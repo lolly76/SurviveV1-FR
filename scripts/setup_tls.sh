@@ -9,7 +9,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 HOSTNAME="${SURVIVE_HOSTNAME:-survive}"
 CERT_DIR="/etc/nginx/certs"
@@ -20,12 +20,12 @@ GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
 info()    { echo -e "${BLUE}[TLS]${NC} $*"; }
 success() { echo -e "${GREEN}[TLS]${NC} $*"; }
 
-[[ $EUID -eq 0 ]] || { echo "Run with sudo: sudo bash $0"; exit 1; }
+[[ $EUID -eq 0 ]] || { echo "Lancez avec sudo : sudo bash $0"; exit 1; }
 
 mkdir -p "$CERT_DIR"
 chmod 700 "$CERT_DIR"
 
-info "Generating self-signed certificate for $HOSTNAME.local..."
+info "Génération d'un certificat auto-signé pour $HOSTNAME.local..."
 openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
     -keyout "$KEY" \
     -out "$CERT" \
@@ -35,7 +35,7 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
 chmod 600 "$KEY"
 chmod 644 "$CERT"
 
-info "Updating nginx config for HTTPS..."
+info "Mise à jour de la configuration nginx pour HTTPS..."
 NGINX_CONF="/etc/nginx/sites-available/survive"
 if [[ -f "$NGINX_CONF" ]]; then
     # Append HTTPS server block if not already present
@@ -99,27 +99,27 @@ server {
     }
 }
 NGINX
-        success "HTTPS server block added to nginx config"
+        success "Bloc serveur HTTPS ajouté à la configuration nginx"
     else
-        info "HTTPS block already present in nginx config"
+        info "Bloc HTTPS déjà présent dans la configuration nginx"
     fi
 
     nginx -t && systemctl reload nginx
-    success "Nginx reloaded with TLS"
+    success "Nginx rechargé avec TLS"
 fi
 
 # Open HTTPS port in firewall
 if command -v ufw &>/dev/null; then
     ufw allow 443/tcp
-    success "Port 443 opened in firewall"
+    success "Port 443 ouvert dans le pare-feu"
 fi
 
 echo ""
-success "TLS setup complete!"
-echo "  HTTPS URL: https://$HOSTNAME.local"
-echo "  HTTP URL:  http://$HOSTNAME.local (still works)"
+success "Configuration TLS terminée !"
+echo "  Adresse HTTPS : https://$HOSTNAME.local"
+echo "  Adresse HTTP :  http://$HOSTNAME.local (fonctionne toujours)"
 echo ""
-echo "  Browser will show a security warning for self-signed certs."
-echo "  Click 'Advanced' → 'Proceed' to accept."
+echo "  Le navigateur affichera un avertissement de sécurité (certificat auto-signé)."
+echo "  Cliquez sur « Avancé » puis « Continuer » pour accepter."
 echo ""
-echo "  To trust the cert on your devices, copy $CERT to each device and install."
+echo "  Pour faire confiance au certificat, copiez $CERT sur chaque appareil et installez-le."

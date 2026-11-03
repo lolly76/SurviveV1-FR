@@ -55,9 +55,9 @@ is_valid() {
     esac
 }
 
-info "Checking content under $STORAGE_PATH ..."
-[[ "$DELETE" == "true" ]] && warn "--delete: invalid files WILL be removed" \
-                          || info "(report only — pass --delete to remove them)"
+info "Vérification des contenus dans $STORAGE_PATH ..."
+[[ "$DELETE" == "true" ]] && warn "--delete : les fichiers invalides SERONT supprimés" \
+                          || info "(rapport seulement — ajoutez --delete pour les supprimer)"
 echo ""
 
 total=0; bad=0
@@ -67,7 +67,7 @@ while IFS= read -r -d '' f; do
     if ! is_valid "$f"; then
         bad=$((bad + 1))
         BAD_FILES+=("$f")
-        echo "  INVALID  ${f#"$STORAGE_PATH"/}"
+        echo "  INVALIDE ${f#"$STORAGE_PATH"/}"
     fi
 done < <(find "$STORAGE_PATH" \
               \( -iname '*.pdf' -o -iname '*.epub' -o -iname '*.mobi' \
@@ -76,24 +76,24 @@ done < <(find "$STORAGE_PATH" \
 
 echo ""
 if (( bad == 0 )); then
-    success "All $total content files are valid."
+    success "Les $total fichiers de contenu sont valides."
     exit 0
 fi
 
-warn "$bad of $total files are not what their extension claims."
-warn "These are almost always HTML error pages saved during a blocked or"
-warn "moved download — they cannot be opened or indexed."
+warn "$bad fichier(s) sur $total ne correspondent pas à leur extension."
+warn "Ce sont presque toujours des pages d'erreur HTML enregistrées lors d'un"
+warn "téléchargement bloqué ou déplacé — elles ne peuvent être ni ouvertes ni indexées."
 
 if [[ "$DELETE" == "true" ]]; then
     for f in "${BAD_FILES[@]}"; do rm -f "$f"; done
-    success "Removed $bad invalid file(s)."
+    success "$bad fichier(s) invalide(s) supprimé(s)."
     echo ""
-    info "Re-download them (now with magic-byte checks + Wayback fallback):"
+    info "Retéléchargez-les (désormais avec contrôle des octets magiques + repli Wayback) :"
     info "  bash download/books_pdfs.sh    --storage $STORAGE_PATH"
     info "  bash download/gaps_content.sh  --storage $STORAGE_PATH"
     info "  bash download/mental_health.sh --storage $STORAGE_PATH"
 else
     echo ""
-    info "Remove them with:  bash scripts/verify_content.sh --delete"
+    info "Supprimez-les avec :  bash scripts/verify_content.sh --delete"
 fi
 exit 1

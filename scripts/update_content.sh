@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 
@@ -30,13 +30,13 @@ warn()    { echo -e "${YELLOW}[UPDATE]${NC} $*"; }
 check_internet() {
     ping -c 1 -W 3 8.8.8.8 &>/dev/null || curl -sfI --max-time 8 https://download.kiwix.org >/dev/null 2>&1 || {
         if [[ "$SCHEDULED" == "true" ]]; then
-            info "Scheduled update: no internet tonight -- skipping"
+            info "Mise à jour planifiée : pas d'Internet cette nuit -- ignorée"
             exit 0
         fi
-        warn "No internet connection. Connect to internet to update content."
+        warn "Pas de connexion Internet. Connectez-vous pour mettre à jour le contenu."
         exit 1
     }
-    success "Internet connection available"
+    success "Connexion Internet disponible"
 }
 
 setup_scheduled_run() {
@@ -45,108 +45,108 @@ setup_scheduled_run() {
     mkdir -p "$STORAGE_PATH/.logs"
     if old=$(cat "$pid_file" 2>/dev/null) && [[ -n "$old" ]] && kill -0 "$old" 2>/dev/null \
        && [[ "$old" != "$$" ]]; then
-        info "Scheduled update: another update (pid $old) is still running -- skipping"
+        info "Mise à jour planifiée : une autre mise à jour (pid $old) est encore en cours -- ignorée"
         exit 0
     fi
     echo "$$" > "$pid_file"   # lets the dashboard show the run as in progress
     renice -n 15 -p $$ >/dev/null 2>&1 || true
     if [[ -n "${SURVIVE_AUTO_UPDATE_RATE_LIMIT:-}" ]] && [[ "${SURVIVE_AUTO_UPDATE_RATE_LIMIT}" != "0" ]]; then
         export SURVIVE_BANDWIDTH_LIMIT="$SURVIVE_AUTO_UPDATE_RATE_LIMIT"
-        info "Scheduled update: bandwidth capped at $(( SURVIVE_AUTO_UPDATE_RATE_LIMIT / 1024 )) KB/s"
+        info "Mise à jour planifiée : débit limité à $(( SURVIVE_AUTO_UPDATE_RATE_LIMIT / 1024 )) KB/s"
     fi
-    info "Scheduled update started $(date '+%Y-%m-%d %H:%M')"
+    info "Mise à jour planifiée démarrée le $(date '+%Y-%m-%d %H:%M')"
 }
 
 main() {
-    info "SurviveV1 Content Updater"
+    info "Mise à jour des contenus SurviveV1"
     check_internet
     setup_scheduled_run
 
     # Update git repo itself — pull whatever branch this clone tracks, never
     # a hardcoded one (the repo may live on main, a fork, or a test branch).
-    info "Updating SurviveV1 scripts..."
+    info "Mise à jour des scripts SurviveV1..."
     local local_branch
     local_branch=$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD")
     if [[ "$local_branch" == "HEAD" ]]; then
-        warn "Repo is on a detached HEAD -- skipping self-update"
+        warn "Le dépôt est en HEAD détaché -- mise à jour des scripts ignorée"
     elif ! git -C "$REPO_DIR" diff --quiet 2>/dev/null; then
-        warn "Repo has local uncommitted changes -- skipping self-update"
-        warn "(a rebase over a dirty tree aborts mid-update; commit or stash first)"
+        warn "Le dépôt a des modifications locales non validées -- mise à jour des scripts ignorée"
+        warn "(un rebase sur un arbre modifié échoue en cours de route ; validez ou remisez d'abord)"
     else
         git -C "$REPO_DIR" pull --rebase origin "$local_branch" \
-            && success "Scripts updated ($local_branch)" || warn "Git pull failed"
+            && success "Scripts mis à jour ($local_branch)" || warn "Échec de git pull"
     fi
 
     # Update yt-dlp
-    info "Updating yt-dlp..."
-    yt-dlp --update && success "yt-dlp updated" || warn "yt-dlp update failed"
+    info "Mise à jour de yt-dlp..."
+    yt-dlp --update && success "yt-dlp mis à jour" || warn "Échec de la mise à jour de yt-dlp"
 
     # Update Ollama models
     if command -v ollama &>/dev/null; then
-        info "Checking for Ollama model updates..."
+        info "Recherche de mises à jour des modèles Ollama..."
         OLLAMA_MODELS="$STORAGE_PATH/ai_models/ollama" \
         ollama list 2>/dev/null | tail -n +2 | awk '{print $1}' | \
         while read -r model; do
-            info "Updating $model..."
+            info "Mise à jour de $model..."
             OLLAMA_MODELS="$STORAGE_PATH/ai_models/ollama" ollama pull "$model" \
-                && success "$model updated" || warn "$model update failed"
+                && success "$model mis à jour" || warn "Échec de la mise à jour de $model"
         done
     fi
 
     # Update new YouTube videos (yt-dlp archive prevents re-downloading)
     if [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]; then
-        info "Checking for new survival videos..."
+        info "Recherche de nouvelles vidéos de survie..."
         bash "$REPO_DIR/download/videos.sh" --storage "$STORAGE_PATH" \
-            || warn "Video refresh finished with errors (see above)"
+            || warn "Le rafraîchissement des vidéos s'est terminé avec des erreurs (voir ci-dessus)"
     fi
 
     # Fill gaps in the Kiwix library: newly-added catalog items, resumed
     # partials, missing titles. Deliberately NOT --update — replacing an
     # existing 100+ GB build is a manual decision, never a button press.
-    info "Refreshing Kiwix library (new/missing content only)..."
+    info "Rafraîchissement de la bibliothèque Kiwix (contenus nouveaux ou manquants seulement)..."
     bash "$REPO_DIR/download/kiwix_content.sh" --storage "$STORAGE_PATH" \
-        || warn "Kiwix refresh finished with errors (see above)"
+        || warn "Le rafraîchissement de Kiwix s'est terminé avec des erreurs (voir ci-dessus)"
 
     # Books and PDFs (existing files are skipped)
     if [[ "${CONTENT_PDFS:-Y}" =~ [Yy] ]]; then
-        info "Refreshing books and PDFs..."
+        info "Rafraîchissement des livres et PDF..."
         bash "$REPO_DIR/download/books_pdfs.sh" --storage "$STORAGE_PATH" \
-            || warn "books_pdfs finished with errors"
+            || warn "books_pdfs terminé avec des erreurs"
         bash "$REPO_DIR/download/gaps_content.sh" --storage "$STORAGE_PATH" \
-            || warn "gaps_content finished with errors"
+            || warn "gaps_content terminé avec des erreurs"
         bash "$REPO_DIR/download/mental_health.sh" --storage "$STORAGE_PATH" \
-            || warn "mental_health finished with errors"
+            || warn "mental_health terminé avec des erreurs"
     fi
 
     # Refresh offline app installers (tracks newest Kiwix/VLC releases)
     if [[ "${CONTENT_APPS:-Y}" =~ [Yy] ]]; then
-        info "Refreshing offline app depot..."
+        info "Rafraîchissement du dépôt d'applications hors ligne..."
         bash "$REPO_DIR/download/app_depot.sh" --storage "$STORAGE_PATH" \
-            || warn "app_depot finished with errors"
+            || warn "app_depot terminé avec des erreurs"
     fi
 
     # Refresh the Meshtastic web client (skips when already current)
     if [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]]; then
-        info "Refreshing comms tools..."
+        info "Rafraîchissement des outils de transmission..."
         bash "$REPO_DIR/download/comms.sh" --storage "$STORAGE_PATH" \
-            || warn "comms finished with errors"
+            || warn "comms terminé avec des erreurs"
     fi
 
     # Refresh the BDPM drug reference (fichiers rafraîchis ; notices déjà récupérées conservées)
     if [[ "${CONTENT_DRUGS:-Y}" =~ [YyOo] ]]; then
-        info "Refreshing drug reference..."
+        info "Rafraîchissement de la référence des médicaments..."
         bash "$REPO_DIR/download/drug_reference.sh" --storage "$STORAGE_PATH" \
-            || warn "drug_reference finished with errors"
+            || warn "drug_reference terminé avec des erreurs"
     fi
 
     # Re-register any new ZIM files
     if command -v kiwix-manage &>/dev/null; then
-        info "Updating Kiwix library..."
+        info "Mise à jour de la bibliothèque Kiwix..."
         KIWIX_LIBRARY="$STORAGE_PATH/.kiwix_library.xml"
         while IFS= read -r -d '' zimfile; do
             kiwix-manage "$KIWIX_LIBRARY" add "$zimfile" 2>/dev/null || true
         done < <(find "$STORAGE_PATH/zim" -name "*.zim" -print0 2>/dev/null)
-        success "Kiwix library updated"
+        success "Bibliothèque Kiwix mise à jour"
     fi
 
     # Rebuild the dashboard search index against the refreshed content.
@@ -154,20 +154,20 @@ main() {
 
     # Incrementally index new documents for full-text search / AI retrieval.
     if command -v python3 &>/dev/null; then
-        info "Updating document index..."
+        info "Mise à jour de l'index des documents..."
         python3 "$REPO_DIR/scripts/index_documents.py" --storage "$STORAGE_PATH" \
-            || warn "Document indexing failed"
+            || warn "Échec de l'indexation des documents"
     fi
 
     # Newly registered ZIMs appear only after kiwix-serve reloads its library.
     # Works unattended only with passwordless sudo; otherwise just say so.
     if sudo -n systemctl restart kiwix 2>/dev/null; then
-        success "Kiwix restarted — new content is live"
+        success "Kiwix redémarré — le nouveau contenu est disponible"
     else
-        info "Restart Kiwix to see new library entries: sudo systemctl restart kiwix"
+        info "Redémarrez Kiwix pour voir les nouvelles entrées : sudo systemctl restart kiwix"
     fi
 
-    success "Content update complete"
+    success "Mise à jour des contenus terminée"
 }
 
 main "$@"

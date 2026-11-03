@@ -15,7 +15,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 while [[ $# -gt 0 ]]; do
@@ -35,7 +35,7 @@ LIBRARY="$STORAGE_PATH/.kiwix_library.xml"
 mkdir -p "$ZIM_DIR"
 
 if ! command -v kiwix-manage &>/dev/null; then
-    warn "kiwix-manage not installed -- cannot rebuild $LIBRARY"
+    warn "kiwix-manage n'est pas installé -- impossible de reconstruire $LIBRARY"
     exit 1
 fi
 
@@ -48,13 +48,13 @@ while IFS= read -r -d '' zimfile; do
     # Skip partial downloads and anything that isn't really a ZIM.
     [[ -f "$zimfile.aria2" ]] && { skipped=$((skipped + 1)); continue; }
     if [[ "$(head -c 4 "$zimfile" 2>/dev/null | tr -d '\0')" != *ZIM* ]]; then
-        warn "Not a valid ZIM, skipping: $zimfile"
+        warn "ZIM invalide, ignoré : $zimfile"
         skipped=$((skipped + 1)); continue
     fi
     if kiwix-manage "$TMP" add "$zimfile" >/dev/null 2>&1; then
         added=$((added + 1))
     else
-        warn "kiwix-manage rejected: $zimfile"
+        warn "kiwix-manage a refusé : $zimfile"
         skipped=$((skipped + 1))
     fi
 done < <(find "$ZIM_DIR" -type f -name "*.zim" -print0 2>/dev/null | sort -z)
@@ -66,13 +66,13 @@ else
     printf '<?xml version="1.0" encoding="UTF-8"?>\n<library version="20110515">\n</library>\n' > "$LIBRARY"
 fi
 trap - EXIT
-success "Library rebuilt: $added ZIM(s) registered, $skipped skipped"
+success "Bibliothèque reconstruite : $added ZIM enregistré(s), $skipped ignoré(s)"
 
 # The dashboard's filename search index must pick up the new files.
 rm -f "$STORAGE_PATH/.search_index.db"
 
 if sudo -n systemctl restart kiwix 2>/dev/null; then
-    success "Kiwix restarted -- new content is live"
+    success "Kiwix redémarré -- le nouveau contenu est disponible"
 else
-    info "Restart Kiwix to publish the library: sudo systemctl restart kiwix"
+    info "Redémarrez Kiwix pour publier la bibliothèque : sudo systemctl restart kiwix"
 fi
