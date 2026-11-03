@@ -16,68 +16,68 @@ FAILURES=0
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════${NC}"
-echo -e "${BLUE}  SurviveV1 Pre-flight Check${NC}"
+echo -e "${BLUE}  SurviveV1 — Vérification préalable${NC}"
 echo -e "${BLUE}════════════════════════════════════════${NC}"
 echo ""
 
 # ── OS / Architecture ─────────────────────────────────────────────────────────
-echo "OS & Architecture"
+echo "Système et architecture"
 if [[ "$(uname -m)" == "aarch64" ]]; then
-    pass "Architecture: aarch64 (64-bit ARM)"
+    pass "Architecture : aarch64 (ARM 64 bits)"
 else
-    warn "Architecture: $(uname -m) — expected aarch64 (Raspberry Pi 5 64-bit)"
+    warn "Architecture : $(uname -m) — aarch64 attendu (Raspberry Pi 5, 64 bits)"
 fi
 
 if grep -qi "bookworm\|trixie" /etc/os-release 2>/dev/null; then
-    pass "OS: Raspberry Pi OS ($(. /etc/os-release && echo "$VERSION_CODENAME"))"
+    pass "Système : Raspberry Pi OS ($(. /etc/os-release && echo "$VERSION_CODENAME"))"
 elif grep -q "Bullseye" /etc/os-release 2>/dev/null; then
-    warn "OS: Bullseye — Bookworm or newer recommended"
+    warn "Système : Bullseye — Bookworm ou plus récent recommandé"
 else
     OS_ID=$(. /etc/os-release && echo "$PRETTY_NAME")
-    warn "OS: $OS_ID — untested, may work"
+    warn "Système : $OS_ID — non testé, peut fonctionner"
 fi
 
 RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
 if [[ "$RAM_MB" -ge 3800 ]]; then
-    pass "RAM: ${RAM_MB} MB"
+    pass "RAM : ${RAM_MB} Mo"
 else
-    warn "RAM: ${RAM_MB} MB — 4 GB recommended for running all services simultaneously"
+    warn "RAM : ${RAM_MB} Mo — 4 Go recommandés pour faire tourner tous les services"
 fi
 
 echo ""
 
 # ── Root / Sudo ───────────────────────────────────────────────────────────────
-echo "Permissions"
+echo "Droits"
 if [[ $EUID -eq 0 ]]; then
     pass "Running as root"
 elif sudo -n true 2>/dev/null; then
     pass "sudo available without password"
 else
-    fail "Not root and no passwordless sudo — installer requires sudo"
+    fail "Ni root ni sudo sans mot de passe — l'installateur exige sudo"
 fi
 
 echo ""
 
 # ── Internet connectivity ─────────────────────────────────────────────────────
-echo "Network"
+echo "Réseau"
 if ping -c 1 -W 5 8.8.8.8 &>/dev/null; then
     pass "Internet: reachable (ping 8.8.8.8)"
 elif ping -c 1 -W 5 1.1.1.1 &>/dev/null; then
     pass "Internet: reachable (ping 1.1.1.1)"
 else
-    fail "Internet: not reachable — required for downloading software and content"
+    fail "Internet : inaccessible — nécessaire pour télécharger logiciels et contenus"
 fi
 
 if ping -c 1 -W 3 download.kiwix.org &>/dev/null 2>&1; then
     pass "Kiwix download server: reachable"
 else
-    warn "Kiwix download server: unreachable — may affect ZIM downloads"
+    warn "Serveur de téléchargement Kiwix : inaccessible — peut gêner le téléchargement des ZIM"
 fi
 
 echo ""
 
 # ── Storage ───────────────────────────────────────────────────────────────────
-echo "Storage"
+echo "Stockage"
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 
 if mountpoint -q "$STORAGE_PATH" 2>/dev/null; then
@@ -86,40 +86,40 @@ if mountpoint -q "$STORAGE_PATH" 2>/dev/null; then
     if [[ "$AVAIL_GB" -ge 800 ]]; then
         pass "Available space: ${AVAIL_GB} GB (sufficient for full 800 GB install)"
     elif [[ "$AVAIL_GB" -ge 100 ]]; then
-        warn "Available space: ${AVAIL_GB} GB — not enough for full install (need 800 GB); partial install possible"
+        warn "Espace disponible : ${AVAIL_GB} Go — insuffisant pour l'installation complète (800 Go) ; installation partielle possible"
     else
-        fail "Available space: ${AVAIL_GB} GB — at least 100 GB required"
+        fail "Espace disponible : ${AVAIL_GB} Go — au moins 100 Go requis"
     fi
 else
-    warn "Storage not mounted at $STORAGE_PATH — mount your drive before running download scripts"
+    warn "Stockage non monté sur $STORAGE_PATH — montez votre disque avant de lancer les téléchargements"
     # Check root filesystem space instead
     ROOT_AVAIL_GB=$(df -BG / | tail -1 | awk '{print $4}' | tr -d 'G')
-    info "Root filesystem has ${ROOT_AVAIL_GB} GB free (content should go on external drive)"
+    info "Le système racine a ${ROOT_AVAIL_GB} Go libres (les contenus doivent aller sur le disque externe)"
 fi
 
 echo ""
 
 # ── Required commands ─────────────────────────────────────────────────────────
-echo "Required Tools"
+echo "Outils requis"
 REQUIRED_CMDS=(apt-get systemctl curl wget git python3)
 for cmd in "${REQUIRED_CMDS[@]}"; do
     if command -v "$cmd" &>/dev/null; then
         pass "$cmd: found"
     else
-        fail "$cmd: NOT FOUND — required for installation"
+        fail "$cmd : INTROUVABLE — requis pour l'installation"
     fi
 done
 
 echo ""
 
 # ── Optional tools (already installed check) ─────────────────────────────────
-echo "Optional Tools (pre-installed)"
+echo "Outils facultatifs (préinstallés)"
 OPTIONAL_CMDS=(ffmpeg nginx ufw rclone aria2c yt-dlp kiwix-serve ollama)
 for cmd in "${OPTIONAL_CMDS[@]}"; do
     if command -v "$cmd" &>/dev/null; then
         pass "$cmd: already installed"
     else
-        info "$cmd: not installed (will be installed by setup/install.sh)"
+        info "$cmd : non installé (sera installé par setup/install.sh)"
     fi
 done
 
@@ -131,9 +131,9 @@ PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_i
 PY_MAJOR=${PY_VER%%.*}
 PY_MINOR=${PY_VER##*.}
 if [[ "$PY_MAJOR" -ge 3 ]] && [[ "$PY_MINOR" -ge 9 ]]; then
-    pass "Python $PY_VER (3.9+ required)"
+    pass "Python $PY_VER (3.9 ou plus requis)"
 else
-    fail "Python $PY_VER — Python 3.9+ required"
+    fail "Python $PY_VER — Python 3.9 ou plus requis"
 fi
 
 echo ""
@@ -141,11 +141,11 @@ echo ""
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo -e "${BLUE}════════════════════════════════════════${NC}"
 if [[ "$FAILURES" -eq 0 ]]; then
-    echo -e "  ${GREEN}All critical checks passed. Ready to install!${NC}"
+    echo -e "  ${GREEN}Toutes les vérifications critiques sont réussies. Prêt à installer !${NC}"
     echo ""
-    echo "  Next: sudo bash setup/install.sh"
+    echo "  Ensuite : sudo bash setup/install.sh"
 else
-    echo -e "  ${RED}$FAILURES critical check(s) failed. Fix issues above before installing.${NC}"
+    echo -e "  ${RED}$FAILURES vérification(s) critique(s) en échec. Corrigez les problèmes ci-dessus avant d'installer.${NC}"
 fi
 echo -e "${BLUE}════════════════════════════════════════${NC}"
 echo ""

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — First-run configuration wizard
+# SurviveV1-FR — Assistant de configuration du premier lancement
 # =============================================================================
 set -euo pipefail
 
@@ -12,43 +12,43 @@ info()   { echo -e "${BLUE}[?]${NC} $*"; }
 prompt() { echo -e "${YELLOW}>>>${NC} $*"; }
 
 echo ""
-echo -e "${GREEN}=== SurviveV1 First-Run Setup ===${NC}"
+echo -e "${GREEN}=== SurviveV1 — Configuration du premier lancement ===${NC}"
 echo ""
 
 # ── Storage path ──────────────────────────────────────────────────────────────
-info "Where should content be stored? (USB SSD recommended)"
-echo "  Options: /mnt/survive, /media/pi/SURVIVE, /home/pi/survive"
-read -rp "  Storage path [/mnt/survive]: " STORAGE_PATH
+info "Où stocker les contenus ? (SSD USB recommandé)"
+echo "  Exemples : /mnt/survive, /media/pi/SURVIVE, /home/pi/survive"
+read -rp "  Chemin de stockage [/mnt/survive] : " STORAGE_PATH
 STORAGE_PATH="${STORAGE_PATH:-/mnt/survive}"
 
 # ── Storage device ────────────────────────────────────────────────────────────
 echo ""
-info "Available block devices:"
+info "Périphériques disponibles :"
 lsblk -o NAME,SIZE,TYPE,MOUNTPOINT 2>/dev/null | grep -E "disk|part" | head -20
 echo ""
-read -rp "  Mount device (e.g. /dev/sda1) or SKIP to use existing path: " STORAGE_DEV
+read -rp "  Périphérique à monter (p. ex. /dev/sda1) ou SKIP pour utiliser le chemin existant : " STORAGE_DEV
 STORAGE_DEV="${STORAGE_DEV:-SKIP}"
 
 # ── Content budget ────────────────────────────────────────────────────────────
 echo ""
-info "Storage budget (GB)? Default 800"
-read -rp "  Budget [800]: " STORAGE_BUDGET_GB
+info "Budget de stockage (Go) ? Par défaut 800"
+read -rp "  Budget [800] : " STORAGE_BUDGET_GB
 STORAGE_BUDGET_GB="${STORAGE_BUDGET_GB:-800}"
 
 # ── Content selection ─────────────────────────────────────────────────────────
 echo ""
-info "Select content to download (y/n for each):"
-read -rp "  Wikipedia EN (full, ~100GB)?          [Y/n]: " DL_WIKIPEDIA
-read -rp "  Wikipedia EN (no pictures, ~20GB)?    [y/N]: " DL_WIKIPEDIA_NOPIC
-read -rp "  Wikibooks + Wikivoyage (~5GB)?        [Y/n]: " DL_WIKIBOOKS
-read -rp "  Stack Exchange (DIY,Medical,etc ~80GB)? [Y/n]: " DL_STACKEXCHANGE
-read -rp "  Project Gutenberg books (~60GB)?      [Y/n]: " DL_GUTENBERG
-read -rp "  Khan Academy via Kolibri (~200GB)?    [Y/n]: " DL_KOLIBRI
-read -rp "  Survival/homesteading videos (~150GB)? [Y/n]: " DL_VIDEOS
-read -rp "  OpenStreetMap offline maps (~70GB)?   [Y/n]: " DL_MAPS
-read -rp "  Curated PDFs/manuals (~20GB)?         [Y/n]: " DL_PDFS
-read -rp "  AI models for Ollama (~50GB)?         [Y/n]: " DL_AI_MODELS
-read -rp "  iFixit repair guides (~5GB)?          [Y/n]: " DL_IFIX
+info "Choisissez les contenus à télécharger (o/n pour chacun) :"
+read -rp "  Wikipédia FR complète (~52 Go) ?               [O/n] : " DL_WIKIPEDIA
+read -rp "  Wikipédia FR sans images (~12 Go) ?            [o/N] : " DL_WIKIPEDIA_NOPIC
+read -rp "  Wikilivres, Wikivoyage, Wikisource, Wiktionnaire (~17 Go) ? [O/n] : " DL_WIKIBOOKS
+read -rp "  Stack Exchange (langue française, <1 Go) ?     [O/n] : " DL_STACKEXCHANGE
+read -rp "  Projet Gutenberg, livres FR (~15 Go) ?         [O/n] : " DL_GUTENBERG
+read -rp "  Khan Academy FR via Kolibri (~200 Go) ?        [O/n] : " DL_KOLIBRI
+read -rp "  Vidéos de survie / autonomie (~150 Go) ?       [O/n] : " DL_VIDEOS
+read -rp "  Cartes OpenStreetMap hors ligne, France (~5 Go) ? [O/n] : " DL_MAPS
+read -rp "  PDF et manuels sélectionnés (~20 Go) ?         [O/n] : " DL_PDFS
+read -rp "  Modèles d'IA pour Ollama (~50 Go) ?            [O/n] : " DL_AI_MODELS
+read -rp "  Guides de réparation iFixit FR (~3,5 Go) ?     [O/n] : " DL_IFIX
 
 DL_WIKIPEDIA="${DL_WIKIPEDIA:-Y}"
 DL_WIKIPEDIA_NOPIC="${DL_WIKIPEDIA_NOPIC:-N}"
@@ -62,23 +62,34 @@ DL_PDFS="${DL_PDFS:-Y}"
 DL_AI_MODELS="${DL_AI_MODELS:-Y}"
 DL_IFIX="${DL_IFIX:-Y}"
 
+# Réponses françaises : « o/O » = oui, tout le reste (hors vide) = non.
+_norm() { case "${1:-}" in [YyOo]*) echo Y ;; "") echo "$2" ;; *) echo N ;; esac; }
+DL_WIKIPEDIA=$(_norm "$DL_WIKIPEDIA" Y);       DL_WIKIPEDIA_NOPIC=$(_norm "$DL_WIKIPEDIA_NOPIC" N)
+DL_WIKIBOOKS=$(_norm "$DL_WIKIBOOKS" Y);       DL_STACKEXCHANGE=$(_norm "$DL_STACKEXCHANGE" Y)
+DL_GUTENBERG=$(_norm "$DL_GUTENBERG" Y);       DL_KOLIBRI=$(_norm "$DL_KOLIBRI" Y)
+DL_VIDEOS=$(_norm "$DL_VIDEOS" Y);             DL_MAPS=$(_norm "$DL_MAPS" Y)
+DL_PDFS=$(_norm "$DL_PDFS" Y);                 DL_AI_MODELS=$(_norm "$DL_AI_MODELS" Y)
+DL_IFIX=$(_norm "$DL_IFIX" Y)
+
 # ── Hostname ──────────────────────────────────────────────────────────────────
 echo ""
-read -rp "  Hostname for this device [survive]: " DEVICE_HOSTNAME
+read -rp "  Nom d'hôte de cet appareil [survive] : " DEVICE_HOSTNAME
 DEVICE_HOSTNAME="${DEVICE_HOSTNAME:-survive}"
 
 # ── Write config ──────────────────────────────────────────────────────────────
 mkdir -p "$(dirname "$CONFIG_FILE")"
 cat > "$CONFIG_FILE" << EOF
-# SurviveV1 Configuration
-# Generated: $(date)
+# Configuration SurviveV1-FR
+# Générée le : $(date)
 
 SURVIVE_STORAGE_PATH="$STORAGE_PATH"
 SURVIVE_STORAGE_DEV="$STORAGE_DEV"
 SURVIVE_BUDGET_GB="$STORAGE_BUDGET_GB"
 SURVIVE_HOSTNAME="$DEVICE_HOSTNAME"
 
-# Content flags (Y=download, N=skip)
+MAP_REGION="france"
+
+# Contenus (Y/O = télécharger, N = ignorer)
 CONTENT_WIKIPEDIA="$DL_WIKIPEDIA"
 CONTENT_WIKIPEDIA_NOPIC="$DL_WIKIPEDIA_NOPIC"
 CONTENT_WIKIBOOKS="$DL_WIKIBOOKS"
@@ -93,12 +104,12 @@ CONTENT_IFIX="$DL_IFIX"
 EOF
 
 echo ""
-echo -e "${GREEN}Configuration saved to $CONFIG_FILE${NC}"
+echo -e "${GREEN}Configuration enregistrée dans $CONFIG_FILE${NC}"
 echo ""
 
 # ── Mount storage ─────────────────────────────────────────────────────────────
 if [[ "$STORAGE_DEV" != "SKIP" ]] && [[ -b "$STORAGE_DEV" ]]; then
-    echo "Mounting $STORAGE_DEV at $STORAGE_PATH..."
+    echo "Montage de $STORAGE_DEV sur $STORAGE_PATH..."
     mkdir -p "$STORAGE_PATH"
     FSTYPE=$(blkid -s TYPE -o value "$STORAGE_DEV" 2>/dev/null || echo "ext4")
     mount -t "$FSTYPE" "$STORAGE_DEV" "$STORAGE_PATH"
@@ -107,6 +118,6 @@ if [[ "$STORAGE_DEV" != "SKIP" ]] && [[ -b "$STORAGE_DEV" ]]; then
     PARTUUID=$(blkid -s PARTUUID -o value "$STORAGE_DEV" 2>/dev/null || echo "")
     if [[ -n "$PARTUUID" ]]; then
         echo "PARTUUID=$PARTUUID  $STORAGE_PATH  $FSTYPE  defaults,noatime  0  2" >> /etc/fstab
-        echo "Added to /etc/fstab for auto-mount"
+        echo "Ajouté à /etc/fstab pour le montage automatique"
     fi
 fi

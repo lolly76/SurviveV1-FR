@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 REMOTE="${1:-gdrive}"
@@ -35,7 +35,7 @@ sync_from() {
     local local_dir="$2"
     local label="$3"
 
-    info "Restoring $label from $REMOTE:$REMOTE_PATH/$remote_dir → $local_dir"
+    info "Restauration de $label depuis $REMOTE:$REMOTE_PATH/$remote_dir → $local_dir"
     mkdir -p "$local_dir"
 
     local FLAGS=(--progress --transfers 4 --checkers 8 --retries 3 --stats 60s)
@@ -43,18 +43,18 @@ sync_from() {
 
     rclone sync "$REMOTE:$REMOTE_PATH/$remote_dir" "$local_dir" \
         "${FLAGS[@]}" \
-    && success "$label restored" \
-    || warn "$label restore had errors"
+    && success "$label restauré" \
+    || warn "La restauration de $label a rencontré des erreurs"
 }
 
 main() {
-    info "Cloud → SurviveV1 Restore"
-    info "Remote: $REMOTE | Dry-run: $DRY_RUN"
+    info "Restauration Cloud → SurviveV1"
+    info "Stockage : $REMOTE | Simulation : $DRY_RUN"
 
     # List available content on remote
-    info "Available content on $REMOTE:$REMOTE_PATH:"
+    info "Contenu disponible sur $REMOTE:$REMOTE_PATH:"
     rclone lsf "$REMOTE:$REMOTE_PATH" 2>/dev/null || {
-        echo "Could not list remote — check connection and remote config"
+        echo "Impossible de lister le stockage distant — vérifiez la connexion et la configuration"
         exit 1
     }
 
@@ -68,7 +68,7 @@ main() {
         sync_from "maps"   "$STORAGE_PATH/maps"   "Maps"
     fi
 
-    success "Restore complete"
+    success "Restauration terminée"
 }
 
 main

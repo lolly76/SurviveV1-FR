@@ -13,7 +13,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 REMOTE="${1:-gdrive}"
@@ -45,10 +45,10 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # ── Check remote ──────────────────────────────────────────────────────────────
 check_remote() {
     if ! rclone listremotes 2>/dev/null | grep -q "^${REMOTE}:"; then
-        error "Remote '$REMOTE' not configured. Run: bash sync/setup_rclone.sh $REMOTE"
+        error "Stockage « $REMOTE » non configuré. Lancez : bash sync/setup_rclone.sh $REMOTE"
         exit 1
     fi
-    success "Remote '$REMOTE' is configured"
+    success "Stockage « $REMOTE » configuré"
 }
 
 # ── Sync function ─────────────────────────────────────────────────────────────
@@ -58,13 +58,13 @@ sync_dir() {
     local label="$3"
 
     if [[ ! -d "$local_dir" ]]; then
-        warn "$label: $local_dir does not exist, skipping"
+        warn "$label : $local_dir n'existe pas, ignoré"
         return
     fi
 
     local size
     size=$(du -sh "$local_dir" 2>/dev/null | cut -f1)
-    info "Syncing $label ($size) → $REMOTE:$REMOTE_PATH/$remote_dir"
+    info "Synchronisation de $label ($size) → $REMOTE:$REMOTE_PATH/$remote_dir"
 
     local FLAGS=(
         --progress
@@ -89,20 +89,20 @@ sync_dir() {
     rclone sync "$local_dir" \
         "$REMOTE:$REMOTE_PATH/$remote_dir" \
         "${FLAGS[@]}" \
-    && success "$label synced" \
-    || warn "$label sync had errors — check $LOG_FILE"
+    && success "$label synchronisé" \
+    || warn "La synchronisation de $label a rencontré des erreurs — voir $LOG_FILE"
 }
 
 # ── Size check ────────────────────────────────────────────────────────────────
 check_cloud_quota() {
-    info "Checking cloud storage quota..."
-    rclone about "$REMOTE:" 2>/dev/null || warn "Could not check quota"
+    info "Vérification du quota de stockage cloud..."
+    rclone about "$REMOTE:" 2>/dev/null || warn "Impossible de vérifier le quota"
 }
 
 # ── Main sync ─────────────────────────────────────────────────────────────────
 main() {
-    info "SurviveV1 → Cloud Sync"
-    info "Remote: $REMOTE | Path: $REMOTE_PATH | Dry-run: $DRY_RUN"
+    info "Synchronisation SurviveV1 → Cloud"
+    info "Stockage : $REMOTE | Chemin : $REMOTE_PATH | Simulation : $DRY_RUN"
     echo ""
 
     check_remote
@@ -114,7 +114,7 @@ main() {
     else
         # Sync all categories
         echo ""
-        info "Syncing all content categories..."
+        info "Synchronisation de toutes les catégories..."
         echo ""
 
         # PDFs and books are highest priority (smallest, most useful)
@@ -132,18 +132,18 @@ main() {
         if [[ "$FREE_REMOTE" -gt 50 ]]; then
             sync_dir "$STORAGE_PATH/videos" "videos" "Survival Videos"
         else
-            warn "Less than 50GB free on $REMOTE — skipping videos"
-            warn "Run with: bash sync/sync_to_cloud.sh $REMOTE --category videos"
+            warn "Moins de 50 Go libres sur $REMOTE — vidéos ignorées"
+            warn "Lancez avec : bash sync/sync_to_cloud.sh $REMOTE --category videos"
         fi
 
         sync_dir "$STORAGE_PATH/maps"  "maps"  "Offline Maps"
     fi
 
     echo ""
-    success "Sync complete. Log: $LOG_FILE"
+    success "Synchronisation terminée. Journal : $LOG_FILE"
 
     # Show remote usage after sync
-    info "Cloud storage after sync:"
+    info "Stockage cloud après synchronisation :"
     rclone about "$REMOTE:" 2>/dev/null || true
 }
 

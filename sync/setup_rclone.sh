@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()    { echo -e "${BLUE}[SYNC]${NC} $*"; }
@@ -24,13 +24,13 @@ version_ge() { [ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -1)" = "$2" ]; }
 
 install_rclone() {
     if ! command -v rclone &>/dev/null; then
-        info "Installing rclone..."
+        info "Installation de rclone..."
         curl -fsSL https://rclone.org/install.sh | bash
     fi
     local current
     current=$(rclone version | head -1 | awk '{print $2}' | tr -d 'v')
     if [[ -n "$current" ]] && ! version_ge "$current" "$MIN_RCLONE_VERSION"; then
-        warn "rclone $current < $MIN_RCLONE_VERSION; upgrade recommended (CVE-2026-41179)."
+        warn "rclone $current < $MIN_RCLONE_VERSION; mise à jour recommandée (CVE-2026-41179)."
     fi
     success "rclone $(rclone version | head -1)"
 }
@@ -41,36 +41,36 @@ setup_provider() {
 
     case "$provider" in
         gdrive|google)
-            info "Setting up Google Drive..."
+            info "Configuration de Google Drive..."
             echo ""
-            echo "  Steps:"
-            echo "  1. Run: rclone config"
-            echo "  2. Choose: n (new remote)"
-            echo "  3. Name: gdrive"
-            echo "  4. Type: 18 (Google Drive)"
-            echo "  5. Follow OAuth flow (requires temporary internet)"
-            echo "  6. Choose 'Full access'"
+            echo "  Étapes :"
+            echo "  1. Lancer : rclone config"
+            echo "  2. Choisir : n (nouveau stockage distant)"
+            echo "  3. Nom : gdrive"
+            echo "  4. Type : 18 (Google Drive)"
+            echo "  5. Suivre l'authentification OAuth (Internet nécessaire temporairement)"
+            echo "  6. Choisir « Accès complet »"
             echo ""
-            echo "  Then run: bash sync/sync_to_cloud.sh gdrive"
+            echo "  Puis lancer : bash sync/sync_to_cloud.sh gdrive"
             ;;
         dropbox)
-            info "Setting up Dropbox..."
+            info "Configuration de Dropbox..."
             echo ""
-            echo "  Steps:"
-            echo "  1. Run: rclone config"
-            echo "  2. Choose: n (new remote)"
-            echo "  3. Name: dropbox"
-            echo "  4. Type: 8 (Dropbox)"
-            echo "  5. Follow OAuth flow"
+            echo "  Étapes :"
+            echo "  1. Lancer : rclone config"
+            echo "  2. Choisir : n (nouveau stockage distant)"
+            echo "  3. Nom : dropbox"
+            echo "  4. Type : 8 (Dropbox)"
+            echo "  5. Suivre l'authentification OAuth"
             ;;
         s3|aws)
-            info "Setting up Amazon S3..."
+            info "Configuration d'Amazon S3..."
             echo ""
-            read -rp "  AWS Access Key ID: " AWS_KEY
-            read -rsp "  AWS Secret Key: " AWS_SECRET
+            read -rp "  Identifiant de clé d'accès AWS : " AWS_KEY
+            read -rsp "  Clé secrète AWS : " AWS_SECRET
             echo ""
-            read -rp "  Region [us-east-1]: " AWS_REGION
-            AWS_REGION="${AWS_REGION:-us-east-1}"
+            read -rp "  Région [eu-west-3] : " AWS_REGION
+            AWS_REGION="${AWS_REGION:-eu-west-3}"
 
             # Secrets passed via a 0600 temp file and --config-str, never on
             # the command line (would leak via ps / shell history / errors).
@@ -94,15 +94,15 @@ EOF
             cat "$secret_file" >> "$rclone_conf"
             # Clear the plaintext secrets from the calling shell.
             unset AWS_KEY AWS_SECRET
-            success "S3 configured as 's3' in $rclone_conf (mode 0600)"
-            warn "Config is only obfuscated by default. Run 'rclone config' and"
-            warn "choose 's' (Set config password) to encrypt credentials at rest."
+            success "S3 configuré sous le nom « s3 » dans $rclone_conf (mode 0600)"
+            warn "La configuration n'est qu'obscurcie par défaut. Lancez « rclone config » et"
+            warn "choisissez « s » (mot de passe de configuration) pour chiffrer les identifiants."
             ;;
         backblaze|b2)
-            info "Setting up Backblaze B2..."
+            info "Configuration de Backblaze B2..."
             echo ""
-            read -rp "  Application Key ID: " B2_KEY
-            read -rsp "  Application Key: " B2_SECRET
+            read -rp "  Identifiant de clé d'application : " B2_KEY
+            read -rsp "  Clé d'application : " B2_SECRET
             echo ""
             local secret_file
             secret_file=$(mktemp) && chmod 600 "$secret_file"
@@ -120,21 +120,21 @@ EOF
             touch "$rclone_conf" && chmod 600 "$rclone_conf"
             cat "$secret_file" >> "$rclone_conf"
             unset B2_KEY B2_SECRET
-            success "Backblaze B2 configured (mode 0600)"
-            warn "Run 'rclone config' -> 's' to encrypt this config at rest."
+            success "Backblaze B2 configuré (mode 0600)"
+            warn "Lancez « rclone config » puis « s » pour chiffrer cette configuration."
             ;;
         onedrive)
-            info "Setting up Microsoft OneDrive..."
+            info "Configuration de Microsoft OneDrive..."
             echo ""
-            echo "  Steps:"
-            echo "  1. Run: rclone config"
-            echo "  2. Choose: n (new remote)"
-            echo "  3. Name: onedrive"
-            echo "  4. Type: 26 (Microsoft OneDrive)"
-            echo "  5. Follow OAuth flow"
+            echo "  Étapes :"
+            echo "  1. Lancer : rclone config"
+            echo "  2. Choisir : n (nouveau stockage distant)"
+            echo "  3. Nom : onedrive"
+            echo "  4. Type : 26 (Microsoft OneDrive)"
+            echo "  5. Suivre l'authentification OAuth"
             ;;
         *)
-            info "Launching interactive rclone config..."
+            info "Lancement de la configuration interactive de rclone..."
             rclone config
             ;;
     esac
@@ -142,8 +142,8 @@ EOF
 
 # ── List configured remotes ───────────────────────────────────────────────────
 list_remotes() {
-    info "Configured cloud remotes:"
-    rclone listremotes 2>/dev/null || echo "  None configured yet"
+    info "Stockages cloud configurés :"
+    rclone listremotes 2>/dev/null || echo "  Aucun pour l'instant"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -152,18 +152,18 @@ main() {
 
     if [[ $# -eq 0 ]]; then
         echo ""
-        echo "Cloud Storage Setup for SurviveV1"
+        echo "Configuration du stockage cloud pour SurviveV1"
         echo ""
-        echo "  Supported providers:"
-        echo "    gdrive    — Google Drive (15GB free)"
-        echo "    dropbox   — Dropbox (2GB free)"
+        echo "  Fournisseurs pris en charge :"
+        echo "    gdrive    — Google Drive (15 Go gratuits)"
+        echo "    dropbox   — Dropbox (2 Go gratuits)"
         echo "    s3        — Amazon S3"
-        echo "    b2        — Backblaze B2 (10GB free)"
-        echo "    onedrive  — Microsoft OneDrive (5GB free)"
-        echo "    custom    — Interactive rclone config"
+        echo "    b2        — Backblaze B2 (10 Go gratuits)"
+        echo "    onedrive  — Microsoft OneDrive (5 Go gratuits)"
+        echo "    custom    — Configuration interactive de rclone"
         echo ""
-        echo "  Usage: bash sync/setup_rclone.sh <provider>"
-        echo "  Then:  bash sync/sync_to_cloud.sh <remote_name>"
+        echo "  Utilisation : bash sync/setup_rclone.sh <fournisseur>"
+        echo "  Puis :  bash sync/sync_to_cloud.sh <nom_du_stockage>"
         echo ""
         list_remotes
         return 0

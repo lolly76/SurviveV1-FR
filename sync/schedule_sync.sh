@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 REMOTE="${1:-gdrive}"
 LOG_DIR="${SURVIVE_STORAGE_PATH:-/mnt/survive}/.logs"
@@ -33,28 +33,28 @@ log() { echo "\$(date '+%Y-%m-%d %H:%M:%S') \$*" >> "\$LOG_DIR/auto_sync.log"; }
 # Check internet connectivity
 if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && \
    ! ping -c 1 -W 3 1.1.1.1 &>/dev/null; then
-    log "No internet — skipping sync"
+    log "Pas d'Internet — synchronisation ignorée"
     exit 0
 fi
 
 # Check if already syncing
 if pgrep -f "rclone sync" &>/dev/null; then
-    log "Sync already in progress — skipping"
+    log "Synchronisation déjà en cours — ignorée"
     exit 0
 fi
 
-log "Internet detected — starting sync to \$REMOTE"
+log "Internet détecté — début de la synchronisation vers \$REMOTE"
 bash "\$REPO_DIR/sync/sync_to_cloud.sh" "\$REMOTE" \
     --bw 5M \
     >> "\$LOG_DIR/auto_sync.log" 2>&1 \
-    && log "Sync complete" \
-    || log "Sync had errors"
+    && log "Synchronisation terminée" \
+    || log "Synchronisation avec erreurs"
 WRAPPER
 chmod +x "$SYNC_WRAPPER"
 
 # ── Add to crontab ────────────────────────────────────────────────────────────
 setup_cron() {
-    info "Setting up cron schedule..."
+    info "Création de la planification cron..."
 
     # Remove old entries
     CRONTAB_TMP=$(mktemp)
@@ -66,13 +66,13 @@ setup_cron() {
     crontab "$CRONTAB_TMP"
     rm -f "$CRONTAB_TMP"
 
-    success "Cron job added — syncs every 6 hours when internet available"
+    success "Tâche cron ajoutée — synchronisation toutes les 6 heures quand Internet est disponible"
 }
 
 # ── NetworkManager hook (sync on Wi-Fi connect) ───────────────────────────────
 setup_nm_hook() {
     if command -v nmcli &>/dev/null; then
-        info "Adding NetworkManager hook for auto-sync on Wi-Fi connect..."
+        info "Ajout d'un crochet NetworkManager pour synchroniser à la connexion Wi-Fi..."
         HOOK_DIR="/etc/NetworkManager/dispatcher.d"
         mkdir -p "$HOOK_DIR"
 
@@ -88,7 +88,7 @@ if [[ "$STATUS" == "up" ]] && [[ "$INTERFACE" =~ ^wlan ]]; then
 fi
 NM_HOOK
         chmod +x "$HOOK_DIR/99-survive-sync"
-        success "NetworkManager hook installed — syncs when Wi-Fi connects"
+        success "Crochet NetworkManager installé — synchronisation à la connexion Wi-Fi"
     fi
 }
 
@@ -125,25 +125,25 @@ TIMER
     systemctl daemon-reload
     systemctl enable survive-sync.timer
     systemctl start survive-sync.timer
-    success "Systemd timer enabled — syncs daily at 2AM (+/- 30min)"
+    success "Minuteur systemd activé — synchronisation quotidienne vers 2 h (± 30 min)"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
-    info "Setting up scheduled cloud sync to: $REMOTE"
+    info "Mise en place de la synchronisation cloud planifiée vers : $REMOTE"
 
     setup_cron
     setup_nm_hook
     setup_systemd_timer 2>/dev/null || setup_cron
 
-    success "Auto-sync configured!"
+    success "Synchronisation automatique configurée !"
     echo ""
-    echo "  Sync schedule:    Every 6 hours (when internet available)"
-    echo "  On WiFi connect:  Automatic (via NetworkManager)"
-    echo "  Manual sync:      bash sync/sync_to_cloud.sh $REMOTE"
-    echo "  Sync logs:        $LOG_DIR/auto_sync.log"
+    echo "  Planification :    toutes les 6 heures (si Internet est disponible)"
+    echo "  À la connexion Wi-Fi : automatique (via NetworkManager)"
+    echo "  Synchro manuelle :  bash sync/sync_to_cloud.sh $REMOTE"
+    echo "  Journaux :          $LOG_DIR/auto_sync.log"
     echo ""
-    echo "  To sync now:      $SYNC_WRAPPER"
+    echo "  Synchroniser maintenant : $SYNC_WRAPPER"
 }
 
 main
