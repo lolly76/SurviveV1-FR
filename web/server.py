@@ -247,6 +247,11 @@ class _TTLCache:
         self._data = None
         self._lock = threading.Lock()
 
+    def invalidate(self) -> None:
+        """Force le recalcul au prochain get() (indépendant de l'uptime de la machine)."""
+        with self._lock:
+            self._ts = None
+
     def get(self, compute):
         """Return cached value, calling compute() to refresh if TTL has expired."""
         with self._lock:
@@ -2147,7 +2152,7 @@ def comms_repeaters_upload():
         upload.save(str(REPEATERS_DIR / name))
     except OSError:
         return redirect(url_for("comms_repeaters", m="Impossible d'enregistrer le fichier."))
-    _repeaters_cache._ts = 0.0  # pylint: disable=protected-access
+    _repeaters_cache.invalidate()
     rows = textutils.parse_repeater_csv(
         (REPEATERS_DIR / name).read_text(encoding="utf-8-sig", errors="replace"), source=name)
     return redirect(url_for("comms_repeaters", m=f"Imported {name}: {len(rows)} repeaters."))
@@ -2164,7 +2169,7 @@ def comms_repeaters_delete():
         target.unlink()
     except OSError:
         abort(500)
-    _repeaters_cache._ts = 0.0  # pylint: disable=protected-access
+    _repeaters_cache.invalidate()
     return redirect(url_for("comms_repeaters", m=f"Removed {name}."))
 
 

@@ -423,7 +423,7 @@ def test_update_start_403_when_no_admin_password(server):
         server.ADMIN_PASSWORD_FILE.unlink()
     except FileNotFoundError:
         pass
-    server._admin_hash_cache._ts = 0.0
+    server._admin_hash_cache.invalidate()
     c = server.app.test_client()
     resp = c.post("/api/update/start", json={})
     assert resp.status_code == 403
@@ -480,7 +480,7 @@ def test_service_restart_requires_admin(server):
         server.ADMIN_PASSWORD_FILE.unlink()
     except FileNotFoundError:
         pass
-    server._admin_hash_cache._ts = 0.0
+    server._admin_hash_cache.invalidate()
     c = server.app.test_client()
     resp = c.post("/api/service/kiwix/restart", json={})
     assert resp.status_code == 403
@@ -635,3 +635,11 @@ def test_ttl_cache_computes_on_first_call_even_right_after_boot(server, monkeypa
     assert cache.get(lambda: {"ok": True}) == {"ok": True}
     # Dans le TTL : pas de recalcul
     assert cache.get(lambda: {"ok": False}) == {"ok": True}
+
+
+def test_ttl_cache_invalidate_forces_recompute_even_right_after_boot(server, monkeypatch):
+    monkeypatch.setattr(server.time, "monotonic", lambda: 5.0)
+    cache = server._TTLCache(60.0)
+    cache.get(lambda: 1)
+    cache.invalidate()
+    assert cache.get(lambda: 2) == 2
