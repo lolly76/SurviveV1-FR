@@ -24,7 +24,7 @@ function copyCode(btn) {
 // Restore tab from URL hash
 (function() {
   const hash = window.location.hash.replace('#','');
-  const valid = ['overview','quickstart','catalog','gaps','licenses','aihat','access'];
+  const valid = ['overview','quickstart','catalog','licenses','aihat','access'];
   if (hash && valid.includes(hash)) {
     const btn = document.querySelector('.tab-btn[onclick*="' + hash + '"]');
     if (btn) show(hash, btn);
