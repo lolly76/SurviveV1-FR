@@ -1,5 +1,5 @@
 [Unit]
-Description=SurviveV1 Dashboard Web Server
+Description=Serveur web du tableau de bord SurviveV1
 After=network.target local-fs.target
 Wants=network.target local-fs.target
 RequiresMountsFor=/mnt/survive

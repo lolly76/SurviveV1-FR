@@ -1,5 +1,5 @@
 [Unit]
-Description=Nightly SurviveV1 content update
+Description=Mise à jour nocturne des contenus SurviveV1
 
 [Timer]
 # Local time; scripts/generate_services.sh rewrites this from

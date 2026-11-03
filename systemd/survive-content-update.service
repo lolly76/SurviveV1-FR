@@ -1,5 +1,5 @@
 [Unit]
-Description=SurviveV1 scheduled content update (started by the .timer)
+Description=Mise à jour planifiée des contenus SurviveV1 (lancée par le minuteur)
 After=network-online.target local-fs.target
 Wants=network-online.target
 RequiresMountsFor=/mnt/survive

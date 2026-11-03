@@ -1,5 +1,5 @@
 [Unit]
-Description=Jellyfin Media Server (SurviveV1 override)
+Description=Serveur multimédia Jellyfin (surcharge SurviveV1)
 # The distro package ships its own unit; this template exists so
 # generate_services.sh can re-path the storage mount dependency when
 # SURVIVE_STORAGE_PATH changes. Jellyfin must never start before the
