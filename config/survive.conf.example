@@ -39,8 +39,9 @@ CONTENT_MESHTASTIC="Y"
 # MeshCore web client (~50 MB) on :8085 plus its Android/Windows apps (~130 MB)
 # for the app depot.
 CONTENT_MESHCORE="Y"
-# Official US national park map PDFs (~2-3 GB; North American regions only).
-CONTENT_NPS_MAPS="Y"
+# Cartes PDF officielles des parcs nationaux AMÉRICAINS (~2-3 Go ; régions
+# nord-américaines uniquement, sans objet pour la France).
+CONTENT_NPS_MAPS="N"
 # World satellite overlay for the map page, zoom 0-6 (~25 MB).
 CONTENT_SATELLITE="Y"
 
@@ -72,8 +73,8 @@ SURVIVE_CLOUD_REMOTE="gdrive"
 SURVIVE_CLOUD_PATH="SurviveV1"
 
 # ── Map region ─────────────────────────────────────────────────────────────────
-# Options: north-america, south-america, europe, africa, asia, world
-MAP_REGION="north-america"
+# Options : france, europe, north-america, south-america, africa, asia, world
+MAP_REGION="france"
 
 # ── Grid-down Wi-Fi hotspot ────────────────────────────────────────────────────
 # Used by scripts/hotspot.sh — the Pi broadcasts its own network so devices can

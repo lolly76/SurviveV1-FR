@@ -12,7 +12,7 @@ if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using de
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 MAP_DIR="$STORAGE_PATH/maps"
-REGION="${MAP_REGION:-north-america}"  # continent or country code
+REGION="${MAP_REGION:-france}"  # continent ou code de pays
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -22,10 +22,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate region against known-good values
+# Valider la région parmi les valeurs connues
 case "$REGION" in
-    north-america|south-america|europe|africa|asia|australia-oceania|us|us-northeast|world) ;;
-    *) echo "Unknown region '$REGION'. Valid: north-america south-america europe africa asia australia-oceania us us-northeast world" >&2; exit 1 ;;
+    france|europe|north-america|south-america|africa|asia|australia-oceania|us|us-northeast|world) ;;
+    *) echo "Région inconnue « $REGION ». Valeurs possibles : france europe north-america south-america africa asia australia-oceania us us-northeast world" >&2; exit 1 ;;
 esac
 
 mkdir -p "$MAP_DIR"/{tiles,mbtiles,pmtiles,pbf,apps,USGS,sprites,fonts}
@@ -109,6 +109,7 @@ dl_osm_pbf() {
 
     # Geofabrik regional extracts (free)
     declare -A REGIONS=(
+        ["france"]="https://download.geofabrik.de/europe/france-latest.osm.pbf"
         ["north-america"]="https://download.geofabrik.de/north-america-latest.osm.pbf"
         ["south-america"]="https://download.geofabrik.de/south-america-latest.osm.pbf"
         ["europe"]="https://download.geofabrik.de/europe-latest.osm.pbf"
@@ -120,7 +121,7 @@ dl_osm_pbf() {
         ["world"]="https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf"
     )
 
-    URL="${REGIONS[$REGION]:-${REGIONS['north-america']}}"
+    URL="${REGIONS[$REGION]:-${REGIONS['france']}}"
 
     info "Downloading: $URL"
     aria2c \
@@ -218,6 +219,7 @@ dl_mbtiles() {
     # Street-level tiles for the configured region only.
     local bbox=""
     case "$REGION" in
+        france)            bbox="-5.5,41.0,10.0,51.5" ;;  # France métropolitaine + Corse
         north-america)     bbox="-170,7,-50,84" ;;
         south-america)     bbox="-93,-56,-32,13" ;;
         europe)            bbox="-25,34,45,72" ;;
@@ -278,7 +280,11 @@ CONF
 
 # ── USGS Topographic Maps ──────────────────────────────────────────────────────
 dl_usgs_topo() {
-    info "=== USGS Topographic Maps ==="
+    case "$REGION" in
+        north-america|us|us-northeast|world) ;;
+        *) return 0 ;;   # cartes topo américaines : inutiles hors Amérique du Nord
+    esac
+    info "=== Cartes topographiques USGS (États-Unis) ==="
     USGS_DIR="$MAP_DIR/USGS"
 
     # USGS National Map — use TNM API to download specific quads
@@ -310,6 +316,30 @@ echo "Done. Maps in ./topo_pdfs/"
 USGS_SCRIPT
     chmod +x "$USGS_DIR/download_topo.sh"
     success "USGS topo helper at $USGS_DIR/download_topo.sh"
+}
+
+# ── Cartes topographiques françaises (IGN) ────────────────────────────────────
+# Les données de l'IGN (SCAN 25, BD TOPO, BD ORTHO, RGE ALTI) sont en libre
+# accès sous Licence ouverte, mais en très gros volumes départementaux : plutôt
+# que de tout télécharger, on prépare un dossier et un mémo.
+dl_ign_info() {
+    [[ "$REGION" == "france" || "$REGION" == "europe" ]] || return 0
+    local dir="$MAP_DIR/IGN"
+    mkdir -p "$dir"
+    cat > "$dir/LISEZ-MOI.txt" << 'IGN_TXT'
+Cartes topographiques de l'IGN (France)
+=======================================
+Données libres (Licence ouverte) à récupérer département par département :
+
+  https://geoservices.ign.fr/telechargement
+  (SCAN 25 = carte de randonnée 1:25 000, BD TOPO = vecteur, RGE ALTI = relief)
+
+Dépôt des fichiers téléchargés dans ce dossier ; ils restent consultables
+depuis l'explorateur de fichiers du tableau de bord (/files).
+Pour la navigation sur téléphone hors ligne : application Organic Maps ou
+OsmAnd (cartes OpenStreetMap France), voir le dépôt d'applications.
+IGN_TXT
+    success "Mémo IGN écrit dans $dir/LISEZ-MOI.txt"
 }
 
 # ── Label fonts + POI sprites for the dashboard's map page ───────────────────
@@ -472,6 +502,7 @@ main() {
     dl_satellite
     setup_tile_server
     dl_usgs_topo
+    dl_ign_info
     dl_nps_maps
     setup_organic_maps_data
 
