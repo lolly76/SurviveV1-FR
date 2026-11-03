@@ -28,7 +28,7 @@ trap cleanup EXIT
 
 # ── Start test server ─────────────────────────────────────────────────────────
 start_server() {
-    info "Starting test server on port $PORT..."
+    info "Démarrage du serveur de test sur le port $PORT..."
 
     # Activate venv if available
     PYTHON="python3"
@@ -227,7 +227,7 @@ run_tests
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════${NC}"
-echo -e "  Passed: ${GREEN}$PASSED${NC}  Failed: ${RED}$FAILED${NC}"
+echo -e "  Réussis : ${GREEN}$PASSED${NC}  Échecs : ${RED}$FAILED${NC}"
 echo -e "${BLUE}════════════════════════════════════════${NC}"
 echo ""
 

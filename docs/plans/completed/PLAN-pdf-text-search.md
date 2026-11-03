@@ -1,143 +1,146 @@
-# PLAN-pdf-text-search: Index the text INSIDE PDFs and EPUBs for search + RAG
+# PLAN-pdf-text-search : indexer le texte À L'INTÉRIEUR des PDF et EPUB pour la recherche et le RAG
 
-**Rank: #1 — do this first.** (Round 2; round-1 plans live in docs/plans/completed/)
+**Rang : n° 1 — à faire en premier.** (Tour 2 ; les plans du tour 1 sont dans docs/plans/completed/)
 
-## Goal
+## Objectif
 
-The most curated content in the repo — ~20 GB of survival PDFs (Where There Is
-No Doctor, military field manuals, Hesperian guides) plus the EPUB library —
-is invisible to full-text search and to the AI. `/search`'s "Inside articles"
-section and `ai_chat()`'s RAG retrieval both query **Kiwix only**, which covers
-ZIM files. A user searching "tourniquet" finds nothing from the TCCC handbook
-sitting on disk, and the AI can't cite it.
+Le contenu le plus soigneusement choisi du dépôt — ~20 Go de PDF de survie (Où il n'y a pas de
+médecin, manuels de terrain militaires, guides Hesperian) plus la bibliothèque d'EPUB — est
+invisible pour la recherche plein texte et pour l'IA. La section « Dans les articles » de
+`/search` et la récupération RAG de `ai_chat()` n'interrogent **que Kiwix**, qui ne couvre que
+les fichiers ZIM. Un utilisateur qui cherche « garrot » ne trouve rien dans le manuel TCCC posé
+sur le disque, et l'IA ne peut pas le citer.
 
-After this change: a standalone indexer extracts text from every PDF/EPUB into
-a second FTS5 database; `/search` gains an "Inside your documents" section with
-highlighted snippets and page-anchored links; `_retrieve_context()` merges the
-best document chunks with Kiwix hits so the AI cites the actual field manuals.
+Après ce changement : un indexeur autonome extrait le texte de chaque PDF/EPUB dans une seconde
+base FTS5 ; `/search` gagne une section « Dans vos documents » avec des extraits en
+surbrillance et des liens ancrés sur la page ; `_retrieve_context()` fusionne les meilleurs
+morceaux de documents avec les résultats de Kiwix afin que l'IA cite les vrais manuels de
+terrain.
 
-## Exact files to touch
+## Fichiers exacts à modifier
 
-| File | Change |
-|------|--------|
-| `scripts/index_documents.py` | NEW — standalone chunk-extractor/indexer (stdlib + pdftotext) |
-| `setup/install.sh` | add `poppler-utils` to the apt package list |
-| `web/server.py` | `_query_doc_index()`, merge into `search()` and `_retrieve_context()` |
-| `web/templates/search.html` | third results section with snippets |
-| `download/books_pdfs.sh`, `download/gaps_content.sh`, `download/mental_health.sh` | run the indexer after downloads |
-| `tests/test_smoke.sh` | doc-search assertion against a seeded text PDF |
-| `CLAUDE.md`, `docs/API.md` | document the second index |
+| Fichier | Changement |
+|---------|------------|
+| `scripts/index_documents.py` | NOUVEAU — extracteur/indexeur de morceaux autonome (bibliothèque standard + pdftotext) |
+| `setup/install.sh` | ajouter `poppler-utils` à la liste des paquets apt |
+| `web/server.py` | `_query_doc_index()`, fusion dans `search()` et `_retrieve_context()` |
+| `web/templates/search.html` | troisième section de résultats avec extraits |
+| `download/books_pdfs.sh`, `download/gaps_content.sh`, `download/mental_health.sh` | lancer l'indexeur après les téléchargements |
+| `tests/test_smoke.sh` | assertion de recherche de documents sur un PDF texte créé pour l'occasion |
+| `CLAUDE.md`, `docs/API.md` | documenter le second index |
 
-## Implementation order
+## Ordre de mise en œuvre
 
-1. **`scripts/index_documents.py`** (python3, stdlib only + `pdftotext` binary):
-   - DB: `$STORAGE/.content_index.db` — separate from `.search_index.db` so the
-     slow content build never blocks the fast filename index swap.
-   - Schema:
+1. **`scripts/index_documents.py`** (python3, bibliothèque standard seulement + binaire
+   `pdftotext`) :
+   - Base : `$STORAGE/.content_index.db` — distincte de `.search_index.db` pour que la lente
+     construction du contenu ne bloque jamais l'échange rapide de l'index des noms de fichiers.
+   - Schéma :
      ```sql
      CREATE VIRTUAL TABLE IF NOT EXISTS chunks USING fts5(
          text, path UNINDEXED, page UNINDEXED, title UNINDEXED);
      CREATE TABLE IF NOT EXISTS indexed_files(
          path TEXT PRIMARY KEY, mtime REAL, chunks INTEGER);
      ```
-   - Walk `pdfs/` and `books/` (reuse the `_safe_walk` logic — copy it in;
-     the script must NOT import server.py, which starts threads on import).
-   - **Incremental**: skip files whose `(path, mtime)` matches `indexed_files`;
-     delete stale rows for files that changed or disappeared
-     (`DELETE FROM chunks WHERE path = ?` before re-adding).
-   - PDF extraction: `subprocess.run(["pdftotext", "-layout", path, "-"],
-     capture_output=True, timeout=120)`. Pages arrive separated by form-feed
-     `\f` — `stdout.split("\f")` gives you page numbers for free.
-   - EPUB extraction: `zipfile.ZipFile` → every `*.xhtml`/`*.html` member →
-     strip tags with the same regex approach as server.py's `_strip_html`.
-     Page number: use the spine order index instead.
-   - Chunking: per page, split into ~1500-char pieces on paragraph boundaries;
-     store `title` = filename stem with `[_.]` → space (same normalisation as
-     the filename index).
-   - Run under `nice -n 19` semantics: call `os.nice(19)` at startup — a full
-     rebuild takes an hour+ on Pi and must not starve Ollama or the dashboard.
-   - CLI: `--storage PATH` (default from `SURVIVE_STORAGE_PATH` env then
-     survive.conf pattern), `--rebuild` (drop everything first). Print a
-     summary line: `indexed N files, S chunks, skipped M unchanged`.
+   - Parcourir `pdfs/` et `books/` (réutiliser la logique de `_safe_walk` — la copier ; le
+     script ne doit PAS importer server.py, qui démarre des fils à l'import).
+   - **Incrémental** : ignorer les fichiers dont `(path, mtime)` correspond à
+     `indexed_files` ; supprimer les lignes périmées des fichiers modifiés ou disparus
+     (`DELETE FROM chunks WHERE path = ?` avant de les rajouter).
+   - Extraction PDF : `subprocess.run(["pdftotext", "-layout", path, "-"],
+     capture_output=True, timeout=120)`. Les pages arrivent séparées par un saut de page `\f`
+     — `stdout.split("\f")` donne gratuitement les numéros de page.
+   - Extraction EPUB : `zipfile.ZipFile` → chaque membre `*.xhtml`/`*.html` → retirer les
+     balises avec la même approche par regex que `_strip_html` de server.py. Numéro de page :
+     utiliser plutôt l'indice dans l'ordre du « spine ».
+   - Découpage : par page, couper en morceaux d'environ 1500 caractères aux limites de
+     paragraphe ; `title` = nom de fichier sans extension avec `[_.]` → espace (même
+     normalisation que l'index des noms de fichiers).
+   - Tourner avec la sémantique de `nice -n 19` : appeler `os.nice(19)` au démarrage — une
+     reconstruction complète prend plus d'une heure sur un Pi et ne doit pas priver Ollama ou
+     le tableau de bord de ressources.
+   - Ligne de commande : `--storage PATH` (par défaut la variable d'environnement
+     `SURVIVE_STORAGE_PATH`, puis le motif survive.conf), `--rebuild` (tout supprimer d'abord).
+     Afficher une ligne de bilan : `indexed N files, S chunks, skipped M unchanged`.
 
-2. **server.py `_query_doc_index(query, limit=5)`**: same shape as
-   `_query_search_index` — per-call sqlite connection to
-   `STORAGE_PATH / ".content_index.db"`, same token sanitisation (reuse the
-   existing regex — factor it into `_fts_sanitize(query)` used by both), query:
+2. **`_query_doc_index(query, limit=5)` dans server.py** : même forme que
+   `_query_search_index` — connexion sqlite par appel vers
+   `STORAGE_PATH / ".content_index.db"`, même assainissement des mots (réutiliser la regex
+   existante — la factoriser en `_fts_sanitize(query)` utilisée par les deux), requête :
    ```sql
    SELECT title, path, page, snippet(chunks, 0, '', '', '…', 12)
    FROM chunks WHERE chunks MATCH ? LIMIT ?
    ```
-   NOTE: `snippet()`'s first argument is the FTS table name and the column
-   index 0 refers to `text`. Empty-string open/close markers — highlighting
-   is done client-side-safe by NOT injecting HTML. Returns
-   `[{title, path, page, snippet}]`; `None` if DB missing; `[]` on
-   OperationalError (mirror the filename-index contract exactly).
+   REMARQUE : le premier argument de `snippet()` est le nom de la table FTS et l'indice de
+   colonne 0 désigne `text`. Marqueurs d'ouverture/fermeture vides — la mise en évidence se
+   fait sans injecter de HTML. Renvoie `[{title, path, page, snippet}]` ; `None` si la base est
+   absente ; `[]` sur OperationalError (reprendre exactement le contrat de l'index des noms de
+   fichiers).
 
-3. **`search()` route**: add `doc_results = _query_doc_index(query) or []`
-   and pass to the template.
+3. **Route `search()`** : ajouter `doc_results = _query_doc_index(query) or []` et le passer au
+   modèle.
 
-4. **`_retrieve_context()`**: after Kiwix search, call
-   `_query_doc_index(query, limit=2)`; append hits as
+4. **`_retrieve_context()`** : après la recherche Kiwix, appeler
+   `_query_doc_index(query, limit=2)` ; ajouter les résultats sous la forme
    `{"title": f"{title} (p.{page})", "path": None, "snippet": snippet,
-   "text": snippet}` entries. **Context budget**: keep total at 3 Kiwix
-   articles × 2000 chars; when doc chunks are present use 2 Kiwix × 2000 + 2
-   chunks × ~1500 — still under the ~7.5k-char budget for `num_ctx 4096`.
-   Sources for doc hits must link to `/serve/<path>#page=N` (browser PDF
-   viewers honour `#page=`); adjust `_sources_for` to use a pre-built `url`
-   key when `path` is None.
+   "text": snippet}`. **Budget de contexte** : garder le total à 3 articles Kiwix × 2000
+   caractères ; quand des morceaux de documents sont présents, utiliser 2 Kiwix × 2000 + 2
+   morceaux × ~1500 — toujours sous le budget de ~7,5k caractères pour `num_ctx 4096`. Les
+   sources des résultats de documents doivent renvoyer vers `/serve/<path>#page=N` (les
+   visionneuses PDF des navigateurs respectent `#page=`) ; adapter `_sources_for` pour
+   utiliser une clé `url` préconstruite quand `path` vaut None.
 
-5. **`search.html`**: third section "Inside your documents" — link
-   `/serve/{{ d.path }}#page={{ d.page }}`, title + `p.{{ d.page }}` badge +
-   snippet (Jinja auto-escape, no `|safe`).
+5. **`search.html`** : troisième section « Dans vos documents » — lien
+   `/serve/{{ d.path }}#page={{ d.page }}`, titre + pastille `p.{{ d.page }}` + extrait
+   (échappement automatique de Jinja, pas de `|safe`).
 
-6. **Download scripts**: append
+6. **Scripts de téléchargement** : ajouter
    `command -v pdftotext >/dev/null && python3 "$REPO_DIR/scripts/index_documents.py" --storage "$STORAGE_PATH" || true`
-   at the end of `main()` in the three scripts that fetch PDFs/EPUBs.
+   à la fin de `main()` dans les trois scripts qui récupèrent des PDF/EPUB.
 
-## Edge cases a weaker model would miss
+## Cas limites qu'un modèle moins attentif manquerait
 
-- **Do NOT import server.py from the indexer** — importing it starts the
-  index-refresher daemon thread and instantiates Flask; the indexer must be a
-  standalone script (copy the two small helpers it needs).
-- **Scanned/image PDFs** return empty text from pdftotext — record them in
-  `indexed_files` with `chunks=0` anyway, or they'll be re-parsed on every
-  run forever. (OCR is explicitly out of scope.)
-- **Encrypted PDFs**: pdftotext exits non-zero — catch, record, skip. Never
-  let one bad file kill the run (`try/except` per file, log and continue).
-- **`subprocess` timeout**: a malformed 500 MB PDF can hang poppler; the
-  120 s timeout + per-file try/except is load-bearing.
-- **FTS5 `snippet()` arguments**: the column index (0) counts only real
-  columns of the FTS table; UNINDEXED columns still count in ordering — text
-  is column 0 here because it's declared first. Getting this wrong returns
-  path fragments as "snippets".
-- **NUL bytes**: pdftotext output can contain `\x00`, which sqlite TEXT
-  rejects mid-string in some drivers — `text.replace("\x00", "")` before
-  insert.
-- **The indexer runs as root from download scripts** but the server runs as
-  `pi` under systemd — `chmod 644` the DB (or chown pi) after the build, or
-  the dashboard gets `sqlite3.OperationalError: unable to open database file`
-  only in production.
-- **`#page=N` anchors** work in Chromium/Firefox's built-in viewers but not
-  all; the link must still open the PDF without the anchor — it degrades
-  gracefully by construction, just don't 404 when page is None (EPUBs).
-- **Context budget interplay with PLAN-chat-memory** (round-2 #2): if both
-  land, history + RAG must share the num_ctx budget — RAG excerpts get
-  priority; trim history first.
+- **Ne PAS importer server.py depuis l'indexeur** — l'importer démarre le fil démon de
+  rafraîchissement de l'index et instancie Flask ; l'indexeur doit être un script autonome
+  (copier les deux petits utilitaires dont il a besoin).
+- **PDF numérisés/images** : pdftotext renvoie un texte vide — les enregistrer quand même dans
+  `indexed_files` avec `chunks=0`, sinon ils seront réanalysés à chaque exécution pour
+  toujours. (L'OCR est explicitement hors périmètre.)
+- **PDF chiffrés** : pdftotext sort avec un code non nul — intercepter, enregistrer, ignorer.
+  Ne jamais laisser un seul mauvais fichier tuer l'exécution (`try/except` par fichier,
+  journaliser et continuer).
+- **Délai de `subprocess`** : un PDF mal formé de 500 Mo peut bloquer poppler ; le délai de
+  120 s + le try/except par fichier sont porteurs.
+- **Arguments de `snippet()` en FTS5** : l'indice de colonne (0) ne compte que les vraies
+  colonnes de la table FTS ; les colonnes UNINDEXED comptent quand même dans l'ordre — le
+  texte est la colonne 0 ici car déclaré en premier. Se tromper renvoie des fragments de
+  chemin en guise d'« extraits ».
+- **Octets NUL** : la sortie de pdftotext peut contenir `\x00`, que le TEXT de sqlite refuse
+  au milieu d'une chaîne avec certains pilotes — `text.replace("\x00", "")` avant l'insertion.
+- **L'indexeur tourne en root depuis les scripts de téléchargement** mais le serveur tourne en
+  `pi` sous systemd — `chmod 644` la base (ou chown pi) après la construction, sinon le
+  tableau de bord obtient `sqlite3.OperationalError: unable to open database file`
+  uniquement en production.
+- **Les ancres `#page=N`** fonctionnent dans les visionneuses intégrées de Chromium/Firefox
+  mais pas dans toutes ; le lien doit quand même ouvrir le PDF sans l'ancre — il se dégrade
+  proprement par construction, mais ne pas faire de 404 quand page vaut None (EPUB).
+- **Interaction du budget de contexte avec PLAN-chat-memory** (tour 2, n° 2) : si les deux
+  sont livrés, historique + RAG doivent se partager le budget `num_ctx` — les extraits RAG ont
+  la priorité ; rogner d'abord l'historique.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-1. Generate a seed PDF in the test env (no poppler needed to *create*):
-   `python3 -c "..."` writing a minimal 1-page PDF containing the literal
-   string `zzyzxtourniquet` (a collision-proof token), place under
-   `/tmp/survive_test/pdfs/`, run
+1. Générer un PDF d'exemple dans l'environnement de test (pas besoin de poppler pour le
+   *créer*) : `python3 -c "..."` écrivant un PDF minimal d'une page contenant la chaîne
+   littérale `zzyzxtourniquet` (un mot à l'abri de toute collision), le placer sous
+   `/tmp/survive_test/pdfs/`, lancer
    `python3 scripts/index_documents.py --storage /tmp/survive_test`.
-   Then `curl "localhost:18080/search?q=zzyzxtourniquet"` returns HTTP 200
-   and the body contains the PDF's filename and `p.1`.
-2. Re-running the indexer prints `skipped 1 unchanged` and finishes in <1 s.
-3. `_query_doc_index('water AND "')` returns `[]`, not an exception.
-4. With mock Kiwix + a seeded doc index, POST `/api/ai/chat` sources include
-   an entry whose url contains `/serve/` and `#page=`.
-5. Smoke tests all pass; pylint ≥ 9.5 on server.py; the indexer itself passes
-   `pylint scripts/index_documents.py --fail-under=7.0` with the repo's
-   standard disables.
+   Alors `curl "localhost:18080/search?q=zzyzxtourniquet"` renvoie HTTP 200 et le corps
+   contient le nom du fichier PDF et `p.1`.
+2. Relancer l'indexeur affiche `skipped 1 unchanged` et se termine en < 1 s.
+3. `_query_doc_index('water AND "')` renvoie `[]`, pas une exception.
+4. Avec un Kiwix simulé + un index de documents créé pour l'occasion, POST `/api/ai/chat` a
+   des sources incluant une entrée dont l'url contient `/serve/` et `#page=`.
+5. Tous les tests de fumée passent ; pylint ≥ 9,5 sur server.py ; l'indexeur lui-même passe
+   `pylint scripts/index_documents.py --fail-under=7.0` avec les désactivations standard du
+   dépôt.

@@ -1,112 +1,114 @@
-# PLAN-ebook-library: Make the E-Books service actually work end-to-end
+# PLAN-ebook-library : faire fonctionner réellement le service E-Books de bout en bout
 
-**Rank: #4.**
+**Rang : n° 4.**
 
-## Goal
+## Objectif
 
-Calibre-Web (`cps`) is installed, has a systemd unit, a port (8083), an nginx
-block, dashboard links everywhere — and **cannot work as configured**, because
-`cps` requires a *Calibre library* (a `metadata.db` created by Calibre's
-tools), while our config points `CALIBRE_DBPATH` at a plain directory of
-loose EPUBs (`/mnt/survive/books`). A user clicking "E-Books" today gets
-Calibre-Web's setup wizard error, not their books. This was found by tracing
-the data flow — the service *starts*, so `make status` shows green, which is
-exactly why it has gone unnoticed.
+Calibre-Web (`cps`) est installé, a une unité systemd, un port (8083), un bloc nginx, des
+liens partout dans le tableau de bord — et **ne peut pas fonctionner tel que configuré**, car
+`cps` exige une *bibliothèque Calibre* (un `metadata.db` créé par les outils de Calibre), alors
+que notre configuration fait pointer `CALIBRE_DBPATH` vers un simple dossier d'EPUB en vrac
+(`/mnt/survive/books`). Un utilisateur qui clique aujourd'hui sur « E-Books » obtient l'erreur
+de l'assistant de configuration de Calibre-Web, pas ses livres. Cela a été trouvé en suivant le
+flux de données — le service *démarre*, donc `make status` est au vert, ce qui explique
+justement pourquoi personne ne l'avait remarqué.
 
-After this change: a new `scripts/build_ebook_library.sh` creates a real
-Calibre library from every EPUB under `books/`, the service points at it, the
-downloader keeps it in sync, and first-login credentials are documented.
+Après ce changement : un nouveau `scripts/build_ebook_library.sh` crée une vraie bibliothèque
+Calibre à partir de tous les EPUB sous `books/`, le service pointe dessus, le téléchargeur la
+tient à jour, et les identifiants de première connexion sont documentés.
 
-## Exact files to touch
+## Fichiers exacts à modifier
 
-| File | Change |
-|------|--------|
-| `scripts/build_ebook_library.sh` | NEW — create/refresh the Calibre library |
-| `setup/install.sh` | apt-install `calibre` (provides `calibredb`); call the build script |
+| Fichier | Changement |
+|---------|------------|
+| `scripts/build_ebook_library.sh` | NOUVEAU — créer/rafraîchir la bibliothèque Calibre |
+| `setup/install.sh` | installer `calibre` via apt (fournit `calibredb`) ; appeler le script de construction |
 | `systemd/calibre-web.service` | `CALIBRE_DBPATH=/mnt/survive/books/calibre-library` |
-| `scripts/start_services.sh` | same path in the `calibre)` case; skip start if no `metadata.db` (warn with the fix command) |
-| `download/books_pdfs.sh` | call the build script at the end (append-only mode) |
-| `docs/TROUBLESHOOTING.md` | first-login setup + admin defaults section |
-| `tests/test_smoke.sh` | not applicable (needs calibre) — see acceptance criteria for a standalone check |
+| `scripts/start_services.sh` | même chemin dans le cas `calibre)` ; ne pas démarrer s'il n'y a pas de `metadata.db` (avertir avec la commande de correction) |
+| `download/books_pdfs.sh` | appeler le script de construction à la fin (mode ajout seul) |
+| `docs/TROUBLESHOOTING.md` | section de première connexion et identifiants d'administration par défaut |
+| `tests/test_smoke.sh` | sans objet (nécessite calibre) — voir les critères d'acceptation pour une vérification autonome |
 
-## Implementation order
+## Ordre de mise en œuvre
 
-1. **`scripts/build_ebook_library.sh`** (follow the house style: `set -euo
-   pipefail`, source `survive.conf`, color helpers):
+1. **`scripts/build_ebook_library.sh`** (suivre le style de la maison : `set -euo pipefail`,
+   charger `survive.conf`, fonctions de couleur) :
    ```
    LIBRARY="$STORAGE_PATH/books/calibre-library"
    ```
-   - If `calibredb` is missing: error with `sudo apt-get install -y calibre` hint, exit 1.
-   - If `$LIBRARY/metadata.db` missing: `mkdir -p "$LIBRARY"` and initialize —
-     `calibredb --with-library="$LIBRARY" list >/dev/null 2>&1 || true` does
-     NOT create a library; the reliable way is to add the first book with
-     `calibredb add --with-library="$LIBRARY" <file>` which auto-creates it.
-     So: initialize implicitly via the bulk add below.
-   - Bulk add, deduplicated:
+   - Si `calibredb` est absent : erreur avec l'indication `sudo apt-get install -y calibre`,
+     sortie 1.
+   - Si `$LIBRARY/metadata.db` est absent : `mkdir -p "$LIBRARY"` puis initialisation —
+     `calibredb --with-library="$LIBRARY" list >/dev/null 2>&1 || true` ne crée PAS de
+     bibliothèque ; la méthode fiable consiste à ajouter un premier livre avec
+     `calibredb add --with-library="$LIBRARY" <fichier>`, ce qui la crée automatiquement.
+     Donc : initialiser implicitement par l'ajout en masse ci-dessous.
+   - Ajout en masse, dédoublonné :
      `find "$STORAGE_PATH/books" -path "$LIBRARY" -prune -o -type f \( -iname '*.epub' -o -iname '*.mobi' -o -iname '*.azw3' \) -print0 | xargs -0 -r calibredb add --with-library="$LIBRARY" --automerge=ignore --`
-     (`--automerge=ignore` skips books already in the library → idempotent,
-     safe to re-run after every download.)
-   - Print the final count: `calibredb --with-library="$LIBRARY" list | wc -l`.
-2. **`setup/install.sh`**: add `calibre` to the apt package list (NOT
-   `calibre-bin`, which lacks `calibredb` on some builds). It is ~400 MB with
-   deps on aarch64 — gate it behind the existing content-flag pattern:
-   only install when `CONTENT_GUTENBERG` or a books flag is `Y`.
-   After install, run `bash scripts/build_ebook_library.sh || true` (books
-   may not be downloaded yet — the script must warn-and-exit-0 when it finds
-   zero ebook files; use `-r` on xargs so an empty find is a no-op).
-3. **`systemd/calibre-web.service`**: change
-   `Environment="CALIBRE_DBPATH=/mnt/survive/books"` to
-   `.../books/calibre-library`. Note: `CALIBRE_DBPATH` tells cps where its
-   *app* db lives; the *library* location is chosen in the web UI on first
-   run — set it non-interactively by passing the app settings db a default:
-   simplest reliable approach is documenting first-run: log in
-   (`admin` / `admin123`), set library path to
-   `/mnt/survive/books/calibre-library`. Put this in TROUBLESHOOTING.md AND
-   print it from `build_ebook_library.sh`'s success message.
-4. **`scripts/start_services.sh`** `calibre)` case: point `CALIBRE_DBPATH` at
-   the new path; before starting, `[[ -f "$STORAGE_PATH/books/calibre-library/metadata.db" ]]`
-   else `warn "E-book library not built — run: bash scripts/build_ebook_library.sh"`
-   and still start cps (the wizard is better than nothing).
-5. **`download/books_pdfs.sh`**: append at the end of main:
+     (`--automerge=ignore` ignore les livres déjà dans la bibliothèque → idempotent, on peut
+     relancer sans risque après chaque téléchargement.)
+   - Afficher le total final : `calibredb --with-library="$LIBRARY" list | wc -l`.
+2. **`setup/install.sh`** : ajouter `calibre` à la liste des paquets apt (PAS `calibre-bin`,
+   qui n'a pas `calibredb` dans certaines versions). Il pèse ~400 Mo avec ses dépendances sur
+   aarch64 — le conditionner au motif d'indicateurs de contenu existant : n'installer que si
+   `CONTENT_GUTENBERG` ou un indicateur de livres vaut `Y`. Après l'installation, lancer
+   `bash scripts/build_ebook_library.sh || true` (les livres ne sont peut-être pas encore
+   téléchargés — le script doit avertir puis sortir avec le code 0 quand il ne trouve aucun
+   fichier de livre ; utiliser `-r` avec xargs pour qu'un find vide soit sans effet).
+3. **`systemd/calibre-web.service`** : remplacer
+   `Environment="CALIBRE_DBPATH=/mnt/survive/books"` par `.../books/calibre-library`.
+   Remarque : `CALIBRE_DBPATH` indique à cps où se trouve la base de *l'application* ; le
+   chemin de la *bibliothèque* se choisit dans l'interface web au premier lancement — pour le
+   définir sans interaction, on passerait un défaut à la base de réglages de l'application :
+   l'approche fiable la plus simple est de documenter le premier lancement : se connecter
+   (`admin` / `admin123`), définir le chemin de la bibliothèque sur
+   `/mnt/survive/books/calibre-library`. Mettre cela dans TROUBLESHOOTING.md ET l'afficher dans
+   le message de succès de `build_ebook_library.sh`.
+4. **`scripts/start_services.sh`**, cas `calibre)` : faire pointer `CALIBRE_DBPATH` vers le
+   nouveau chemin ; avant de démarrer, tester
+   `[[ -f "$STORAGE_PATH/books/calibre-library/metadata.db" ]]`, sinon
+   `warn "Bibliothèque de livres non construite — lancez : bash scripts/build_ebook_library.sh"`
+   et démarrer cps quand même (l'assistant vaut mieux que rien).
+5. **`download/books_pdfs.sh`** : ajouter à la fin du programme principal :
    `command -v calibredb >/dev/null && bash "$REPO_DIR/scripts/build_ebook_library.sh" || true`.
 
-## Edge cases a weaker model would miss
+## Cas limites qu'un modèle moins attentif manquerait
 
-- **`find ... -prune`**: without pruning `$LIBRARY` itself, every re-run
-  re-adds the library's own converted copies — infinite growth. The
-  `-path "$LIBRARY" -prune -o` clause is load-bearing.
-- **`--automerge=ignore`** is what makes re-runs idempotent. The default
-  behavior creates duplicate records on every sync.
-- **`xargs -r`**: zero EPUBs (fresh install) must be a clean no-op, not a
-  `calibredb add` usage error that fails `set -e`.
-- **Filenames with spaces/quotes**: `-print0 | xargs -0` is mandatory; the
-  content downloads include titles like `Root Cellaring (Natural Storage).epub`.
-- **calibredb cannot run while calibre-web holds the library open** — the
-  build script must `systemctl stop calibre-web 2>/dev/null || true` before
-  bulk-adding and restart it after, otherwise adds fail with a database-lock
-  error only on systems where the service is running (works in dev, breaks
-  in prod).
-- **Disk**: the library duplicates each added book into its own folder
-  structure. 18 GB of books → 36 GB total. Mention in the script's output;
-  optionally `calibredb add --add-duplicates=false` does NOT dedupe content
-  — `--automerge=ignore` is the correct flag pair.
-- **User=pi in the unit** — the library dir must be owned by `pi`
-  (`chown -R pi:pi "$LIBRARY"` at the end of the build script when running
-  as root), or cps gets read-only sqlite errors.
-- **PDFs stay out**: Calibre handles PDFs poorly on Pi RAM; the dashboard
-  already serves PDFs natively via `/serve/`. Only index epub/mobi/azw3.
+- **`find ... -prune`** : sans élaguer `$LIBRARY` lui-même, chaque relance rajoute les copies
+  converties de la bibliothèque — croissance infinie. La clause `-path "$LIBRARY" -prune -o`
+  est porteuse.
+- **`--automerge=ignore`** est ce qui rend les relances idempotentes. Le comportement par
+  défaut crée des enregistrements en double à chaque synchronisation.
+- **`xargs -r`** : zéro EPUB (installation neuve) doit être sans effet, pas une erreur
+  d'utilisation de `calibredb add` qui fait échouer `set -e`.
+- **Noms de fichiers avec espaces ou guillemets** : `-print0 | xargs -0` est obligatoire ; les
+  contenus téléchargés incluent des titres comme `Root Cellaring (Natural Storage).epub`.
+- **calibredb ne peut pas tourner pendant que calibre-web garde la bibliothèque ouverte** — le
+  script de construction doit faire `systemctl stop calibre-web 2>/dev/null || true` avant
+  l'ajout en masse et le redémarrer ensuite, sinon les ajouts échouent avec une erreur de
+  verrou de base de données uniquement sur les systèmes où le service tourne (marche en
+  développement, casse en production).
+- **Disque** : la bibliothèque duplique chaque livre ajouté dans sa propre arborescence.
+  18 Go de livres → 36 Go au total. Le mentionner dans la sortie du script ;
+  `calibredb add --add-duplicates=false` ne dédoublonne PAS le contenu — la bonne paire
+  d'options est `--automerge=ignore`.
+- **User=pi dans l'unité** — le dossier de la bibliothèque doit appartenir à `pi`
+  (`chown -R pi:pi "$LIBRARY"` à la fin du script lorsqu'il tourne en root), sinon cps obtient
+  des erreurs sqlite en lecture seule.
+- **Les PDF restent dehors** : Calibre gère mal les PDF avec la RAM d'un Pi ; le tableau de
+  bord sert déjà les PDF nativement via `/serve/`. N'indexer que epub/mobi/azw3.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-1. On a Pi (or any Debian box with `calibre` installed):
+1. Sur un Pi (ou toute machine Debian avec `calibre` installé) :
    `SURVIVE_STORAGE_PATH=/tmp/cal_test bash scripts/build_ebook_library.sh`
-   with 3 sample EPUBs under `/tmp/cal_test/books/` creates
-   `/tmp/cal_test/books/calibre-library/metadata.db` and prints "3".
-2. Re-running the same command prints "3" again (idempotent, no duplicates).
-3. Running with zero EPUBs exits 0 with a warning, not an error.
-4. `systemctl start calibre-web` then `curl -sf localhost:8083 | grep -qi calibre` succeeds.
-5. In a browser: log in at `:8083`, see all 3 books with covers, open one in
-   the built-in reader, read past page 1.
-6. After `bash download/books_pdfs.sh` completes, newly downloaded EPUBs
-   appear in Calibre-Web without manual steps.
-7. shellcheck (CI settings) passes on all touched scripts.
+   avec 3 EPUB d'exemple sous `/tmp/cal_test/books/` crée
+   `/tmp/cal_test/books/calibre-library/metadata.db` et affiche « 3 ».
+2. Relancer la même commande affiche encore « 3 » (idempotent, sans doublons).
+3. L'exécution sans aucun EPUB se termine avec le code 0 et un avertissement, pas une erreur.
+4. `systemctl start calibre-web` puis `curl -sf localhost:8083 | grep -qi calibre` réussit.
+5. Dans un navigateur : se connecter sur `:8083`, voir les 3 livres avec leurs couvertures,
+   en ouvrir un dans le lecteur intégré, lire au-delà de la page 1.
+6. Après la fin de `bash download/books_pdfs.sh`, les EPUB nouvellement téléchargés
+   apparaissent dans Calibre-Web sans manipulation manuelle.
+7. shellcheck (réglages de la CI) passe sur tous les scripts modifiés.

@@ -25,26 +25,26 @@ DEFAULT_FILE = REPO_DIR / "config" / ".admin_password"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Set the dashboard admin password.")
+    parser = argparse.ArgumentParser(description="Définit le mot de passe administrateur du tableau de bord.")
     parser.add_argument("--file", default=os.environ.get(
         "SURVIVE_ADMIN_PASSWORD_FILE", str(DEFAULT_FILE)))
     args = parser.parse_args()
     dest = Path(args.file)
 
-    pw1 = getpass.getpass("New admin password: ")
+    pw1 = getpass.getpass("Nouveau mot de passe administrateur : ")
     if len(pw1) < 8:
-        print("Password must be at least 8 characters.", file=sys.stderr)
+        print("Le mot de passe doit comporter au moins 8 caractères.", file=sys.stderr)
         return 1
-    pw2 = getpass.getpass("Confirm password: ")
+    pw2 = getpass.getpass("Confirmez le mot de passe : ")
     if pw1 != pw2:
-        print("Passwords do not match.", file=sys.stderr)
+        print("Les mots de passe ne correspondent pas.", file=sys.stderr)
         return 1
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(generate_password_hash(pw1), encoding="utf-8")
     dest.chmod(0o600)
-    print(f"Admin password set ({dest}). Guests stay read-only; "
-          f"log in at /login to manage the device.")
+    print(f"Mot de passe administrateur défini ({dest}). Les invités restent en "
+          f"lecture seule ; connectez-vous sur /login pour gérer l'appareil.")
     return 0
 
 

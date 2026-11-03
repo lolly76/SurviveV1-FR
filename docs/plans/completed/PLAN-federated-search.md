@@ -1,44 +1,46 @@
-# PLAN-federated-search: Instant indexed search + full-text article results
+# PLAN-federated-search : recherche indexée instantanée + résultats plein texte dans les articles
 
-**Rank: #2.**
+**Rang : n° 2.**
 
-## Goal
+## Objectif
 
-`/search` currently walks the storage tree on **every request** (up to 500 000
-files, capped by `_MAX_FILES_CHECKED`) and matches filenames only. On a full
-800 GB drive over USB this takes many seconds per query, burns the 30/min rate
-limit slot on I/O, and finds nothing inside articles.
+`/search` parcourt actuellement l'arborescence du stockage **à chaque requête** (jusqu'à
+500 000 fichiers, plafonnés par `_MAX_FILES_CHECKED`) et ne compare que les noms de fichiers.
+Sur un disque de 800 Go plein, connecté en USB, cela prend plusieurs secondes par requête,
+consomme un créneau de la limite de 30/min en E/S, et ne trouve rien à l'intérieur des
+articles.
 
-After this change:
+Après ce changement :
 
-1. A **SQLite FTS5 index** of all content filenames is built in the background
-   and refreshed periodically → filename search answers in <50 ms.
-2. The search results page gets a second section, **"Inside articles"**,
-   powered by the same Kiwix full-text endpoint used by PLAN-ai-rag.
+1. Un **index SQLite FTS5** de tous les noms de fichiers est construit en arrière-plan et
+   rafraîchi périodiquement → la recherche par nom répond en < 50 ms.
+2. La page de résultats gagne une seconde section, **« Dans les articles »**, alimentée par le
+   même point d'accès plein texte de Kiwix que PLAN-ai-rag.
 
-Leverage: search is the front door of a knowledge base; today it is the
-slowest, weakest page. This also unblocks future category filtering.
+Effet de levier : la recherche est la porte d'entrée d'une base de connaissances ; elle est
+aujourd'hui la page la plus lente et la plus faible. Cela ouvre aussi la voie à un futur
+filtrage par catégorie.
 
-**Dependency note:** implement PLAN-ai-rag first — reuse its
-`_kiwix_search()` helper verbatim. If executing this plan standalone, copy
-step 1 of PLAN-ai-rag into this work.
+**Note de dépendance :** implémenter d'abord PLAN-ai-rag — réutiliser tel quel son
+utilitaire `_kiwix_search()`. En cas d'exécution isolée de ce plan, copier l'étape 1 de
+PLAN-ai-rag dans ce travail.
 
-## Exact files to touch
+## Fichiers exacts à modifier
 
-| File | Change |
-|------|--------|
-| `web/server.py` | index builder + query functions; rewrite `search()` route |
-| `web/templates/search.html` | two result sections; index-freshness footer |
-| `tests/test_smoke.sh` | index-related assertions |
-| `CLAUDE.md` | document the index file and rebuild cadence |
+| Fichier | Changement |
+|---------|------------|
+| `web/server.py` | constructeur d'index + fonctions de requête ; réécrire la route `search()` |
+| `web/templates/search.html` | deux sections de résultats ; pied de page de fraîcheur de l'index |
+| `tests/test_smoke.sh` | assertions liées à l'index |
+| `CLAUDE.md` | documenter le fichier d'index et la cadence de reconstruction |
 
-## Implementation order
+## Ordre de mise en œuvre
 
-1. **Index location**: `INDEX_DB = STORAGE_PATH / ".search_index.db"` (hidden
-   file, next to `.kiwix_library.xml`, excluded from walks because `_safe_walk`
-   already skips dotfiles).
+1. **Emplacement de l'index** : `INDEX_DB = STORAGE_PATH / ".search_index.db"` (fichier caché,
+   à côté de `.kiwix_library.xml`, exclu des parcours car `_safe_walk` ignore déjà les fichiers
+   cachés).
 
-2. **Schema** (create with `sqlite3` stdlib):
+2. **Schéma** (à créer avec le module standard `sqlite3`) :
    ```sql
    CREATE VIRTUAL TABLE IF NOT EXISTS files USING fts5(
        name, path UNINDEXED, ext UNINDEXED, size_mb UNINDEXED,
@@ -46,77 +48,82 @@ step 1 of PLAN-ai-rag into this work.
    );
    CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
    ```
-   At insert time store `name` with underscores and dots replaced by spaces
-   (`re.sub(r"[_.]", " ", f.stem)`) so `Where_There_Is_No_Doctor` matches the
-   query "doctor". Keep the original filename in `path`.
+   À l'insertion, stocker `name` avec les tirets bas et les points remplacés par des espaces
+   (`re.sub(r"[_.]", " ", f.stem)`) pour que `Where_There_Is_No_Doctor` corresponde à la
+   requête « doctor ». Conserver le nom de fichier d'origine dans `path`.
 
-3. **`_rebuild_search_index()`**: walk with the existing `_safe_walk(STORAGE_PATH)`,
-   batch-insert 500 rows per transaction into a **temp table swap**: build into
-   `files_new`, then `DROP TABLE files; ALTER TABLE files_new RENAME TO files;`
-   inside one transaction so readers never see a half-built index. Record
-   `meta['built_at'] = datetime.now().isoformat()` and `meta['count']`.
-   Guard concurrent rebuilds with a module-level `threading.Lock` +
+3. **`_rebuild_search_index()`** : parcourir avec le `_safe_walk(STORAGE_PATH)` existant,
+   insérer par lots de 500 lignes par transaction dans un **échange de table temporaire** :
+   construire dans `files_new`, puis `DROP TABLE files; ALTER TABLE files_new RENAME TO files;`
+   dans une seule transaction pour que les lecteurs ne voient jamais un index à moitié
+   construit. Enregistrer `meta['built_at'] = datetime.now().isoformat()` et `meta['count']`.
+   Protéger les reconstructions concurrentes par un `threading.Lock` au niveau du module +
    `sqlite3.connect(..., timeout=30)`.
 
-4. **Background refresh**: module-level
-   `threading.Thread(target=_index_refresher, daemon=True).start()` at import
-   time, sleeping 6 h between rebuilds (`time.sleep` loop), first build
-   delayed 60 s after startup so boot stays fast. ALSO rebuild on demand when
-   `search()` finds the DB missing.
+4. **Rafraîchissement en arrière-plan** : à l'import,
+   `threading.Thread(target=_index_refresher, daemon=True).start()` au niveau du module, avec
+   6 h d'attente entre reconstructions (boucle `time.sleep`), la première construction
+   retardée de 60 s après le démarrage pour que le démarrage reste rapide. Reconstruire AUSSI
+   à la demande quand `search()` constate que la base est absente.
 
-5. **`_query_search_index(q, limit=50)`**: open a **per-call connection**
-   (SQLite objects are not thread-safe across Flask threads). Sanitize the
-   FTS query: strip all characters except `[a-zA-Z0-9 -]`, then append `*` to
-   the last token for prefix matching. Query:
+5. **`_query_search_index(q, limit=50)`** : ouvrir une **connexion par appel** (les objets
+   SQLite ne sont pas sûrs entre fils Flask). Assainir la requête FTS : retirer tous les
+   caractères sauf `[a-zA-Z0-9 -]`, puis ajouter `*` au dernier mot pour la correspondance par
+   préfixe. Requête :
    `SELECT name, path, ext, size_mb FROM files WHERE files MATCH ? LIMIT ?`.
-   On `sqlite3.OperationalError` (bad FTS syntax) return `[]`, never 500.
+   Sur `sqlite3.OperationalError` (syntaxe FTS invalide), renvoyer `[]`, jamais un 500.
 
-6. **Rewrite `search()` route**: try the index first; if `INDEX_DB` does not
-   exist, fall back to the current `_safe_walk` loop (keep it — it is the
-   correctness backstop) and kick off a background rebuild. Add
-   `article_results = _kiwix_search(query, limit=5)` for the second section.
-   Pass both lists plus `index_built_at` to the template.
+6. **Réécrire la route `search()`** : essayer d'abord l'index ; si `INDEX_DB` n'existe pas, se
+   replier sur la boucle `_safe_walk` actuelle (la garder — c'est le filet de sécurité de
+   l'exactitude) et lancer une reconstruction en arrière-plan. Ajouter
+   `article_results = _kiwix_search(query, limit=5)` pour la seconde section. Transmettre les
+   deux listes plus `index_built_at` au modèle.
 
-7. **`search.html`**: section one "Files" (existing card grid), section two
-   "Inside articles" — title links to
-   `http://{{ request.host.split(':')[0] }}:{{ PORT_KIWIX }}{{ r.url }}`,
-   show the snippet with `{{ r.snippet }}` (Jinja auto-escapes — do NOT add
-   `|safe`; Kiwix snippets contain `<b>` tags that must render as text or be
-   stripped server-side with the same regex as PLAN-ai-rag step 2).
-   Footer line: "Index of {{ count }} files, built {{ built_at }}".
+7. **`search.html`** : section un « Fichiers » (la grille de cartes existante), section deux
+   « Dans les articles » — le titre renvoie vers
+   `http://{{ request.host.split(':')[0] }}:{{ PORT_KIWIX }}{{ r.url }}`, afficher l'extrait
+   avec `{{ r.snippet }}` (Jinja échappe automatiquement — NE PAS ajouter `|safe` ; les
+   extraits de Kiwix contiennent des balises `<b>` qui doivent s'afficher comme du texte ou
+   être retirées côté serveur avec la même regex que l'étape 2 de PLAN-ai-rag). Ligne de pied
+   de page : « Index de {{ count }} fichiers, construit {{ built_at }} ».
 
-## Edge cases a weaker model would miss
+## Cas limites qu'un modèle moins attentif manquerait
 
-- **gunicorn runs 2 workers** (systemd unit): both import server.py and both
-  would start refresher threads and race the rebuild. The temp-table swap +
-  lock makes this safe, but ALSO stagger: sleep `60 + (os.getpid() % 30)`
-  before the first build so they don't collide at boot.
-- **SQLite thread affinity**: never reuse one connection across requests;
-  open/close per call (fast for SQLite) or use `threading.local()`.
-- **FTS5 syntax injection**: user input like `water AND "` throws
-  `OperationalError: fts5: syntax error` — sanitization in step 5 is
-  mandatory, and the except clause is the second line of defense.
-- **Index on the storage drive**: if the drive is unmounted, `STORAGE_PATH`
-  falls back to `repo/data` (see server.py config block) — index path follows
-  automatically; do not hardcode `/mnt/survive`.
-- **Stale index** after a big download: 6 h staleness is acceptable, but
-  `scripts/update_content.sh` and `download/download_all.sh` should `rm -f
-  "$STORAGE_PATH/.search_index.db"` on completion so the next search
-  triggers a rebuild (one-line addition at the end of each script's main).
-- **`size_mb` at index time vs serve time**: files can be deleted after
-  indexing; `/serve/<path>` already 404s cleanly — do not stat results at
-  query time (that reintroduces the I/O you removed).
-- **Do not** index `.logs/`, hidden dirs, or the DB itself — `_safe_walk`
-  already excludes dotfiles; verify with the acceptance test.
+- **gunicorn lance 2 processus** (unité systemd) : les deux importent server.py et les deux
+  démarreraient des fils de rafraîchissement et se disputeraient la reconstruction. L'échange
+  de table temporaire + le verrou rendent cela sûr, mais ÉCHELONNER aussi : attendre
+  `60 + (os.getpid() % 30)` s avant la première construction pour qu'ils n'entrent pas en
+  collision au démarrage.
+- **Affinité de fil de SQLite** : ne jamais réutiliser une connexion entre requêtes ;
+  ouvrir/fermer à chaque appel (rapide avec SQLite) ou utiliser `threading.local()`.
+- **Injection de syntaxe FTS5** : une saisie comme `water AND "` lève
+  `OperationalError: fts5: syntax error` — l'assainissement de l'étape 5 est obligatoire, et
+  la clause except est la seconde ligne de défense.
+- **Index sur le disque de stockage** : si le disque est démonté, `STORAGE_PATH` se replie sur
+  `repo/data` (voir le bloc de configuration de server.py) — le chemin de l'index suit
+  automatiquement ; ne pas coder `/mnt/survive` en dur.
+- **Index périmé** après un gros téléchargement : 6 h de péremption est acceptable, mais
+  `scripts/update_content.sh` et `download/download_all.sh` doivent faire `rm -f
+  "$STORAGE_PATH/.search_index.db"` à la fin pour que la recherche suivante déclenche une
+  reconstruction (une ligne ajoutée à la fin du programme principal de chaque script).
+- **`size_mb` à l'indexation ou au service** : des fichiers peuvent être supprimés après
+  l'indexation ; `/serve/<path>` renvoie déjà proprement 404 — ne pas faire de `stat` sur les
+  résultats au moment de la requête (cela réintroduirait les E/S que l'on a retirées).
+- **Ne pas** indexer `.logs/`, les dossiers cachés, ni la base elle-même — `_safe_walk` exclut
+  déjà les fichiers cachés ; le vérifier avec le test d'acceptation.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-1. Seed 1 000 dummy files (`mkdir -p /tmp/survive_test/pdfs && for i in $(seq 1000); do touch "/tmp/survive_test/pdfs/file_$i.pdf"; done`),
-   start the server, wait for the index, then:
-   `time curl -s "localhost:18080/search?q=file" >/dev/null` completes in
-   **< 300 ms** (vs seconds for the walk).
-2. Searching `doctor` finds a file named `Where_There_Is_No_Doctor_2021.pdf`.
-3. `sqlite3 /tmp/survive_test/.search_index.db "SELECT count(*) FROM files"` matches the seeded file count.
-4. A query of `water AND "` (FTS syntax bomb) returns HTTP 200 with zero file results.
-5. Delete the DB file, hit `/search?q=x` → HTTP 200 via the walk fallback, and the DB reappears within 2 minutes.
-6. All smoke tests pass; pylint ≥ 9.5.
+1. Créer 1 000 faux fichiers
+   (`mkdir -p /tmp/survive_test/pdfs && for i in $(seq 1000); do touch "/tmp/survive_test/pdfs/file_$i.pdf"; done`),
+   démarrer le serveur, attendre l'index, puis :
+   `time curl -s "localhost:18080/search?q=file" >/dev/null` se termine en **< 300 ms**
+   (contre plusieurs secondes pour le parcours).
+2. La recherche de `doctor` trouve un fichier nommé `Where_There_Is_No_Doctor_2021.pdf`.
+3. `sqlite3 /tmp/survive_test/.search_index.db "SELECT count(*) FROM files"` correspond au
+   nombre de fichiers créés.
+4. Une requête `water AND "` (bombe de syntaxe FTS) renvoie HTTP 200 avec zéro résultat de
+   fichier.
+5. Supprimer le fichier de base, appeler `/search?q=x` → HTTP 200 via le repli par parcours, et
+   la base réapparaît en moins de 2 minutes.
+6. Tous les tests de fumée passent ; pylint ≥ 9,5.
