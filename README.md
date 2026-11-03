@@ -2,7 +2,7 @@
 
 > Fork francophone de [schwadb/SurviveV1](https://github.com/schwadb/SurviveV1). Le code d'origine est de son auteur ; ce fork traduit l'interface, la documentation et l'assistant IA en français.
 
-Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour les scénarios de survie en cas d'effondrement ou de coupure du réseau électrique. Elle tourne sur un **Raspberry Pi 5 avec AI Hat**, s'utilise avec un écran portable et une batterie externe, et peut contenir jusqu'à **800 Go** de connaissances de survie sélectionnées.
+Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour les scénarios de survie en cas d'effondrement ou de coupure du réseau électrique. Elle tourne sur un **Raspberry Pi 5 (avec ou sans AI Hat)**, sur une VM ou sur un vieux portable Debian 64 bits, s'utilise avec un écran portable et une batterie externe, et peut contenir jusqu'à **800 Go** de connaissances de survie sélectionnées.
 
 ---
 
@@ -25,6 +25,8 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 | **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence en France |
 
 > **Avancement de la francisation des sources.** Fait : interface du tableau de bord, scripts d'installation, de démarrage et de téléchargement (messages en français), ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF, premiers secours psychologiques (OMS et Croix-Rouge), référence des médicaments (BDPM), documentation (`docs/`, page `index.html`, skill `install-pi`). Les contenus « experts » (médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité…) n'ont pas d'équivalent français vérifié : ils sont conservés en anglais dans un **pack « English »** identifié (`CONTENT_GAPS_EN`, activé par défaut) ; vos documents français s'ajoutent via `config/gaps_extra.list`. Référence des médicaments : désormais basée sur la BDPM française (`CONTENT_DRUG_NOTICES="N"` pour ne garder que les fichiers de base ; `SURVIVE_DRUGS_NOTICE_MAX` limite la récupération des notices à chaque passage). L'**assistant IA** est aussi francisé (prompt système du modèle `survive`, scripts `ai/` et Hailo, `docs/ai_hat_setup.md`). `docs/gaps_analysis.md` est traduit. Les plans de conception `docs/plans/` sont également traduits. Vérifié en ligne le 3 novembre 2026 : fichiers et formats BDPM, pages de notices (redirection vers la fiche « extrait »), lien de la fiche officielle, URL Geofabrik, noms et tailles des ZIM Kiwix français, existence de la chaîne Kolibri. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia, manuels militaires américains et PDF techniques, chaînes YouTube anglophones, PDF et vidéos de santé mentale) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN`, `CONTENT_PDFS_EN`, `CONTENT_VIDEOS_EN`, `CONTENT_MENTAL_EN` dans `config/survive.conf`).
+>
+> **Avancement du 3 novembre 2026 — consolidation avant test.** Vérification des URL de téléchargement (rapport automatique `url-health` sur 250 URL) et corrections : installation de Martin (tuiles de cartes) choisie selon l'architecture, dépôt Hailo inexistant remplacé par `hailo-all`, raccourci Kolibri mort retiré, encodage réel des fichiers BDPM (cp1252), tailles et dates des ZIM mises à jour. **Matériel agnostique :** détection (`scripts/detect_hardware.sh`) et modules activables (IA, Hailo, USB du Pi, point d'accès Wi-Fi, capot, batterie) ; l'IA se désactive proprement sans AVX2. **Stockage :** disque dédié ou dossier système, profils `test` / `léger` / `moyen` / `complet`. **Qualité :** CI GitHub sur Debian 12 et 13, 130 tests, correction d'un bug de cache qui provoquait des erreurs 500 juste après un démarrage. **À valider :** installation réelle sur VM (`docs/VM_TEST.md`, `scripts/vm_check.sh`), puis sur Raspberry Pi. **Limites connues :** une vingtaine de liens PDF américains et ~18 chaînes YouTube des packs anglophones optionnels sont morts (packs désactivés par défaut) ; plusieurs sites officiels (CDC, FEMA, Peace Corps…) répondent 403 aux robots, leur téléchargement réel reste à confirmer ; le code d'origine n'a pas de licence explicite.
 
 ---
 
@@ -71,10 +73,10 @@ http://localhost:8080
 
 ## Configuration requise
 
-- **Matériel :** Raspberry Pi 5 (4 Go de RAM ou plus recommandés), AI Hat (Hailo-8L)
-- **Stockage :** SSD USB 3.0 ou NVMe (256 Go minimum, 800 Go recommandés)
-- **Alimentation :** Batterie externe (20 000 mAh ou plus) ou solaire + batterie
-- **Système :** Raspberry Pi OS (64 bits, Bookworm)
+- **Matériel :** Raspberry Pi 5 (4 Go de RAM ou plus recommandés ; AI Hat Hailo facultatif) **ou** PC / portable reconditionné / VM 64 bits (aarch64 ou x86_64, 4 Go de RAM minimum). Voir « Matériel : Raspberry Pi, VM ou vieux portable » ci-dessous.
+- **Stockage :** disque dédié (SSD USB 3.0 ou NVMe) ou dossier sur le disque du système ; de 60 Go (profil `léger`) à 800 Go (profil `complet`)
+- **Alimentation :** Batterie externe (20 000 mAh ou plus) ou solaire + batterie ; sur un portable, la batterie interne sert d'onduleur de secours
+- **Système :** **Debian 12 ou 13, 64 bits** (Raspberry Pi OS inclus). Ubuntu et Tails ne sont pas pris en charge
 - **Facultatif :** Clé Wi-Fi pour le partage sur le réseau local
 
 ---
