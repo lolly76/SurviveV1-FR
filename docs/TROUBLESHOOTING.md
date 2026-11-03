@@ -104,7 +104,7 @@ tail -f /var/log/survive_ollama.log
 
 ## Le disque de stockage ne se monte pas
 
-**Symptôme :** avertissement « Stockage non monté », contenus absents
+**Symptôme :** avertissement « Disque de stockage non monté », contenus absents
 
 ```bash
 # Vérifier que le disque est visible

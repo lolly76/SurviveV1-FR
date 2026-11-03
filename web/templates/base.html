@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}SurviveV1{% endblock %} — Offline Knowledge</title>
+  <title>{% block title %}SurviveV1{% endblock %} — Connaissances hors ligne</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -275,37 +275,37 @@
 
 <nav>
   <div class="nav-inner">
-    <div class="status-dot" title="Offline — System Running"></div>
-    <a href="/" class="nav-logo">SurviveV1<span>OFFLINE</span></a>
+    <div class="status-dot" title="Hors ligne — système en marche"></div>
+    <a href="/" class="nav-logo">SurviveV1<span>HORS LIGNE</span></a>
     <div class="nav-links">
-      <a href="/" class="{{ 'active' if request.endpoint == 'index' }}">Home</a>
-      <a href="/files" class="{{ 'active' if request.endpoint == 'browse_files' }}">Browse</a>
-      <a href="/ai" class="{{ 'active' if request.endpoint == 'ai_page' }}">AI Assistant</a>
-      <a href="/maps" class="{{ 'active' if request.endpoint == 'maps_page' }}">Maps</a>
+      <a href="/" class="{{ 'active' if request.endpoint == 'index' }}">Accueil</a>
+      <a href="/files" class="{{ 'active' if request.endpoint == 'browse_files' }}">Parcourir</a>
+      <a href="/ai" class="{{ 'active' if request.endpoint == 'ai_page' }}">Assistant IA</a>
+      <a href="/maps" class="{{ 'active' if request.endpoint == 'maps_page' }}">Cartes</a>
       <a href="/notes" class="{{ 'active' if request.endpoint in ('notes_page','note_view','note_new') }}">Notes</a>
-      <a href="/comms" class="{{ 'active' if request.endpoint and request.endpoint.startswith('comms') }}">Comms</a>
-      <a href="/apps" class="{{ 'active' if request.endpoint == 'apps_page' }}">Apps</a>
-      <a href="/drugs" class="{{ 'active' if request.endpoint in ('drugs_page','drug_detail') }}">Drugs</a>
-      <a href="/content" class="{{ 'active' if request.endpoint == 'content_page' }}">Library</a>
-      <a href="/status" class="{{ 'active' if request.endpoint == 'status_page' }}">Status</a>
-      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_KIWIX }}" target="_blank">Wikipedia</a>
-      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_KOLIBRI }}" target="_blank">Education</a>
-      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_JELLYFIN }}" target="_blank">Videos</a>
+      <a href="/comms" class="{{ 'active' if request.endpoint and request.endpoint.startswith('comms') }}">Transmissions</a>
+      <a href="/apps" class="{{ 'active' if request.endpoint == 'apps_page' }}">Applications</a>
+      <a href="/drugs" class="{{ 'active' if request.endpoint in ('drugs_page','drug_detail') }}">Médicaments</a>
+      <a href="/content" class="{{ 'active' if request.endpoint == 'content_page' }}">Bibliothèque</a>
+      <a href="/status" class="{{ 'active' if request.endpoint == 'status_page' }}">État</a>
+      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_KIWIX }}" target="_blank">Wikipédia</a>
+      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_KOLIBRI }}" target="_blank">Éducation</a>
+      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_JELLYFIN }}" target="_blank">Vidéos</a>
     </div>
     <form class="nav-search" action="/search" method="get">
-      <input type="text" name="q" placeholder="Search knowledge base..."
+      <input type="text" name="q" placeholder="Rechercher dans la base de connaissances..."
              value="{{ request.args.get('q', '') }}" autocomplete="off">
-      <button type="submit">Search</button>
+      <button type="submit">Rechercher</button>
     </form>
     {% if is_admin %}
     <form method="POST" action="/logout" style="margin-left:8px;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" title="Log out of admin"
+      <button type="submit" title="Se déconnecter de l'administration"
               style="background:none;border:1px solid var(--border);color:var(--text-dim);
                      padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">Admin ✓</button>
     </form>
     {% else %}
-    <a href="/login" title="Admin login" style="margin-left:8px;color:var(--text-dim);
+    <a href="/login" title="Connexion administrateur" style="margin-left:8px;color:var(--text-dim);
        border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;text-decoration:none;">&#128273;</a>
     {% endif %}
   </div>
@@ -313,25 +313,25 @@
 
 {% if not storage_mounted %}
 <div style="background:#d29922;color:#0d1117;padding:8px 20px;text-align:center;font-size:13px;font-weight:600;position:sticky;top:56px;z-index:99;">
-  &#9888; Storage drive not mounted &mdash; content may be missing. Connect drive and restart services.
+  &#9888; Disque de stockage non monté &mdash; des contenus peuvent manquer. Branchez le disque et redémarrez les services.
 </div>
 {% endif %}
 {% if in_captive_browser %}
 <div style="background:#1f6feb;color:#fff;padding:8px 20px;text-align:center;font-size:13px;font-weight:600;position:sticky;top:56px;z-index:99;">
-  &#128241; You're in the Wi-Fi sign-in window. Open <a href="http://10.42.0.1:8080/" style="color:#fff;text-decoration:underline;">http://10.42.0.1:8080</a> in your normal browser for the full dashboard.
+  &#128241; Vous êtes dans la fenêtre de connexion au Wi-Fi. Ouvrez <a href="http://10.42.0.1:8080/" style="color:#fff;text-decoration:underline;">http://10.42.0.1:8080</a> dans votre navigateur habituel pour accéder au tableau de bord complet.
 </div>
 {% endif %}
 
 {% block content %}{% endblock %}
 
 <footer>
-  <strong>SurviveV1</strong> — Offline Survival Knowledge Repository •
+  <strong>SurviveV1</strong> — Base de connaissances de survie hors ligne •
   Raspberry Pi 5 + AI Hat •
-  Running since {{ now.strftime('%Y-%m-%d') if now is defined else 'offline' }}
+  En service depuis {{ now.strftime('%d/%m/%Y') if now is defined else 'hors ligne' }}
 </footer>
 
 <script>
-// Press "/" anywhere to jump to the search box (like GitHub/Wikipedia).
+// Appuyez sur « / » n'importe où pour aller dans la zone de recherche (comme sur GitHub/Wikipédia).
 document.addEventListener('keydown', (e) => {
   if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
     e.preventDefault();
