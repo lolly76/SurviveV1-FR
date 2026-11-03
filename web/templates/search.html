@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Search{% endblock %}
+{% block title %}Recherche{% endblock %}
 
 {% block head %}
 <style>
@@ -60,36 +60,36 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-title">🔍 Search</div>
+  <div class="page-title">🔍 Recherche</div>
 
   <div class="search-box">
     <form action="/search" method="get">
       <div class="search-input-row">
         <input type="text" name="q" class="search-big"
-               placeholder="Search survival knowledge..."
+               placeholder="Rechercher dans les connaissances de survie..."
                value="{{ query }}" autofocus autocomplete="off">
         <button type="submit" class="btn btn-primary" style="height:50px; padding: 0 24px;">
-          Search
+          Rechercher
         </button>
       </div>
     </form>
     {% set host = request.host.split(':')[0] %}
     <div class="search-also">
-      Also search in:
-      <a href="http://{{ host }}:{{ PORT_KIWIX }}/search?lang=eng&pattern={{ query|urlencode }}" target="_blank">Wikipedia</a> •
+      Chercher aussi dans :
+      <a href="http://{{ host }}:{{ PORT_KIWIX }}/search?lang=fra&pattern={{ query|urlencode }}" target="_blank">Wikipédia</a> •
       <a href="http://{{ host }}:{{ PORT_KOLIBRI }}/en/search?query={{ query|urlencode }}" target="_blank">Khan Academy</a> •
-      <a href="http://{{ host }}:{{ PORT_CALIBRE }}/search?query={{ query|urlencode }}" target="_blank">E-Books</a>
+      <a href="http://{{ host }}:{{ PORT_CALIBRE }}/search?query={{ query|urlencode }}" target="_blank">Livres numériques</a>
     </div>
   </div>
 
   {% if query %}
-    <!-- ── Files section ──────────────────────────────────────── -->
+    <!-- ── Section fichiers ───────────────────────────────────── -->
     <div style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">
       {% if results %}
-        Found <strong style="color:var(--text);">{{ results|length }}</strong> files matching
-        "<strong style="color:var(--accent);">{{ query }}</strong>"
+        <strong style="color:var(--text);">{{ results|length }}</strong> fichier(s) correspondant à
+        « <strong style="color:var(--accent);">{{ query }}</strong> »
       {% else %}
-        No local files found for "<strong style="color:var(--accent);">{{ query }}</strong>"
+        Aucun fichier local trouvé pour « <strong style="color:var(--accent);">{{ query }}</strong> »
       {% endif %}
     </div>
 
@@ -108,18 +108,18 @@
         <div class="result-path">{{ result.path }}</div>
       </div>
       <div class="result-meta">
-        <span class="badge badge-blue result-ext">{{ result.ext.upper() if result.ext else 'FILE' }}</span>
-        <div class="result-size">{{ result.size_mb }} MB</div>
+        <span class="badge badge-blue result-ext">{{ result.ext.upper() if result.ext else 'FICHIER' }}</span>
+        <div class="result-size">{{ result.size_mb }} Mo</div>
       </div>
     </a>
     {% endfor %}
 
-    <!-- ── Inside articles (Kiwix full-text) ──────────────────── -->
+    <!-- ── Dans les articles (texte intégral Kiwix) ───────────── -->
     {% if article_results %}
     {% set host = request.host.split(':')[0] %}
     <div style="color: var(--text-dim); font-size: 13px; margin: 24px 0 12px;">
-      Inside articles — <strong style="color:var(--text);">{{ article_results|length }}</strong>
-      matches in the Wikipedia/Kiwix library
+      Dans les articles — <strong style="color:var(--text);">{{ article_results|length }}</strong>
+      résultat(s) dans la bibliothèque Wikipédia/Kiwix
     </div>
     {% for art in article_results %}
     <a href="http://{{ host }}:{{ PORT_KIWIX }}{{ art.path }}" class="result-card" target="_blank">
@@ -135,11 +135,11 @@
     {% endfor %}
     {% endif %}
 
-    <!-- ── Inside your documents (PDF/EPUB full-text) ─────────── -->
+    <!-- ── Dans vos documents (texte intégral PDF/EPUB) ───────── -->
     {% if doc_results %}
     <div style="color: var(--text-dim); font-size: 13px; margin: 24px 0 12px;">
-      Inside your documents — <strong style="color:var(--text);">{{ doc_results|length }}</strong>
-      matches in local PDFs and books
+      Dans vos documents — <strong style="color:var(--text);">{{ doc_results|length }}</strong>
+      résultat(s) dans les PDF et livres locaux
     </div>
     {% for doc in doc_results %}
     <a href="/serve/{{ doc.path }}{% if doc.page %}#page={{ doc.page }}{% endif %}"
@@ -158,7 +158,7 @@
 
     {% if note_results %}
     <div class="search-also" style="margin:18px 0 10px;">
-      In your notes &mdash; <strong style="color:var(--text);">{{ note_results|length }}</strong>
+      Dans vos notes &mdash; <strong style="color:var(--text);">{{ note_results|length }}</strong>
     </div>
     {% for n in note_results %}
     <a href="/notes/{{ n.slug }}" class="result-card">
@@ -179,11 +179,11 @@
     <div style="text-align: center; padding: 40px 20px;">
       <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
       <div style="font-size: 15px; color: var(--text-dim);">
-        No local files found. Try searching Wikipedia or Khan Academy using the links above.
+        Aucun fichier local trouvé. Essayez de chercher dans Wikipédia ou Khan Academy avec les liens ci-dessus.
       </div>
       <div style="margin-top: 16px; font-size: 13px; color: var(--text-dim);">
-        Haven't downloaded content yet?<br>
-        Run: <code style="background:var(--surface2); padding:2px 8px; border-radius:4px;">
+        Vous n'avez pas encore téléchargé de contenus ?<br>
+        Exécutez : <code style="background:var(--surface2); padding:2px 8px; border-radius:4px;">
         bash download/download_all.sh</code>
       </div>
     </div>
@@ -191,8 +191,8 @@
 
     {% if index_count %}
     <div style="margin-top: 24px; font-size: 11px; color: var(--text-dim); text-align: center;">
-      Filename index: {{ index_count }} files{% if index_built_at %},
-      built {{ index_built_at[:19]|replace('T', ' ') }}{% endif %}
+      Index des noms de fichiers : {{ index_count }} fichiers{% if index_built_at %},
+      construit le {{ index_built_at[:19]|replace('T', ' ') }}{% endif %}
     </div>
     {% endif %}
   {% endif %}

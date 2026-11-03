@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Shared Files{% endblock %}
+{% block title %}Fichiers partagés{% endblock %}
 
 {% block head %}
 <style>
@@ -16,11 +16,11 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-title">&#128194; Shared Files</div>
+  <div class="page-title">&#128194; Fichiers partagés</div>
   <div class="page-sub">
-    A drop box on the storage drive for your own documents: scanned papers, photos of the
-    pantry, PDFs you bought, phone backups. Anyone on the network can add files and download
-    them; deleting needs the admin login.
+    Un dépôt sur le disque de stockage pour vos propres documents : papiers numérisés, photos du
+    garde-manger, PDF achetés, sauvegardes de téléphone. Toute personne du réseau peut ajouter des fichiers et les
+    télécharger ; la suppression exige la connexion administrateur.
   </div>
 
   {% if message %}
@@ -29,14 +29,14 @@
 
   <form class="drop" id="drop" method="post" action="/shared/upload" enctype="multipart/form-data" style="margin-top:16px;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div style="font-size:14px;font-weight:600;">Drop files here or choose them</div>
+    <div style="font-size:14px;font-weight:600;">Déposez des fichiers ici ou choisissez-les</div>
     <input type="file" name="files" id="files" multiple>
-    <button type="submit" class="btn btn-primary" id="uploadBtn">Upload</button>
-    <div class="muted" style="margin-top:8px;">Up to 2 GB per upload &middot; {{ free_gb }} GB free (10 GB is always kept free)</div>
+    <button type="submit" class="btn btn-primary" id="uploadBtn">Envoyer</button>
+    <div class="muted" style="margin-top:8px;">Jusqu'à 2 Go par envoi &middot; {{ free_gb }} Go libres (10 Go sont toujours laissés libres)</div>
   </form>
 
   <div class="card" style="margin-top:20px;">
-    <div class="card-title">Files ({{ items|length }})</div>
+    <div class="card-title">Fichiers ({{ items|length }})</div>
     {% for it in items %}
     <div class="file-row">
       <div style="font-size:20px;">{% if it.is_dir %}&#128193;{% elif it.ext in ('jpg','jpeg','png','gif','webp') %}&#128444;{% elif it.ext == 'pdf' %}&#128196;{% else %}&#128462;{% endif %}</div>
@@ -47,20 +47,20 @@
           <a href="/serve/shared/{{ it.name|urlencode }}" style="color:var(--text);">{{ it.name }}</a>
         {% endif %}
       </div>
-      <div class="meta">{% if it.size_mb is not none %}{{ it.size_mb }} MB &middot; {% endif %}{{ it.modified }}</div>
+      <div class="meta">{% if it.size_mb is not none %}{{ it.size_mb }} Mo &middot; {% endif %}{{ it.modified }}</div>
       {% if not it.is_dir %}
-        <a href="/serve/shared/{{ it.name|urlencode }}" class="btn btn-secondary btn-sm" download>Download</a>
+        <a href="/serve/shared/{{ it.name|urlencode }}" class="btn btn-secondary btn-sm" download>Télécharger</a>
         {% if is_admin %}
-        <form method="post" action="/shared/delete" onsubmit="return confirm('Delete {{ it.name }}?');" style="margin:0;">
+        <form method="post" action="/shared/delete" onsubmit="return confirm('Supprimer {{ it.name }} ?');" style="margin:0;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="name" value="{{ it.name }}">
-          <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--danger);">Delete</button>
+          <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--danger);">Supprimer</button>
         </form>
         {% endif %}
       {% endif %}
     </div>
     {% else %}
-    <p class="muted">Nothing here yet. Files also appear in <code>shared/</code> on the drive and in the Samba share.</p>
+    <p class="muted">Rien ici pour l'instant. Les fichiers apparaissent aussi dans <code>shared/</code> sur le disque et dans le partage Samba.</p>
     {% endfor %}
   </div>
 </div>
@@ -72,6 +72,6 @@
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', e => { if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; } });
-  drop.addEventListener('submit', () => { btn.disabled = true; btn.textContent = 'Uploading… (large files take a while)'; });
+  drop.addEventListener('submit', () => { btn.disabled = true; btn.textContent = 'Envoi en cours… (les gros fichiers prennent du temps)'; });
 </script>
 {% endblock %}

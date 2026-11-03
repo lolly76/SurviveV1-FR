@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Morse Code Tool{% endblock %}
+{% block title %}Outil Morse{% endblock %}
 
 {% block head %}
 <style>
@@ -27,46 +27,46 @@
 {% block content %}
 <div id="flash"></div>
 <div class="container">
-  <div class="page-title">&#8226;&#8212; Morse Code Tool</div>
-  <div class="page-sub">Send with sound or light, decode what you hear, practise with the key. Nothing leaves this device.</div>
+  <div class="page-title">&#8226;&#8212; Outil Morse</div>
+  <div class="page-sub">Émettez par le son ou la lumière, décodez ce que vous entendez, entraînez-vous avec le manipulateur. Rien ne quitte cet appareil.</div>
 
   <div class="grid2">
     <div class="card">
-      <div class="card-title">Text &rarr; Morse</div>
-      <textarea id="txt" placeholder="SOS WE NEED WATER AT THE NORTH RIDGE"></textarea>
+      <div class="card-title">Texte &rarr; Morse</div>
+      <textarea id="txt" placeholder="SOS BESOIN D'EAU AU COL NORD"></textarea>
       <div class="out" id="morseOut"></div>
       <div class="ctl">
-        <button class="btn btn-primary btn-sm" id="play">&#9654; Play sound</button>
-        <button class="btn btn-secondary btn-sm" id="flashBtn" title="Full-screen flashes — hold the phone up or point the screen at a mirror">&#128161; Flash screen</button>
-        <button class="btn btn-secondary btn-sm" id="stop">&#9632; Stop</button>
+        <button class="btn btn-primary btn-sm" id="play">&#9654; Jouer le son</button>
+        <button class="btn btn-secondary btn-sm" id="flashBtn" title="Flashs plein écran — levez le téléphone ou orientez l'écran vers un miroir">&#128161; Flasher l'écran</button>
+        <button class="btn btn-secondary btn-sm" id="stop">&#9632; Arrêter</button>
       </div>
       <div class="ctl">
-        <label>Speed <span id="wpmV">12</span> WPM</label><input type="range" id="wpm" min="5" max="30" value="12">
-        <label>Tone <span id="hzV">700</span> Hz</label><input type="range" id="hz" min="400" max="1000" step="10" value="700">
+        <label>Vitesse <span id="wpmV">12</span> mots/min</label><input type="range" id="wpm" min="5" max="30" value="12">
+        <label>Tonalité <span id="hzV">700</span> Hz</label><input type="range" id="hz" min="400" max="1000" step="10" value="700">
       </div>
-      <div class="muted" style="margin-top:8px;">SOS is <b>&middot;&middot;&middot; &mdash;&mdash;&mdash; &middot;&middot;&middot;</b>. Three of anything (whistles, flashes, fires) is a distress signal.</div>
+      <div class="muted" style="margin-top:8px;">SOS s'écrit <b>&middot;&middot;&middot; &mdash;&mdash;&mdash; &middot;&middot;&middot;</b>. Trois signaux identiques (coups de sifflet, éclairs, feux) forment un signal de détresse.</div>
     </div>
 
     <div class="card">
-      <div class="card-title">Morse &rarr; Text</div>
-      <input type="text" id="code" placeholder="... --- ...   (space between letters, / between words)">
+      <div class="card-title">Morse &rarr; Texte</div>
+      <input type="text" id="code" placeholder="... --- ...   (espace entre les lettres, / entre les mots)">
       <div class="out" id="textOut"></div>
-      <div class="muted" style="margin-top:8px;">Use <b>.</b> and <b>-</b> (or &middot; and &mdash;), a space between letters, and <b>/</b> or three spaces between words.</div>
-      <div class="card-title" style="margin-top:18px;">Practice key</div>
-      <button class="key" id="key">HOLD TO KEY &mdash; or press SPACE</button>
+      <div class="muted" style="margin-top:8px;">Utilisez <b>.</b> et <b>-</b> (ou &middot; et &mdash;), un espace entre les lettres, et <b>/</b> ou trois espaces entre les mots.</div>
+      <div class="card-title" style="margin-top:18px;">Manipulateur d'entraînement</div>
+      <button class="key" id="key">MAINTENEZ POUR ÉMETTRE &mdash; ou appuyez sur ESPACE</button>
       <div class="out" id="keyOut"></div>
       <div class="ctl">
         <span class="muted" id="keyMorse"></span>
-        <button class="btn btn-secondary btn-sm" id="keyClear" style="margin-left:auto;">Clear</button>
+        <button class="btn btn-secondary btn-sm" id="keyClear" style="margin-left:auto;">Effacer</button>
       </div>
-      <div class="muted">Short press = dot, long press = dash (timing follows the WPM slider). Pause to end a letter, pause longer for a space.</div>
+      <div class="muted">Appui court = point, appui long = trait (la durée suit le curseur de vitesse). Faites une pause pour terminer une lettre, une pause plus longue pour un espace.</div>
     </div>
   </div>
 
   <div class="card" style="margin-top:20px;">
-    <div class="card-title">Reference</div>
+    <div class="card-title">Référence</div>
     <div class="ref" id="ref"></div>
-    <div class="muted" style="margin-top:8px;">Prosigns: <b>SOS</b> distress &middot; <b>AR</b> (&middot;&mdash;&middot;&mdash;&middot;) end of message &middot; <b>SK</b> (&middot;&middot;&middot;&mdash;&middot;&mdash;) end of contact &middot; <b>?</b> (&middot;&middot;&mdash;&mdash;&middot;&middot;) say again.</div>
+    <div class="muted" style="margin-top:8px;">Signaux de service : <b>SOS</b> détresse &middot; <b>AR</b> (&middot;&mdash;&middot;&mdash;&middot;) fin de message &middot; <b>SK</b> (&middot;&middot;&middot;&mdash;&middot;&mdash;) fin de contact &middot; <b>?</b> (&middot;&middot;&mdash;&mdash;&middot;&middot;) répétez.</div>
   </div>
 </div>
 {% endblock %}
@@ -77,39 +77,40 @@
   'use strict';
   const TABLE = { A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
     '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
-    '.':'.-.-.-',',':'--..--','?':'..--..',"'":'.----.','!':'-.-.--','/':'-..-.','(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',';':'-.-.-.','=':'-...-','+':'.-.-.','-':'-....-','_':'..--.-','"':'.-..-.','$':'...-..-','@':'.--.-.' };
+    '.':'.-.-.-',',':'--..--','?':'..--..',"'":'.----.','!':'-.-.--','/':'-..-.','(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',';':'-.-.-.','=':'-...-','+':'.-.-.','-':'-....-','_':'..--.-','"':'.-..-.','$':'...-..-','@':'.--.-.','É':'..-..','À':'.--.-' };
+  const base = c => c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');  // È→E, Ç→C, Ù→U…
   const REV = {}; Object.keys(TABLE).forEach(k => REV[TABLE[k]] = k);
   const $ = id => document.getElementById(id);
 
-  // Reference grid
+  // Grille de référence
   const ref = $('ref');
   Object.keys(TABLE).forEach(k => { const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = k; d.appendChild(b); d.appendChild(document.createTextNode(TABLE[k].replace(/\./g, '·').replace(/-/g, '−'))); ref.appendChild(d); });
 
-  // Text -> Morse
-  const encode = t => t.toUpperCase().split(/\s+/).filter(Boolean).map(w => w.split('').map(c => TABLE[c] || '').filter(Boolean).join(' ')).join(' / ');
+  // Texte -> Morse
+  const encode = t => t.toUpperCase().split(/\s+/).filter(Boolean).map(w => w.split('').map(c => TABLE[c] || TABLE[base(c)] || '').filter(Boolean).join(' ')).join(' / ');
   const txt = $('txt'), morseOut = $('morseOut');
   txt.addEventListener('input', () => { morseOut.textContent = encode(txt.value); });
 
-  // Morse -> Text
+  // Morse -> Texte
   const norm = s => s.replace(/[·•]/g, '.').replace(/[−–—_]/g, '-').replace(/\s{3,}/g, ' / ').replace(/\|/g, '/');
   const decode = s => norm(s).trim().split('/').map(w => w.trim().split(/\s+/).filter(Boolean).map(l => REV[l] || '?').join('')).join(' ');
   const code = $('code'), textOut = $('textOut');
   code.addEventListener('input', () => { textOut.textContent = decode(code.value); });
 
-  // Timing
+  // Cadence
   const wpm = $('wpm'), hz = $('hz');
-  const unit = () => 1200 / Number(wpm.value);  // ms per dit (PARIS standard)
+  const unit = () => 1200 / Number(wpm.value);  // ms par point (standard PARIS)
   wpm.addEventListener('input', () => { $('wpmV').textContent = wpm.value; });
   hz.addEventListener('input', () => { $('hzV').textContent = hz.value; });
 
-  // Playback (sound / light)
+  // Lecture (son / lumière)
   let ctx = null, playing = false, timers = [];
   function schedule(morse, onOn, onOff) {
     const u = unit(); let t = 0;
     morse.split('').forEach(ch => {
       if (ch === '.' || ch === '-') { const d = ch === '.' ? u : 3 * u; timers.push(setTimeout(onOn, t)); t += d; timers.push(setTimeout(onOff, t)); t += u; }
-      else if (ch === ' ') t += 2 * u;      // letter gap totals 3 units
-      else if (ch === '/') t += 4 * u;      // word gap totals 7 units
+      else if (ch === ' ') t += 2 * u;      // l'intervalle entre lettres totalise 3 unités
+      else if (ch === '/') t += 4 * u;      // l'intervalle entre mots totalise 7 unités
     });
     timers.push(setTimeout(stop, t));
     return t;
@@ -134,7 +135,7 @@
   $('flashBtn').addEventListener('click', flash);
   $('stop').addEventListener('click', stop);
 
-  // Practice key
+  // Manipulateur d'entraînement
   const key = $('key'), keyOut = $('keyOut'), keyMorse = $('keyMorse');
   let downAt = 0, letter = '', text = '', gapTimer = null, wordTimer = null, isDown = false;
   function keyDown() {
