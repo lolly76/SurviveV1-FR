@@ -12,7 +12,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 PDF_DIR="$STORAGE_PATH/pdfs"
@@ -78,7 +78,7 @@ _fetch_with_fallback() {  # _fetch_with_fallback <url> <dest-file> <name>
         return 0
     fi
     rm -f "$2"
-    echo "  [$3] direct download failed -- trying the Wayback Machine..." >&2
+    echo "  [$3] téléchargement direct impossible -- essai via la Wayback Machine..." >&2
     if _fetch "https://web.archive.org/web/2id_/$1" "$2" && _is_valid_download "$2"; then
         return 0
     fi
@@ -144,14 +144,14 @@ mapfile -t YTDLP_AUTH < <(_ytdlp_auth_args)
 # Drop the leading empty element produced when no auth is configured.
 [[ ${#YTDLP_AUTH[@]} -gt 0 ]] && [[ -z "${YTDLP_AUTH[0]}" ]] && YTDLP_AUTH=("${YTDLP_AUTH[@]:1}")
 if [[ ${#YTDLP_AUTH[@]} -eq 0 ]]; then
-    echo "[WARN] No YouTube credentials configured (SURVIVE_YTDLP_COOKIES /" >&2
-    echo "[WARN] SURVIVE_YTDLP_BROWSER in survive.conf). Blocked videos will be" >&2
-    echo "[WARN] skipped -- see docs/TROUBLESHOOTING.md 'YouTube bot check'." >&2
+    echo "[WARN] Aucun identifiant YouTube configuré (SURVIVE_YTDLP_COOKIES /" >&2
+    echo "[WARN] SURVIVE_YTDLP_BROWSER dans survive.conf). Les vidéos bloquées seront" >&2
+    echo "[WARN] ignorées -- voir docs/TROUBLESHOOTING.md." >&2
 fi
 
 dl_channel() {
     local category="$1"; local name="$2"; local url="$3"; local max="${4:-100}"
-    info "[VIDEO] $name ($category, max $max videos)"
+    info "[VIDÉO] $name ($category, max $max vidéos)"
     yt-dlp "${YTDLP_AUTH[@]}" \
         --format "bestvideo[height<=720][ext=mp4]+bestaudio/best[height<=720]/best" \
         --merge-output-format mp4 \
@@ -161,8 +161,8 @@ dl_channel() {
         --playlist-end "$max" \
         --ignore-errors --no-warnings \
         "$url" \
-        && success "[VIDEO] $name done" \
-        || warn "[VIDEO] $name had errors"
+        && success "[VIDÉO] $name terminé" \
+        || warn "[VIDÉO] $name : erreurs"
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -638,9 +638,9 @@ dl_hesperian_book() {
         fi
     done
     if (( missing == 0 )); then
-        success "$name: $got chapter PDFs"
+        success "$name : $got PDF de chapitres"
     else
-        warn "$name: $got chapters saved, $missing missing (re-run to retry)"
+        warn "$name : $got chapitres enregistrés, $missing manquants (relancez pour réessayer)"
         echo "$(date '+%Y-%m-%d %H:%M:%S') PARTIAL [Hesperian: $name] $missing chapter(s) missing" >> "$FAILED_LOG"
     fi
 }

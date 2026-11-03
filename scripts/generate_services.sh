@@ -9,7 +9,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 SERVICE_TEMPLATE_DIR="$REPO_DIR/systemd"
@@ -54,7 +54,7 @@ for _b in "${!RESOLVED_BIN[@]}"; do
     if [[ -x "${RESOLVED_BIN[$_b]}" ]]; then
         info "$_b -> ${RESOLVED_BIN[$_b]}"
     else
-        info "$_b -> not installed (unit will stay DOWN until it is)"
+        info "$_b -> non installé (le service restera arrêté tant qu'il ne l'est pas)"
     fi
 done
 
@@ -107,7 +107,7 @@ success "systemd daemon reloaded"
 if [[ "${SURVIVE_AUTO_UPDATE:-false}" == "true" ]]; then
     systemctl enable --now survive-content-update.timer 2>/dev/null \
         && success "Nightly update timer enabled (${AUTO_UPDATE_TIME})" \
-        || info "Could not enable survive-content-update.timer"
+        || info "Impossible d'activer survive-content-update.timer"
 else
     systemctl disable --now survive-content-update.timer 2>/dev/null || true
     info "Nightly update timer off (SURVIVE_AUTO_UPDATE=true in survive.conf to enable)"

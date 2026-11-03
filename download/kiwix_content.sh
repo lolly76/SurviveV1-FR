@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 ZIM_DIR="$STORAGE_PATH/zim"
@@ -89,11 +89,11 @@ download_zim() {
     local resolved
     if resolved=$(resolve_zim_url "$url"); then
         if [[ "$resolved" != "$url" ]]; then
-            info "[$name] Current build: $(basename "$resolved")"
+            info "[$name] Version actuelle : $(basename "$resolved")"
             url="$resolved"
         fi
     else
-        warn "[$name] Could not list the mirror — trying the pinned URL"
+        warn "[$name] Impossible de lister le miroir — essai de l'URL fixée"
     fi
 
     local filename
@@ -119,7 +119,7 @@ download_zim() {
         # Delete it and fall through to a clean re-download rather than
         # trusting the byte count.
         if ! _zim_magic_ok "$existing"; then
-            warn "[$name] Existing file is not a valid ZIM (bad magic) -- deleting and re-downloading"
+            warn "[$name] Le fichier existant n'est pas un ZIM valide (octets magiques) -- suppression et retéléchargement"
             rm -f "$existing" "$existing.aria2" "$existing.aria2__temp"
             existing=""
         fi
@@ -130,18 +130,18 @@ download_zim() {
                     | grep -i '^content-length' | tail -1 | tr -dc '0-9' || true)
         local_sz=$(stat -c %s "$existing" 2>/dev/null || echo 0)
         if [[ -z "$remote_sz" ]] || (( local_sz >= remote_sz )); then
-            success "[$name] Already downloaded: $existing"
+            success "[$name] Déjà téléchargé : $existing"
             return 0
         fi
         if ! _space_ok "$(( remote_sz - local_sz ))"; then
-            warn "[$name] Not enough free space to finish ($(( (remote_sz - local_sz) / 1024 / 1024 )) MB needed) -- skipping"
+            warn "[$name] Espace libre insuffisant pour terminer ($(( (remote_sz - local_sz) / 1024 / 1024 )) Mo nécessaires) -- ignoré"
             mark_failed "$name" "insufficient disk space"
             return 1
         fi
-        info "[$name] Incomplete file ($(( local_sz / 1024 / 1024 )) of $(( remote_sz / 1024 / 1024 )) MB) -- resuming"
+        info "[$name] Fichier incomplet ($(( local_sz / 1024 / 1024 )) sur $(( remote_sz / 1024 / 1024 )) Mo) -- reprise"
         rm -f "$existing.aria2__temp"
         if ! wget -c -q --show-progress --tries=3 -O "$existing" "$url"; then
-            warn "[$name] resume failed -- will retry next run"
+            warn "[$name] échec de la reprise -- nouvel essai au prochain passage"
             mark_failed "$name" "wget resume"
             return 1
         fi
@@ -159,9 +159,9 @@ download_zim() {
             existing="$cand"; break
         done < <(find "$ZIM_DIR" -type f -name "$prefix_glob" -print0 2>/dev/null)
         if [[ -n "$existing" ]]; then
-            info "[$name] Existing build kept: $existing"
-            info "[$name] (re-run with --update to fetch newer builds;"
-            info "[$name]  delete the old build afterwards to reclaim space)"
+            info "[$name] Version existante conservée : $existing"
+            info "[$name] (relancez avec --update pour récupérer les versions plus récentes ;"
+            info "[$name]  supprimez ensuite l'ancienne version pour libérer de la place)"
             return 0
         fi
     fi
@@ -171,11 +171,11 @@ download_zim() {
         new_sz=$(curl -sIL --max-time 30 "$url" 2>/dev/null \
                  | grep -i '^content-length' | tail -1 | tr -dc '0-9' || true)
         if [[ -n "$new_sz" ]] && ! _space_ok "$new_sz"; then
-            warn "[$name] Not enough free space ($(( new_sz / 1024 / 1024 )) MB needed) -- skipping"
+            warn "[$name] Espace libre insuffisant ($(( new_sz / 1024 / 1024 )) Mo nécessaires) -- ignoré"
             mark_failed "$name" "insufficient disk space"
             return 1
         fi
-        info "[$name] Downloading to $dest..."
+        info "[$name] Téléchargement vers $dest..."
         local BW_ARGS=()
         [[ "${SURVIVE_BANDWIDTH_LIMIT:-0}" != "0" ]] && BW_ARGS=(--max-overall-download-limit="${SURVIVE_BANDWIDTH_LIMIT}")
 
@@ -189,7 +189,7 @@ download_zim() {
                 --summary-interval=60 \
                 "${BW_ARGS[@]}" \
                 "$url"; then
-            warn "[$name] aria2c exited non-zero -- will retry next run"
+            warn "[$name] aria2c a échoué -- nouvel essai au prochain passage"
             mark_failed "$name" "aria2c exit"
             return 1
         fi
@@ -200,7 +200,7 @@ download_zim() {
     local sz
     sz=$(stat -c %s "$dest" 2>/dev/null || echo 0)
     if (( sz < 1048576 )); then
-        warn "[$name] File too small (${sz} bytes) -- removing stub"
+        warn "[$name] Fichier trop petit (${sz} octets) -- suppression"
         rm -f "$dest"
         mark_failed "$name" "size=$sz"
         return 1
@@ -210,7 +210,7 @@ download_zim() {
     # size on a mirror that ships no checksum. A ZIM that fails this can never
     # be registered with Kiwix, so delete it rather than keep dead weight.
     if ! _zim_magic_ok "$dest"; then
-        warn "[$name] Downloaded file is not a valid ZIM (bad magic) -- removing"
+        warn "[$name] Le fichier téléchargé n'est pas un ZIM valide (octets magiques) -- suppression"
         rm -f "$dest" "$dest.aria2" "$dest.aria2__temp"
         mark_failed "$name" "invalid ZIM magic"
         return 1
@@ -230,14 +230,14 @@ download_zim() {
         # next run downloads the whole file cleanly (aria2 manages its own
         # piece integrity in a single session).
         if [[ "$resumed" == "true" ]]; then
-            warn "[$name] Resumed a control-file-less partial and the mirror"
-            warn "[$name] has no checksum to verify it -- discarding for a clean re-download"
+            warn "[$name] Reprise d'un fichier partiel sans fichier de contrôle et le miroir"
+            warn "[$name] n'a pas de somme de contrôle pour le vérifier -- abandon pour un retéléchargement propre"
             rm -f "$dest" "$dest.aria2" "$dest.aria2__temp"
             mark_failed "$name" "unverifiable resume"
             return 1
         fi
-        warn "[$name] No checksum sidecar at $sha_url -- size + magic check only"
-        success "[$name] Done: $filename (magic OK, no checksum available)"
+        warn "[$name] Pas de somme de contrôle à $sha_url -- vérification de la taille et des octets magiques seulement"
+        success "[$name] Terminé : $filename (octets magiques OK, pas de somme de contrôle)"
         return 0
     fi
     # Replace the path in the sidecar with our local filename so sha256sum
@@ -246,11 +246,11 @@ download_zim() {
     expected=$(awk '{print $1; exit}' "$sha_file")
     echo "$expected  $dest" > "$sha_file"
     if sha256sum -c "$sha_file" &>/dev/null; then
-        success "[$name] Checksum OK"
+        success "[$name] Somme de contrôle OK"
         rm -f "$sha_file"
         return 0
     else
-        warn "[$name] Checksum MISMATCH -- deleting corrupt file"
+        warn "[$name] Somme de contrôle INCORRECTE -- suppression du fichier corrompu"
         rm -f "$dest" "$sha_file"
         mark_failed "$name" "checksum mismatch"
         return 1
@@ -334,7 +334,7 @@ dl_stackexchange() {
         "$ZIM_DIR/skills"
 
     [[ "${CONTENT_STACKEXCHANGE_EN:-N}" =~ [Yy] ]] || return
-    info "=== Stack Exchange (EN, option) ==="
+    info "=== Stack Exchange (anglais, option) ==="
     declare -A SE_PACKAGES=(
         ["Super User"]="$KIWIX_MIRROR/stack_exchange/superuser.com_en_all_2026-02.zim"
         ["DIY"]="$KIWIX_MIRROR/stack_exchange/diy.stackexchange.com_en_all_2026-02.zim"
@@ -478,7 +478,7 @@ dl_expansion_en() {
 
 # ── Register all ZIMs with kiwix-serve ───────────────────────────────────────
 register_zims() {
-    info "Registering ZIM files with Kiwix library..."
+    info "Enregistrement des fichiers ZIM dans la bibliothèque Kiwix..."
     KIWIX_LIBRARY="$STORAGE_PATH/.kiwix_library.xml"
 
     # Find all downloaded ZIM files and register them
@@ -486,13 +486,13 @@ register_zims() {
         kiwix-manage "$KIWIX_LIBRARY" add "$zimfile" 2>/dev/null || true
     done < <(find "$ZIM_DIR" -name "*.zim" -print0)
 
-    success "Kiwix library updated: $KIWIX_LIBRARY"
+    success "Bibliothèque Kiwix mise à jour : $KIWIX_LIBRARY"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
-    info "Starting Kiwix ZIM downloads..."
-    info "Output directory: $ZIM_DIR"
+    info "Début du téléchargement des ZIM Kiwix..."
+    info "Dossier de destination : $ZIM_DIR"
 
     dl_wikipedia
     dl_wikibooks
@@ -510,17 +510,17 @@ main() {
     register_zims
 
     if [[ -s "$FAILED_LOG" ]]; then
-        warn "Some downloads failed -- see $FAILED_LOG"
+        warn "Certains téléchargements ont échoué -- voir $FAILED_LOG"
         echo "---"
         cat "$FAILED_LOG"
         echo "---"
-        info "Re-run this script to retry failed items."
+        info "Relancez ce script pour réessayer les éléments en échec."
         du -sh "$ZIM_DIR" 2>/dev/null || true
         exit 2
     fi
 
-    success "Kiwix content download complete"
-    info "ZIM files: $ZIM_DIR"
+    success "Téléchargement des contenus Kiwix terminé"
+    info "Fichiers ZIM : $ZIM_DIR"
     du -sh "$ZIM_DIR" 2>/dev/null || true
 }
 
