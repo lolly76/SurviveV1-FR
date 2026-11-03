@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## French fork (SurviveV1-FR)
+
+This repo is a French-language fork of schwadb/SurviveV1. All user-facing strings (dashboard, scripts, docs, AI system prompt) are in French; content sources are French (Kiwix `_fr_` ZIMs, Kolibri FR, BDPM for drug reference). English-only expert resources live in an identified "English" pack (`CONTENT_GAPS_EN`, `CONTENT_*_EN` flags in `config/survive.conf.example`). Keep new user-facing text in French, keep the `ZIMDL_FINISHED` / `RESCAN_FINISHED` / `UPDATE_FINISHED exit=` markers unchanged, and keep the README's progress note current. Drug reference: `download/drug_reference.sh` -> `scripts/build_drug_index.py` (+ optional `scripts/fetch_drug_notices.py`).
+
+---
+
 ## What This Is
 
 Offline-first survival knowledge base for Raspberry Pi 5 + Hailo-8L AI Hat. Flask dashboard at `:8080` aggregates six backend services and provides search, file browsing, and an AI chat interface over ~800 GB of curated content stored on a USB SSD at `/mnt/survive`.
