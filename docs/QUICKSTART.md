@@ -1,238 +1,239 @@
-# SurviveV1 Quick Start Guide
+# Guide de démarrage rapide SurviveV1
 
-## What You Need
+## Ce qu'il vous faut
 
-- Raspberry Pi 5 (4GB or 8GB RAM)
-- AI Hat (Hailo-8L, seated in M.2 slot)
-- 512GB–1TB USB 3.0 SSD or NVMe (via USB 3.1 or M.2 adapter)
-- Portable monitor (HDMI)
-- Power bank (20,000+ mAh, USB-C PD 45W+)
-- MicroSD card (32GB+) with Raspberry Pi OS 64-bit Bookworm
+- Raspberry Pi 5 (4 Go ou 8 Go de RAM)
+- AI Hat (Hailo-8L, enfiché dans le connecteur M.2)
+- SSD USB 3.0 ou NVMe de 512 Go à 1 To (via USB 3.1 ou adaptateur M.2)
+- Écran portable (HDMI)
+- Batterie externe (20 000 mAh ou plus, USB-C PD 45 W ou plus)
+- Carte microSD (32 Go ou plus) avec Raspberry Pi OS 64 bits Bookworm
 
 ---
 
-## Step 1: Prepare the Pi
+## Étape 1 : Préparer le Pi
 
 ```bash
-# Flash Raspberry Pi OS (64-bit) to SD card using Raspberry Pi Imager
-# Enable SSH in Imager settings
-# Boot and connect to Pi via SSH or keyboard/monitor
+# Flasher Raspberry Pi OS (64 bits) sur la carte SD avec Raspberry Pi Imager
+# Activer SSH dans les réglages d'Imager
+# Démarrer, puis se connecter au Pi en SSH ou avec clavier/écran
 ```
 
 ---
 
-## Step 2: Clone and Install
+## Étape 2 : Cloner et installer
 
 ```bash
-# Clone repository (replace URL with your fork or local path)
+# Cloner le dépôt (remplacez l'URL par votre fork ou un chemin local)
 git clone https://github.com/lolly76/SurviveV1-FR.git ~/SurviveV1
 cd ~/SurviveV1
 
-# Run installer (takes 15-30 minutes)
+# Lancer l'installateur (15 à 30 minutes)
 sudo bash setup/install.sh
 ```
 
-The installer will:
-- Update the system
-- Install all required software (Kiwix, Kolibri, Jellyfin, Calibre, Ollama, nginx)
-- Set up network sharing (Samba, mDNS)
-- Configure firewall
-- Install systemd services
+L'installateur va :
+- Mettre à jour le système
+- Installer tous les logiciels nécessaires (Kiwix, Kolibri, Jellyfin, Calibre, Ollama, nginx)
+- Configurer le partage réseau (Samba, mDNS)
+- Configurer le pare-feu
+- Installer les services systemd
 
 ---
 
-## Step 3: Mount Your Storage Drive
+## Étape 3 : Monter votre disque de stockage
 
 ```bash
-# Find your drive
+# Repérer votre disque
 lsblk
 
-# Format if new (WARNING: erases all data)
-sudo mkfs.ext4 /dev/sda1  # replace sda1 with your drive
+# Formater s'il est neuf (ATTENTION : efface toutes les données)
+sudo mkfs.ext4 /dev/sda1  # remplacez sda1 par votre disque
 
-# Mount
+# Monter
 sudo mkdir -p /mnt/survive
 sudo mount /dev/sda1 /mnt/survive
 
-# Auto-mount on boot
+# Montage automatique au démarrage
 echo "UUID=$(sudo blkid -s UUID -o value /dev/sda1)  /mnt/survive  ext4  defaults,noatime  0  2" | sudo tee -a /etc/fstab
 ```
 
 ---
 
-## Step 4: Configure
+## Étape 4 : Configurer
 
 ```bash
-# Edit configuration
+# Modifier la configuration
 nano ~/SurviveV1/config/survive.conf
 
-# Key settings:
+# Réglages principaux :
 # SURVIVE_STORAGE_PATH="/mnt/survive"
-# MAP_REGION="north-america"  (or your region)
-# CONTENT_VIDEOS="Y"          (set N to skip)
+# MAP_REGION="north-america"  (ou votre région)
+# CONTENT_VIDEOS="Y"          (mettre N pour ignorer)
 ```
 
 ---
 
-## Step 5: Download Content
+## Étape 5 : Télécharger les contenus
 
 ```bash
-# Download everything (will take DAYS — let it run overnight)
+# Tout télécharger (cela prendra DES JOURS — laissez tourner la nuit)
 bash download/download_all.sh
 
-# Or download specific categories:
-bash download/kiwix_content.sh          # Wikipedia (~100GB)
-bash download/videos.sh                  # Survival videos (~150GB)
-bash download/books_pdfs.sh              # PDFs/books (~20GB)
-bash download/maps.sh --region us        # US maps (~20GB)
-bash download/kolibri_content.sh         # Khan Academy (~200GB)
+# Ou télécharger certaines catégories seulement :
+bash download/kiwix_content.sh          # Wikipédia (~100 Go)
+bash download/videos.sh                  # Vidéos de survie (~150 Go)
+bash download/books_pdfs.sh              # PDF/livres (~20 Go)
+bash download/maps.sh --region us        # Cartes des États-Unis (~20 Go)
+bash download/kolibri_content.sh         # Khan Academy (~200 Go)
 ```
 
-**Download times (with 100 Mbps connection):**
-| Content | Size | Est. Time |
-|---------|------|-----------|
-| Wikipedia | 100 GB | ~3 hours |
-| Videos | 150 GB | ~4 hours |
-| Maps (US) | 20 GB | ~30 min |
-| Khan Academy | 200 GB | ~5 hours |
-| PDFs/Books | 20 GB | ~30 min |
+**Durées de téléchargement (connexion à 100 Mbit/s) :**
+
+| Contenu | Taille | Durée estimée |
+|---------|--------|---------------|
+| Wikipédia | 100 Go | ~3 heures |
+| Vidéos | 150 Go | ~4 heures |
+| Cartes (États-Unis) | 20 Go | ~30 min |
+| Khan Academy | 200 Go | ~5 heures |
+| PDF/livres | 20 Go | ~30 min |
 
 ---
 
-## Step 6: Set Up AI
+## Étape 6 : Configurer l'IA
 
 ```bash
-# Pull AI models
+# Télécharger les modèles d'IA
 bash ai/setup_ollama.sh
 
-# Or manually pull a specific model
-ollama pull phi3:mini    # 2.3GB — recommended for RPi5
-ollama pull tinyllama    # 637MB — very fast, basic quality
+# Ou télécharger un modèle précis à la main
+ollama pull phi3:mini    # 2,3 Go — recommandé pour le RPi5
+ollama pull tinyllama    # 637 Mo — très rapide, qualité basique
 ```
 
 ---
 
-## Step 7: Start Everything
+## Étape 7 : Tout démarrer
 
 ```bash
-# First time: generate systemd service files for your storage path
+# Première fois : générer les fichiers de service systemd pour votre chemin de stockage
 sudo bash scripts/generate_services.sh
 
-# Enable services to start on boot
+# Activer les services au démarrage
 sudo systemctl enable survive-dashboard kiwix ollama martin-tiles kolibri
 
-# Start all services now
+# Démarrer tous les services maintenant
 sudo systemctl start survive-dashboard kiwix ollama martin-tiles
 
-# Or use the convenience script (works with or without systemd)
+# Ou utiliser le script pratique (fonctionne avec ou sans systemd)
 bash scripts/start_services.sh
 ```
 
-**Managing individual services with systemctl:**
+**Gérer chaque service avec systemctl :**
 ```bash
-# Check status
+# Voir l'état
 sudo systemctl status survive-dashboard
 
-# Restart a service
+# Redémarrer un service
 sudo systemctl restart kiwix
 
-# View live logs
+# Suivre les journaux en direct
 sudo journalctl -u ollama -f
 
-# Stop all SurviveV1 services
+# Arrêter tous les services SurviveV1
 sudo systemctl stop survive-dashboard kiwix ollama martin-tiles kolibri
 ```
 
-Open in browser:
-- From the Pi: `http://localhost:8080`
-- From another device: `http://survive.local:8080`
+Ouvrir dans le navigateur :
+- Depuis le Pi : `http://localhost:8080`
+- Depuis un autre appareil : `http://survive.local:8080`
 
 ---
 
-## Step 8: Cloud Backup (Optional)
+## Étape 8 : Sauvegarde dans le cloud (facultatif)
 
-Do this while you have internet access, so you can restore later.
+À faire tant que vous avez Internet, pour pouvoir restaurer plus tard.
 
 ```bash
-# Configure cloud storage
+# Configurer le stockage cloud
 bash sync/setup_rclone.sh gdrive     # Google Drive
 bash sync/setup_rclone.sh dropbox    # Dropbox
 
-# Sync to cloud
+# Synchroniser vers le cloud
 bash sync/sync_to_cloud.sh gdrive
 
-# Schedule automatic sync when internet available
+# Programmer une synchronisation automatique quand Internet est disponible
 sudo bash sync/schedule_sync.sh gdrive
 ```
 
 ---
 
-## Accessing Your System
+## Accéder à votre système
 
-### From the Pi itself:
-- Open browser: `http://localhost:8080`
+### Depuis le Pi lui-même :
+- Ouvrir le navigateur : `http://localhost:8080`
 
-### From other devices on the same network:
-- Browser: `http://survive.local:8080`
-- Or: `http://192.168.1.X:8080` (replace with Pi's IP)
+### Depuis d'autres appareils du même réseau :
+- Navigateur : `http://survive.local:8080`
+- Ou : `http://192.168.1.X:8080` (remplacez par l'IP du Pi)
 
-### File sharing:
-- Windows: `\\survive\survive`
-- Mac: `smb://survive/survive`
-- Linux: `smb://survive/survive`
+### Partage de fichiers :
+- Windows : `\\survive\survive`
+- Mac : `smb://survive/survive`
+- Linux : `smb://survive/survive`
 
 ---
 
-## Service Ports
+## Ports des services
 
 | Service | URL |
 |---------|-----|
-| Main Dashboard | http://survive.local:8080 |
-| Wikipedia | http://survive.local:8081 |
+| Tableau de bord principal | http://survive.local:8080 |
+| Wikipédia | http://survive.local:8081 |
 | Khan Academy | http://survive.local:8082 |
-| E-Books | http://survive.local:8083 |
-| Videos | http://survive.local:8096 |
-| Maps | http://survive.local:3000 |
-| AI Chat | http://survive.local:8080/ai |
+| Livres numériques | http://survive.local:8083 |
+| Vidéos | http://survive.local:8096 |
+| Cartes | http://survive.local:3000 |
+| Discussion avec l'IA | http://survive.local:8080/ai |
 
 ---
 
-## Power Tips
+## Conseils d'alimentation
 
-| Setup | Battery Life |
-|-------|-------------|
-| Pi 5 + display | ~5-6 hours on 20,000mAh |
-| Pi 5 only (headless) | ~10-12 hours |
-| Pi 5 + solar panel | Indefinite |
+| Configuration | Autonomie |
+|---------------|-----------|
+| Pi 5 + écran | ~5 à 6 heures avec 20 000 mAh |
+| Pi 5 seul (sans écran) | ~10 à 12 heures |
+| Pi 5 + panneau solaire | Illimitée |
 
-- Use `sudo vcgencmd get_throttled` to check for power issues
-- Use `sudo cpufreq-set -g powersave` to extend battery life
+- Utilisez `sudo vcgencmd get_throttled` pour détecter les problèmes d'alimentation
+- Utilisez `sudo cpufreq-set -g powersave` pour prolonger l'autonomie
 
 ---
 
-## Troubleshooting
+## Dépannage
 
-**Dashboard not loading:**
+**Le tableau de bord ne se charge pas :**
 ```bash
 bash scripts/status.sh
 tail -f /tmp/survive_dashboard.log
 ```
 
-**Wikipedia not showing content:**
+**Wikipédia n'affiche aucun contenu :**
 ```bash
 ls /mnt/survive/zim/
-# Should show .zim files
-bash scripts/start_services.sh  # restart kiwix
+# Doit afficher des fichiers .zim
+bash scripts/start_services.sh  # redémarrer kiwix
 ```
 
-**AI not responding:**
+**L'IA ne répond pas :**
 ```bash
 ollama serve &
-ollama list    # check models are installed
+ollama list    # vérifier que les modèles sont installés
 ```
 
-**No disk space:**
+**Plus d'espace disque :**
 ```bash
 df -h /mnt/survive
-du -sh /mnt/survive/*   # find largest directories
+du -sh /mnt/survive/*   # repérer les plus gros dossiers
 ```

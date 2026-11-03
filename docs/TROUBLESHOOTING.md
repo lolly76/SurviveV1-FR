@@ -1,373 +1,346 @@
-# SurviveV1 Troubleshooting Guide
+# Guide de dépannage SurviveV1
 
-## Log Locations
+## Emplacement des journaux
 
-| Service | Log file |
-|---------|----------|
-| Dashboard | `/var/log/survive_dashboard.log` |
+| Service | Fichier journal |
+|---------|-----------------|
+| Tableau de bord | `/var/log/survive_dashboard.log` |
 | Kiwix | `/var/log/survive_kiwix.log` |
 | Ollama | `/var/log/survive_ollama.log` |
-| Maps (Martin) | `/var/log/survive_maps.log` |
+| Cartes (Martin) | `/var/log/survive_maps.log` |
 | Kolibri | `/var/log/survive_kolibri.log` |
 | nginx | `/var/log/nginx/survive_access.log` |
-| Download errors | `/mnt/survive/.logs/failed_downloads.log` |
-| Manual start | `/tmp/survive_dashboard.log` |
+| Erreurs de téléchargement | `/mnt/survive/.logs/failed_downloads.log` |
+| Démarrage manuel | `/tmp/survive_dashboard.log` |
 
-Tail any log in real time: `tail -f /var/log/survive_dashboard.log`
+Suivre un journal en temps réel : `tail -f /var/log/survive_dashboard.log`
 
 ---
 
-## Dashboard Not Loading
+## Le tableau de bord ne se charge pas
 
-**Symptom:** Browser shows "Connection refused" at http://survive.local:8080
+**Symptôme :** le navigateur affiche « Connexion refusée » sur http://survive.local:8080
 
 ```bash
-# Check service status
+# Vérifier l'état des services
 bash scripts/status.sh
 
-# Check if Flask is running
+# Vérifier que Flask tourne
 ps aux | grep server.py
 
-# Start manually and watch for errors
+# Démarrer à la main et surveiller les erreurs
 source /opt/survive/venv/bin/activate
 cd web && python3 server.py
 
-# Check systemd status
+# Vérifier l'état systemd
 sudo systemctl status survive-dashboard
 sudo journalctl -u survive-dashboard -n 50
 ```
 
-**Common causes:**
-- Python venv not activated — install ran but venv missing: `python3 -m venv /opt/survive/venv && pip install -r requirements.txt`
-- Port 8080 already in use: `ss -tlnp | grep 8080`
-- Missing `config/.secret_key` — re-run: `python3 web/server.py` once to generate
+**Causes fréquentes :**
+- Environnement virtuel Python non activé — l'installation s'est terminée mais le venv manque : `python3 -m venv /opt/survive/venv && pip install -r requirements.txt`
+- Port 8080 déjà utilisé : `ss -tlnp | grep 8080`
+- Fichier `config/.secret_key` manquant — lancez une fois `python3 web/server.py` pour le générer
 
 ---
 
-## Wikipedia / Kiwix Not Showing Content
+## Wikipédia / Kiwix n'affiche aucun contenu
 
-**Symptom:** "No results" or Kiwix page blank
+**Symptôme :** « Aucun résultat » ou page Kiwix vide
 
 ```bash
-# Check if ZIM files exist
+# Vérifier que les fichiers ZIM existent
 ls /mnt/survive/zim/
 
-# Check kiwix library file
+# Vérifier le fichier de bibliothèque kiwix
 cat /mnt/survive/.kiwix_library.xml | head -5
 
-# Re-register ZIM files
+# Réenregistrer les fichiers ZIM
 while IFS= read -r -d '' f; do
     kiwix-manage /mnt/survive/.kiwix_library.xml add "$f" 2>/dev/null
 done < <(find /mnt/survive/zim -name "*.zim" -print0)
 
-# Restart kiwix
+# Redémarrer kiwix
 sudo systemctl restart kiwix
-# or manually:
+# ou à la main :
 kiwix-serve --library /mnt/survive/.kiwix_library.xml --port 8081
 ```
 
-**Common causes:**
-- ZIM files not downloaded yet — run `bash download/kiwix_content.sh`
-- Library XML is empty or malformed — delete and re-register
-- Kiwix version mismatch — re-run `bash setup/install.sh` kiwix section
+**Causes fréquentes :**
+- Fichiers ZIM pas encore téléchargés — lancez `bash download/kiwix_content.sh`
+- Le XML de bibliothèque est vide ou mal formé — supprimez-le et réenregistrez
+- Version de Kiwix incompatible — relancez la section kiwix de `bash setup/install.sh`
 
 ---
 
-## AI Not Responding
+## L'IA ne répond pas
 
-**Symptom:** "AI Service Not Running" banner, or chat times out
+**Symptôme :** bandeau « Service IA arrêté », ou la discussion expire
 
 ```bash
-# Check if Ollama is running
+# Vérifier qu'Ollama tourne
 curl http://localhost:11434/api/tags
 
-# Start Ollama
+# Démarrer Ollama
 ollama serve &
 
-# Check installed models
+# Voir les modèles installés
 ollama list
 
-# Pull a model if none exist (637 MB — fits on Pi)
+# Télécharger un modèle s'il n'y en a aucun (637 Mo — tient sur le Pi)
 ollama pull tinyllama
 
-# Check logs
+# Consulter les journaux
 sudo journalctl -u ollama -n 30
 tail -f /var/log/survive_ollama.log
 ```
 
-**Common causes:**
-- No models installed — run `bash ai/setup_ollama.sh`
-- Ollama not running — `sudo systemctl start ollama`
-- Model too large for RAM — use `tinyllama` (637 MB) or `phi3:mini` (2.3 GB) on Pi5 4GB
+**Causes fréquentes :**
+- Aucun modèle installé — lancez `bash ai/setup_ollama.sh`
+- Ollama ne tourne pas — `sudo systemctl start ollama`
+- Modèle trop gros pour la RAM — utilisez `tinyllama` (637 Mo) ou `phi3:mini` (2,3 Go) sur un Pi 5 de 4 Go
 
 ---
 
-## Storage Drive Not Mounting
+## Le disque de stockage ne se monte pas
 
-**Symptom:** "Storage not mounted" warning, content missing
+**Symptôme :** avertissement « Stockage non monté », contenus absents
 
 ```bash
-# Verify drive is visible
+# Vérifier que le disque est visible
 lsblk
 fdisk -l
 
-# Mount manually
+# Monter à la main
 sudo mount /dev/sda1 /mnt/survive
 
-# Check filesystem
+# Vérifier le système de fichiers
 sudo fsck /dev/sda1
 
-# Verify fstab entry for auto-mount
+# Vérifier l'entrée fstab pour le montage automatique
 cat /etc/fstab | grep survive
 
-# Add fstab entry (replace UUID with your drive's UUID from blkid)
+# Ajouter l'entrée fstab (remplacez l'UUID par celui de votre disque, donné par blkid)
 UUID=$(sudo blkid -s UUID -o value /dev/sda1)
 echo "UUID=$UUID  /mnt/survive  ext4  defaults,noatime  0  2" | sudo tee -a /etc/fstab
 
-# Test fstab
+# Tester fstab
 sudo mount -a
 ```
 
 ---
 
-## No Disk Space
+## Plus d'espace disque
 
-**Symptom:** Downloads fail, services won't start, errors about disk full
+**Symptôme :** les téléchargements échouent, les services ne démarrent pas, erreurs de disque plein
 
 ```bash
-# Check overall usage
+# Voir l'utilisation globale
 df -h /mnt/survive
 
-# Find largest directories
+# Repérer les plus gros dossiers
 du -sh /mnt/survive/* | sort -rh | head -20
 
-# Clean incomplete download temp files
+# Nettoyer les fichiers temporaires de téléchargements incomplets
 find /mnt/survive -name "*.aria2" -delete
 find /mnt/survive -name "*.part" -delete
 
-# Remove failed/incomplete video fragments
+# Supprimer les fragments vidéo échoués ou incomplets
 find /mnt/survive/videos -name "*.ytdl" -delete
 ```
 
 ---
 
-## Videos Not Playing in Jellyfin
+## Les vidéos ne se lisent pas dans Jellyfin
 
-**Symptom:** Jellyfin shows files but won't play
+**Symptôme :** Jellyfin affiche les fichiers mais ne les lit pas
 
 ```bash
-# Check Jellyfin status
+# Vérifier l'état de Jellyfin
 sudo systemctl status jellyfin
 
-# Check video directory is visible
+# Vérifier que le dossier vidéo est visible
 ls /mnt/survive/videos/
 
-# Re-scan library in Jellyfin web UI:
-# Dashboard → Libraries → [your library] → Scan All Libraries
+# Relancer l'analyse de la médiathèque dans l'interface web de Jellyfin :
+# Tableau de bord → Médiathèques → [votre médiathèque] → Analyser toutes les médiathèques
+# (Dashboard → Libraries → Scan All Libraries si l'interface est en anglais)
 
-# Check for hardware transcoding errors
+# Chercher des erreurs de transcodage matériel
 sudo journalctl -u jellyfin -n 50 | grep -i "error\|transcode"
 ```
 
 ---
 
-## Maps Not Loading
+## Les cartes ne se chargent pas
 
-**Symptom:** Maps tile server returns 404 or blank tiles
+**Symptôme :** le serveur de tuiles renvoie une erreur 404 ou des tuiles vides
 
 ```bash
-# Check Martin config
+# Vérifier la configuration de Martin
 cat /mnt/survive/maps/martin_config.yaml
 
-# Verify .mbtiles files exist
+# Vérifier que les fichiers .mbtiles existent
 ls /mnt/survive/maps/mbtiles/
 
-# Re-generate config
-bash download/maps.sh --region your-region
+# Régénérer la configuration
+bash download/maps.sh --region votre-region
 
-# Start Martin manually
+# Démarrer Martin à la main
 martin --config /mnt/survive/maps/martin_config.yaml --listen-addresses 0.0.0.0:3000
 
-# Check logs
+# Consulter les journaux
 tail -f /var/log/survive_maps.log
 ```
 
 ---
 
-## Services Start Slowly After Boot
+## Les services démarrent lentement après le boot
 
-**Symptom:** Dashboard loads but services show "STOPPED" for first 2-3 minutes
+**Symptôme :** le tableau de bord se charge, mais les services restent « ARRÊTÉ » pendant les 2 à 3 premières minutes
 
-This is normal — Kolibri (Khan Academy) takes up to 2 minutes to initialize. Kiwix and Ollama take 30–60 seconds.
+C'est normal : Kolibri (Khan Academy) met jusqu'à 2 minutes à s'initialiser. Kiwix et Ollama mettent 30 à 60 secondes.
 
 ```bash
-# Check systemd boot order
+# Voir l'ordre de démarrage systemd
 systemctl list-dependencies survive-dashboard.service
 
-# View startup timing
+# Voir les temps de démarrage
 systemd-analyze blame | head -20
 ```
 
 ---
 
-## Network / mDNS (survive.local) Not Resolving
+## Le réseau / mDNS (survive.local) ne se résout pas
 
-**Symptom:** `http://survive.local` doesn't work from other devices
+**Symptôme :** `http://survive.local` ne fonctionne pas depuis les autres appareils
 
 ```bash
-# Check avahi is running
+# Vérifier qu'avahi tourne
 sudo systemctl status avahi-daemon
 
-# Restart avahi
+# Redémarrer avahi
 sudo systemctl restart avahi-daemon
 
-# Test mDNS resolution
+# Tester la résolution mDNS
 avahi-resolve -n survive.local
 
-# Alternative: use IP address directly
-hostname -I  # shows Pi's IP
-# Then use http://192.168.x.x:8080
+# Alternative : utiliser directement l'adresse IP
+hostname -I  # affiche l'IP du Pi
+# Puis utiliser http://192.168.x.x:8080
 ```
 
 ---
 
-## Download Failures — Retrying Failed Downloads
+## Échecs de téléchargement — relancer les téléchargements échoués
 
-After a download run, check the failure log:
+Après une session de téléchargement, consultez le journal des échecs :
 
 ```bash
 cat /mnt/survive/.logs/failed_downloads.log
 ```
 
-Failed URLs are logged with timestamps. To retry specific content:
+Les URL en échec sont consignées avec l'horodatage. Pour relancer un contenu précis :
 
 ```bash
-# Retry a specific category
+# Relancer une catégorie précise
 bash download/books_pdfs.sh --storage /mnt/survive
 
-# Retry all (skips already-downloaded files)
+# Tout relancer (les fichiers déjà téléchargés sont ignorés)
 bash download/download_all.sh --resume
 ```
 
 ---
 
-## Reinstalling / Starting Fresh
+## Réinstaller / repartir de zéro
 
 ```bash
-# Stop all services
+# Arrêter tous les services
 bash scripts/stop_services.sh
 
-# Re-run installer (safe to re-run)
+# Relancer l'installateur (sans risque)
 sudo bash setup/install.sh
 
-# Re-generate systemd service files with your storage path
+# Régénérer les fichiers de service systemd avec votre chemin de stockage
 sudo bash scripts/generate_services.sh
 
-# Verify config
+# Vérifier la configuration
 cat config/survive.conf
 ```
 
 ---
 
-## Hotspot Mode (Grid-Down Wi-Fi)
+## Mode point d'accès (Wi-Fi hors réseau)
 
-`sudo bash scripts/hotspot.sh enable` makes the Pi broadcast its own Wi-Fi
-network (settings in `survive.conf`: `SURVIVE_HOTSPOT_SSID` / `_PASS`).
-The dashboard is then at **http://10.42.0.1:8080** (NetworkManager shared
-mode always gives the Pi 10.42.0.1) — `survive.local` also works on the
-hotspot subnet via mDNS.
+`sudo bash scripts/hotspot.sh enable` fait diffuser par le Pi son propre réseau Wi-Fi (réglages dans `survive.conf` : `SURVIVE_HOTSPOT_SSID` / `_PASS`). Le tableau de bord est alors à **http://10.42.0.1:8080** (le mode partagé de NetworkManager donne toujours l'adresse 10.42.0.1 au Pi) — `survive.local` fonctionne aussi sur le sous-réseau du point d'accès, via mDNS.
 
-**Locked yourself out?** (enabled the AP over Wi-Fi SSH and lost the link):
-plug in Ethernet, or simply **power-cycle the Pi** — the hotspot connection
-is created with `autoconnect no`, so a reboot returns to normal Wi-Fi. This
-is deliberate (a dead-man switch for headless boxes). To make the hotspot
-persistent across reboots instead:
+**Vous vous êtes enfermé dehors ?** (vous avez activé le point d'accès depuis une session SSH en Wi-Fi et perdu la liaison) : branchez un câble Ethernet, ou **coupez simplement l'alimentation du Pi** — la connexion du point d'accès est créée avec `autoconnect no`, donc un redémarrage ramène au Wi-Fi normal. C'est voulu (un interrupteur de sécurité pour les boîtiers sans écran). Pour rendre au contraire le point d'accès persistant après redémarrage :
 
 ```bash
 sudo nmcli connection modify survive-hotspot connection.autoconnect yes
 ```
 
-**Why 2.4 GHz?** The AP uses band `bg` on purpose: it works in every
-regulatory domain (5 GHz AP channels fail silently when the Wi-Fi country is
-unset), every phone supports it, and it penetrates walls better — the right
-trade-off in a disaster.
+**Pourquoi le 2,4 GHz ?** Le point d'accès utilise la bande `bg` volontairement : elle fonctionne dans tous les domaines réglementaires (les canaux 5 GHz échouent sans message quand le pays Wi-Fi n'est pas défini), tous les téléphones la gèrent, et elle traverse mieux les murs — le bon compromis en cas de catastrophe.
 
-**AP won't start?** Set your Wi-Fi country first:
-`sudo raspi-config nonint do_wifi_country US` (or your country code).
+**Le point d'accès ne démarre pas ?** Définissez d'abord votre pays Wi-Fi : `sudo raspi-config nonint do_wifi_country FR` (ou votre code pays).
 
-**Phone shows "IP configuration error" / "Failed to obtain IP address"?**
-The phone associated but the Pi's firewall (ufw) dropped its DHCP request.
-`hotspot.sh enable` now opens DHCP/DNS/dashboard on `wlan0` automatically,
-but if you enabled the AP with an older copy of the script, open them by
-hand:
+**Le téléphone affiche « Erreur de configuration IP » / « Échec de l'obtention de l'adresse IP » ?** Le téléphone s'est associé, mais le pare-feu du Pi (ufw) a rejeté sa requête DHCP. `hotspot.sh enable` ouvre désormais automatiquement DHCP, DNS et le tableau de bord sur `wlan0`, mais si vous avez activé le point d'accès avec une ancienne copie du script, ouvrez-les à la main :
 
 ```bash
 sudo ufw allow in on wlan0 to any port 67 proto udp   # DHCP
 sudo ufw allow in on wlan0 to any port 53             # DNS
-sudo ufw allow in on wlan0 to any port 8080 proto tcp # dashboard
+sudo ufw allow in on wlan0 to any port 8080 proto tcp # tableau de bord
 sudo ufw reload
 ```
 
-Then on the phone: forget the network and reconnect. Confirm the DHCP
-server is actually running with
-`sudo journalctl -u NetworkManager | grep -i dhcp` — you want a line like
-`DHCP, IP range 10.42.0.10 -- 10.42.0.254`.
+Ensuite, sur le téléphone : oubliez le réseau et reconnectez-vous. Vérifiez que le serveur DHCP tourne bien avec `sudo journalctl -u NetworkManager | grep -i dhcp` — vous devez voir une ligne comme `DHCP, IP range 10.42.0.10 -- 10.42.0.254`.
 
 ---
 
-## YouTube "Sign in to confirm you're not a bot"
+## YouTube « Sign in to confirm you're not a bot »
 
-yt-dlp downloads fail with this message when YouTube decides the request looks
-automated. It is a YouTube policy change, not a fault in the download scripts —
-and it comes and goes.
+Les téléchargements yt-dlp échouent avec ce message lorsque YouTube juge la requête automatisée. C'est un changement de politique de YouTube, pas un défaut des scripts de téléchargement — et il va et vient.
 
-Fixes, cheapest first:
+Solutions, de la moins coûteuse à la plus coûteuse :
 
 ```bash
-# 1. Update yt-dlp — the project ships fixes for these blocks constantly
-sudo yt-dlp -U    # or: sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && sudo chmod +x /usr/local/bin/yt-dlp
+# 1. Mettre à jour yt-dlp — le projet publie en permanence des correctifs contre ces blocages
+sudo yt-dlp -U    # ou : sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && sudo chmod +x /usr/local/bin/yt-dlp
 ```
 
 ```bash
-# 2. Supply cookies from a logged-in YouTube session.
-#    On the Pi's desktop browser, install a "Get cookies.txt" extension, export
-#    while logged in to youtube.com, then set in config/survive.conf:
-SURVIVE_YTDLP_COOKIES="/home/<user>/yt_cookies.txt"
+# 2. Fournir les cookies d'une session YouTube connectée.
+#    Dans le navigateur du bureau du Pi, installez une extension « Get cookies.txt »,
+#    exportez-les en étant connecté à youtube.com, puis renseignez dans config/survive.conf :
+SURVIVE_YTDLP_COOKIES="/home/<utilisateur>/yt_cookies.txt"
 ```
 
 ```bash
-# 3. Or read cookies straight from a local browser profile:
+# 3. Ou lire les cookies directement depuis un profil de navigateur local :
 SURVIVE_YTDLP_BROWSER="chromium"
 ```
 
-**The "n challenge" (formats missing even with cookies):** YouTube also
-obfuscates stream URLs with JavaScript that yt-dlp must execute. Requirements
-(all three, in the SAME environment):
+**Le « n challenge » (formats manquants même avec les cookies) :** YouTube masque aussi les URL des flux avec du JavaScript que yt-dlp doit exécuter. Prérequis (les trois, dans le MÊME environnement) :
 
 ```bash
 sudo apt install -y nodejs
 sudo pip install --break-system-packages -U yt-dlp yt-dlp-ejs
 ```
 
-Important: the standalone yt-dlp binary CANNOT load the yt-dlp-ejs solver —
-yt-dlp must be the pip-installed package. If `which yt-dlp` shows a binary
-that predates the pip install, delete it so the pip copy takes over.
+Important : le binaire autonome de yt-dlp NE PEUT PAS charger le solveur yt-dlp-ejs — yt-dlp doit être le paquet installé par pip. Si `which yt-dlp` indique un binaire antérieur à l'installation par pip, supprimez-le pour que la copie pip prenne le relais.
 
-If "n challenge solving failed" persists with all of the above current,
-YouTube is ahead of the tooling — a known, recurring state. Retry monthly:
+Si « n challenge solving failed » persiste alors que tout ce qui précède est à jour, YouTube a une longueur d'avance sur les outils — un état connu et récurrent. Réessayez chaque mois :
 
 ```bash
 sudo pip install --break-system-packages -U yt-dlp yt-dlp-ejs
 ```
 
-Note that using a personal account for bulk downloads can get that account rate
-limited; a throwaway account is the safer choice. Blocked videos are skipped
-rather than aborting the run, so partial video libraries are expected.
+Notez que l'utilisation d'un compte personnel pour des téléchargements en masse peut entraîner une limitation de débit de ce compte ; un compte jetable est plus prudent. Les vidéos bloquées sont ignorées au lieu d'interrompre la session : des bibliothèques vidéo partielles sont donc à prévoir.
 
 ---
 
-## Getting Help
+## Obtenir de l'aide
 
-- Check service status: `bash scripts/status.sh`
-- View all logs: `tail -f /var/log/survive_*.log`
-- GitHub Issues: https://github.com/lolly76/SurviveV1-FR/issues
+- Vérifier l'état des services : `bash scripts/status.sh`
+- Voir tous les journaux : `tail -f /var/log/survive_*.log`
+- Tickets GitHub : https://github.com/lolly76/SurviveV1-FR/issues
