@@ -290,11 +290,11 @@ def _admin_required(func):
         if not is_admin():
             wants_json = request.path.startswith("/api/")
             if not admin_configured():
-                msg = "No admin password set — run scripts/set_admin_password.py"
+                msg = "Aucun mot de passe administrateur défini — lancez scripts/set_admin_password.py"
                 return (jsonify({"error": msg}), 403) if wants_json else \
                     (render_template("error.html", code=403, message=msg), 403)
             if wants_json:
-                return jsonify({"error": "Admin login required"}), 403
+                return jsonify({"error": "Connexion administrateur requise"}), 403
             return redirect(url_for("login", next=request.path))
         return func(*args, **kwargs)
     return wrapper
@@ -539,7 +539,7 @@ def _retrieve_context(query: str) -> list:
                            ("purpose", "indications", "dosage", "warnings"))[:1200]
         if excerpt.strip():
             articles.append({
-                "title": f"Drug label: {name}",
+                "title": f"Notice du médicament : {name}",
                 "url": f"/drugs/{d['id']}",
                 "snippet": excerpt[:300],
                 "text": excerpt,
@@ -548,9 +548,10 @@ def _retrieve_context(query: str) -> list:
 
 
 _BASE_SYSTEM_PROMPT = (
-    "You are a survival expert assistant running offline on a Raspberry Pi. "
-    "Help with practical survival, medicine, food, water, shelter, energy, "
-    "and skills. Be concise and practical. No internet available."
+    "Tu es un assistant expert en survie, qui fonctionne hors ligne sur un Raspberry Pi. "
+    "Aide sur la survie pratique, la médecine, la nourriture, l'eau, l'abri, "
+    "l'énergie et les savoir-faire. Réponds toujours en français, de façon "
+    "concise et pratique. Aucun accès à Internet."
 )
 
 
@@ -559,15 +560,15 @@ def _build_rag_prompt(articles: list) -> str:
     if not articles:
         return (
             _BASE_SYSTEM_PROMPT
-            + " No reference articles were found for this question in the "
-            "local library; say so if you are unsure rather than guessing."
+            + " Aucun article de référence n'a été trouvé pour cette question dans la "
+            "bibliothèque locale ; dis-le si tu n'es pas sûr plutôt que de deviner."
         )
-    lines = [_BASE_SYSTEM_PROMPT, "", "Reference excerpts from the offline library:"]
+    lines = [_BASE_SYSTEM_PROMPT, "", "Extraits de référence de la bibliothèque hors ligne :"]
     for i, article in enumerate(articles, 1):
         lines.append(f"[{i}] {article['title']}: {article.get('text', article['snippet'])}")
     lines.append(
-        "Answer using these excerpts where relevant and mention which source "
-        "numbers you used."
+        "Appuie-toi sur ces extraits lorsque c'est pertinent et indique les "
+        "numéros des sources utilisées."
     )
     return "\n".join(lines)
 
@@ -580,15 +581,15 @@ def _validate_history(raw) -> tuple:
     the survival system prompt. The char budget keeps history + RAG excerpts
     + question inside the survive model's num_ctx 4096 (~16k chars)."""
     if not isinstance(raw, list):
-        return [], "history must be a list"
+        return [], "l'historique doit être une liste"
     clean = []
     for turn in raw[-8:]:  # cap turn count first
         if not isinstance(turn, dict):
-            return [], "invalid history entry"
+            return [], "entrée d'historique invalide"
         role = turn.get("role")
         content = turn.get("content")
         if role not in ("user", "assistant") or not isinstance(content, str):
-            return [], "invalid history entry"
+            return [], "entrée d'historique invalide"
         clean.append({"role": role, "content": content[:2000]})
     # Char budget: walk from the newest turn backwards, keep what fits.
     total = 0
@@ -633,7 +634,7 @@ def _fts_sanitize(query: str) -> str:
     """Turn raw user input into a safe FTS5 prefix query — strips quotes and
     operators that would otherwise be a syntax error or injection vector.
     Returns '' when nothing searchable remains."""
-    tokens = re.sub(r"[^a-zA-Z0-9 -]", " ", query).split()
+    tokens = re.sub(r"[^\w -]|_", " ", query).split()
     if not tokens:
         return ""
     return " ".join(tokens[:-1] + [tokens[-1] + "*"])
@@ -658,7 +659,7 @@ def _query_doc_index(query: str, limit: int = 5, relaxed: bool = False):
     if rows is None:
         return None
     if not rows and relaxed:
-        words = [w for w in re.sub(r"[^a-zA-Z0-9 -]", " ", query).split()
+        words = [w for w in re.sub(r"[^\w -]|_", " ", query).split()
                  if len(w) >= 4]
         if words:
             rows = _run_doc_query(" OR ".join(f"{w}*" for w in words), limit)
@@ -993,9 +994,9 @@ def serve_file(filepath):
     try:
         full_path.relative_to(storage_root)
     except ValueError:
-        return render_template("error.html", code=403, message="Access forbidden"), 403
+        return render_template("error.html", code=403, message="Accès interdit"), 403
     if not full_path.exists():
-        return render_template("error.html", code=404, message="File not found"), 404
+        return render_template("error.html", code=404, message="Fichier introuvable"), 404
     return send_from_directory(str(full_path.parent), full_path.name)
 
 
@@ -1059,7 +1060,7 @@ def drug_detail(drug_id):
         return render_template("drug_disclaimer.html", next=f"/drugs/{drug_id}")
     drug = _drug_by_id(drug_id)
     if drug is None:
-        return render_template("error.html", code=404, message="Drug not found"), 404
+        return render_template("error.html", code=404, message="Médicament introuvable"), 404
     return render_template("drug_detail.html", drug=drug)
 
 
@@ -1069,17 +1070,17 @@ def api_drug_interactions():
     text for drug B's name and vice versa. This is a TEXT MATCH against FDA
     labels, NOT a clinical interaction database — the UI says so plainly."""
     if not _drug_disclaimer_ok():
-        return jsonify({"error": "Accept the disclaimer first"}), 403
+        return jsonify({"error": "Acceptez d'abord l'avertissement"}), 403
     try:
         a_id = int(request.args.get("a", ""))
     except (TypeError, ValueError):
-        return jsonify({"error": "Missing drug id 'a'"}), 400
+        return jsonify({"error": "Identifiant de médicament « a » manquant"}), 400
     b_name = request.args.get("b", "").strip()[:100]
     if not b_name:
-        return jsonify({"error": "Missing drug name 'b'"}), 400
+        return jsonify({"error": "Nom de médicament « b » manquant"}), 400
     drug_a = _drug_by_id(a_id)
     if drug_a is None:
-        return jsonify({"error": "Drug not found"}), 404
+        return jsonify({"error": "Médicament introuvable"}), 404
 
     b_lower = b_name.lower()
     haystack = " ".join(str(drug_a.get(f, "")) for f in
@@ -1102,8 +1103,8 @@ def api_drug_interactions():
         "b": b_name,
         "a_label_mentions_b": a_mentions_b,
         "b_label_mentions_a": b_mentions_a,
-        "note": "Label-text match only — not a clinical interaction checker. "
-                "Consult a pharmacist or doctor.",
+        "note": "Simple recherche dans le texte des notices — ce n'est pas un outil clinique de vérification des interactions. "
+                "Consultez un pharmacien ou un médecin.",
     })
 
 
@@ -1188,17 +1189,17 @@ def ai_chat():
     # cross-origin without a CORS preflight, so this blocks CSRF-style
     # form POSTs from a malicious page while the user is on the dashboard.
     if (request.content_type or "").split(";")[0].strip() != "application/json":
-        return jsonify({"error": "Content-Type must be application/json"}), 415
+        return jsonify({"error": "Le Content-Type doit être application/json"}), 415
 
     data = request.get_json(silent=True)
     if not data or "message" not in data:
-        return jsonify({"error": "No message"}), 400
+        return jsonify({"error": "Aucun message"}), 400
 
     model = data.get("model", os.environ.get("SURVIVE_AI_MODEL", "survive"))
     # Validate model name: allow alphanumeric, colon, dot, dash, underscore only.
     # Prevents path traversal or injection into the Ollama API URL.
     if not re.fullmatch(r"[a-zA-Z0-9:.\-_]{1,100}", model):
-        return jsonify({"error": "Invalid model name"}), 400
+        return jsonify({"error": "Nom de modèle invalide"}), 400
 
     history, history_error = _validate_history(data.get("history", []))
     if history_error:
@@ -1245,14 +1246,14 @@ def ai_chat():
         logging.warning("Ollama rejected the request (%s): %s", exc.code, detail)
         if exc.code == 404:
             return jsonify({"error": (
-                f"Model '{model}' is not installed. Available models are listed "
-                "in the dropdown; install more with: bash ai/setup_ollama.sh setup"
+                f"Le modèle « {model} » n'est pas installé. Les modèles disponibles sont dans "
+                "la liste déroulante ; pour en installer : bash ai/setup_ollama.sh setup"
             )}), 404
-        return jsonify({"error": f"AI service error (HTTP {exc.code})"}), 502
+        return jsonify({"error": f"Erreur du service IA (HTTP {exc.code})"}), 502
     except (OSError, json.JSONDecodeError):
         logging.exception("AI chat proxy error (connect)")
-        return jsonify({"error": "AI service unavailable — is Ollama running? "
-                                 "Check: systemctl status ollama"}), 502
+        return jsonify({"error": "Service IA indisponible — Ollama est-il lancé ? "
+                                 "Vérifiez : systemctl status ollama"}), 502
 
     def generate():
         # With streaming, TIMEOUT_AI_CHAT is a per-read idle timeout, not a
@@ -1271,7 +1272,7 @@ def ai_chat():
                     return
         except (OSError, json.JSONDecodeError):
             logging.exception("AI chat proxy error (stream)")
-            yield json.dumps({"error": "stream interrupted"}) + "\n"
+            yield json.dumps({"error": "flux interrompu"}) + "\n"
         finally:
             # Closing the upstream tells Ollama to stop generating when the
             # browser disconnects, so the Pi's CPU isn't wasted on a dead read.
@@ -1290,7 +1291,7 @@ def _require_json():
     Same CSRF defence as /api/ai/chat: browsers cannot send application/json
     cross-origin without a CORS preflight."""
     if (request.content_type or "").split(";")[0].strip() != "application/json":
-        return jsonify({"error": "Content-Type must be application/json"}), 415
+        return jsonify({"error": "Le Content-Type doit être application/json"}), 415
     return None
 
 
@@ -1482,7 +1483,7 @@ def api_pins_create():
     try:
         stored = _pin_insert_many([pin])[0]
     except sqlite3.Error as exc:
-        return jsonify({"error": f"Could not save pin: {exc}"}), 500
+        return jsonify({"error": f"Impossible d'enregistrer le repère : {exc}"}), 500
     return jsonify(stored), 201
 
 
@@ -1498,11 +1499,11 @@ def api_pin_modify(pin_id):
             if request.method == "DELETE":
                 cur = conn.execute("DELETE FROM pins WHERE id = ?", (pin_id,))
                 if cur.rowcount == 0:
-                    return jsonify({"error": "No such pin"}), 404
+                    return jsonify({"error": "Repère introuvable"}), 404
                 return jsonify({"deleted": pin_id})
             row = conn.execute("SELECT * FROM pins WHERE id = ?", (pin_id,)).fetchone()
             if not row:
-                return jsonify({"error": "No such pin"}), 404
+                return jsonify({"error": "Repère introuvable"}), 404
             merged = {**dict(row), **(request.get_json(silent=True) or {})}
             pin = textutils.clean_pin(merged)
             now = textutils.utc_now_iso()
@@ -1515,7 +1516,7 @@ def api_pin_modify(pin_id):
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     except sqlite3.Error as exc:
-        return jsonify({"error": f"Could not update pin: {exc}"}), 500
+        return jsonify({"error": f"Impossible de modifier le repère : {exc}"}), 500
 
 
 @app.route("/api/map/pins/export")
@@ -1543,13 +1544,13 @@ def api_pins_import():
     try:
         pins = textutils.parse_pins(str(data.get("text", "")))
     except (ValueError, ET.ParseError) as exc:
-        return jsonify({"error": f"Could not read file: {exc}"}), 400
+        return jsonify({"error": f"Impossible de lire le fichier : {exc}"}), 400
     if not pins:
-        return jsonify({"error": "No waypoints found in that file"}), 400
+        return jsonify({"error": "Aucun point de passage trouvé dans ce fichier"}), 400
     try:
         stored = _pin_insert_many(pins)
     except sqlite3.Error as exc:
-        return jsonify({"error": f"Could not save pins: {exc}"}), 500
+        return jsonify({"error": f"Impossible d'enregistrer les repères : {exc}"}), 500
     return jsonify({"imported": len(stored), "pins": stored}), 201
 
 
@@ -1661,7 +1662,7 @@ def content_page():
 @app.route("/api/content/catalog")
 @limiter.limit("30 per minute")
 def api_content_catalog():
-    lang = re.sub(r"[^a-z]", "", request.args.get("lang", "eng").lower())[:3]
+    lang = re.sub(r"[^a-z]", "", request.args.get("lang", "fra").lower())[:3]
     query = request.args.get("q", "").strip()[:80]
     cat_filter = request.args.get("category", "").strip()
     try:
@@ -1681,7 +1682,7 @@ def api_content_catalog():
         data = textutils.parse_kiwix_catalog(_fetch_catalog(path))
     except (OSError, ET.ParseError, ValueError) as exc:
         logging.info("catalog fetch failed: %s", exc)
-        return jsonify({"error": "Could not reach library.kiwix.org — is the Pi online?"}), 503
+        return jsonify({"error": "library.kiwix.org injoignable — le Pi est-il connecté à Internet ?"}), 503
     installed = {z["name"]: z for z in _local_zims()}
     jobs = {j["id"]: j for j in _content_jobs()["jobs"]}
     for entry in data["entries"]:
@@ -1706,7 +1707,7 @@ def api_content_languages():
     try:
         langs = textutils.parse_kiwix_languages(_fetch_catalog("/languages"))
     except (OSError, ET.ParseError, ValueError):
-        return jsonify({"error": "Could not reach library.kiwix.org"}), 503
+        return jsonify({"error": "library.kiwix.org injoignable"}), 503
     return jsonify({"languages": langs})
 
 
@@ -1736,7 +1737,7 @@ def api_content_download():
     name = str(data.get("name", "")).strip()
     zim_host = url.split("/")[2] if url.startswith("https://") and url.count("/") >= 3 else ""
     if zim_host not in _ALLOWED_ZIM_HOSTS or not url.endswith(".zim") or ".." in url:
-        return jsonify({"error": "Only .zim downloads from download.kiwix.org are allowed"}), 400
+        return jsonify({"error": "Seuls les téléchargements .zim depuis download.kiwix.org sont autorisés"}), 400
     if not name:
         name = textutils.zim_name_prefix(url)
     try:
@@ -1745,25 +1746,25 @@ def api_content_download():
         size = 0
     if size and _free_bytes() - size < FREE_SPACE_MARGIN:
         need_gb = round((size + FREE_SPACE_MARGIN - _free_bytes()) / 1024 ** 3, 1)
-        return jsonify({"error": f"Not enough free space — {need_gb} GB short "
-                                 "(10 GB is always kept free)"}), 507
+        return jsonify({"error": f"Espace libre insuffisant — il manque {need_gb} Go "
+                                 "(10 Go restent toujours libres)"}), 507
     if not _compute_connectivity()["online"]:
-        return jsonify({"error": "No internet connection — connect the Pi first"}), 503
+        return jsonify({"error": "Pas de connexion Internet — connectez d'abord le Pi"}), 503
     if not DOWNLOAD_ZIM_SCRIPT.exists():
-        return jsonify({"error": f"Script missing: {DOWNLOAD_ZIM_SCRIPT}"}), 500
+        return jsonify({"error": f"Script introuvable : {DOWNLOAD_ZIM_SCRIPT}"}), 500
     jobs = _content_jobs()
     if jobs["running"] >= _MAX_ZIM_JOBS:
-        return jsonify({"error": f"{_MAX_ZIM_JOBS} downloads already running — "
-                                 "wait for one to finish"}), 409
+        return jsonify({"error": f"{_MAX_ZIM_JOBS} téléchargements déjà en cours — "
+                                 "attendez qu'un d'eux se termine"}), 409
     job_id = _zim_job_id(name)
     log_file, pid_file = _zim_job_paths(job_id)
     if _read_job_state(log_file, pid_file, _ZIMDL_MARK)["running"]:
-        return jsonify({"error": "That download is already running"}), 409
+        return jsonify({"error": "Ce téléchargement est déjà en cours"}), 409
     try:
         pid = _launch_detached(DOWNLOAD_ZIM_SCRIPT, [url, "catalog"],
                                log_file, pid_file, _ZIMDL_MARK)
     except OSError as exc:
-        return jsonify({"error": f"Could not start download: {exc}"}), 500
+        return jsonify({"error": f"Impossible de lancer le téléchargement : {exc}"}), 500
     return jsonify({"started": True, "job": job_id, "pid": pid}), 202
 
 
@@ -1779,14 +1780,14 @@ def api_content_rescan():
     logs = STORAGE_PATH / ".logs"
     log_file, pid_file = logs / "rescan.log", logs / "rescan.pid"
     if _read_job_state(log_file, pid_file, _RESCAN_MARK)["running"]:
-        return jsonify({"error": "A rescan is already running"}), 409
+        return jsonify({"error": "Une réanalyse est déjà en cours"}), 409
     if not RESCAN_SCRIPT.exists():
-        return jsonify({"error": f"Script missing: {RESCAN_SCRIPT}"}), 500
+        return jsonify({"error": f"Script introuvable : {RESCAN_SCRIPT}"}), 500
     try:
         pid = _launch_detached(RESCAN_SCRIPT, ["--storage", str(STORAGE_PATH)],
                                log_file, pid_file, _RESCAN_MARK)
     except OSError as exc:
-        return jsonify({"error": f"Could not start rescan: {exc}"}), 500
+        return jsonify({"error": f"Impossible de lancer la réanalyse : {exc}"}), 500
     return jsonify({"started": True, "pid": pid}), 202
 
 
@@ -1889,7 +1890,7 @@ def note_save():
     the notebook is a shared pad for whoever is on the hotspot."""
     body = request.form.get("body", "").replace("\r\n", "\n")
     if len(body.encode("utf-8")) > _NOTE_MAX_BYTES:
-        return render_template("error.html", code=413, message="Note too long (512 KB max)"), 413
+        return render_template("error.html", code=413, message="Note trop longue (512 Ko maximum)"), 413
     if not body.strip():
         return redirect(url_for("notes_page"))
     slug = request.form.get("slug", "").strip()
@@ -1901,7 +1902,7 @@ def note_save():
                 abort(400)
         else:
             if sum(1 for _ in NOTES_DIR.glob("*.md")) >= _NOTES_MAX:
-                return render_template("error.html", code=507, message="Too many notes"), 507
+                return render_template("error.html", code=507, message="Trop de notes"), 507
             slug = _unique_slug(textutils.slugify(textutils.first_heading(body)))
             path = NOTES_DIR / f"{slug}.md"
         tmp = path.with_name(path.name + ".tmp")
@@ -1909,7 +1910,7 @@ def note_save():
         tmp.replace(path)
     except OSError as exc:
         logging.warning("note save failed: %s", exc)
-        return render_template("error.html", code=500, message="Could not save the note"), 500
+        return render_template("error.html", code=500, message="Impossible d'enregistrer la note"), 500
     return redirect(url_for("note_view", slug=slug))
 
 
@@ -1970,15 +1971,15 @@ def shared_upload():
     deletion is admin-only. Streams to disk, keeps the free-space margin."""
     files = [f for f in request.files.getlist("files") if f and f.filename]
     if not files:
-        return redirect(url_for("shared_page", m="Pick at least one file."))
+        return redirect(url_for("shared_page", m="Choisissez au moins un fichier."))
     declared = request.content_length or 0
     if _free_bytes() - declared < FREE_SPACE_MARGIN:
         return redirect(url_for("shared_page",
-                                m="Not enough free space (10 GB is always kept free)."))
+                                m="Espace libre insuffisant (10 Go restent toujours libres)."))
     try:
         SHARED_DIR.mkdir(parents=True, exist_ok=True)
         if sum(1 for _ in SHARED_DIR.iterdir()) + len(files) > _SHARED_MAX_FILES:
-            return redirect(url_for("shared_page", m="The shared folder is full."))
+            return redirect(url_for("shared_page", m="Le dossier partagé est plein."))
         saved = []
         for upload in files:
             name = secure_filename(upload.filename)[:150]
@@ -1994,8 +1995,8 @@ def shared_upload():
             saved.append(dest.name)
     except OSError as exc:
         logging.warning("upload failed: %s", exc)
-        return redirect(url_for("shared_page", m="Upload failed — is the drive full?"))
-    note = f"Saved {len(saved)} file(s)." if saved else "Nothing saved — bad filename?"
+        return redirect(url_for("shared_page", m="Échec de l'envoi — le disque est-il plein ?"))
+    note = f"{len(saved)} fichier(s) enregistré(s)." if saved else "Rien d'enregistré — nom de fichier invalide ?"
     return redirect(url_for("shared_page", m=note))
 
 
@@ -2010,7 +2011,7 @@ def shared_delete():
         target.unlink()
     except OSError:
         abort(500)
-    return redirect(url_for("shared_page", m=f"Deleted {name}."))
+    return redirect(url_for("shared_page", m=f"{name} supprimé."))
 
 
 
@@ -2094,15 +2095,15 @@ def comms_repeaters():
 def comms_repeaters_upload():
     upload = request.files.get("file")
     if not upload or not upload.filename:
-        return redirect(url_for("comms_repeaters", m="Pick a CSV file first."))
+        return redirect(url_for("comms_repeaters", m="Choisissez d'abord un fichier CSV."))
     name = secure_filename(upload.filename)[:120]
     if not name.lower().endswith(".csv"):
-        return redirect(url_for("comms_repeaters", m="Only .csv files are accepted."))
+        return redirect(url_for("comms_repeaters", m="Seuls les fichiers .csv sont acceptés."))
     try:
         REPEATERS_DIR.mkdir(parents=True, exist_ok=True)
         upload.save(str(REPEATERS_DIR / name))
     except OSError:
-        return redirect(url_for("comms_repeaters", m="Could not save the file."))
+        return redirect(url_for("comms_repeaters", m="Impossible d'enregistrer le fichier."))
     _repeaters_cache._ts = 0.0  # pylint: disable=protected-access
     rows = textutils.parse_repeater_csv(
         (REPEATERS_DIR / name).read_text(encoding="utf-8-sig", errors="replace"), source=name)
@@ -2192,10 +2193,10 @@ def api_update_schedule_set():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=15, check=False)
     except (OSError, subprocess.SubprocessError) as exc:
-        return jsonify({"error": f"Could not run systemctl: {exc}"}), 500
+        return jsonify({"error": f"Impossible d'exécuter systemctl : {exc}"}), 500
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()[:200]
-        return jsonify({"error": "systemctl refused — run scripts/install_sudoers.sh on the Pi. "
+        return jsonify({"error": "systemctl a refusé — lancez scripts/install_sudoers.sh sur le Pi. "
                                  + detail, "manual": " ".join(cmd[2:])}), 500
     return jsonify(_schedule_info())
 
@@ -2223,11 +2224,11 @@ def login():
     if not stored:
         return render_template(
             "login.html", configured=False,
-            error="No admin password is set on this device."), 403
+            error="Aucun mot de passe administrateur n'est défini sur cet appareil."), 403
     if not check_password_hash(stored, password):
         return render_template(
             "login.html", configured=True,
-            error="Incorrect password."), 401
+            error="Mot de passe incorrect."), 401
     # Success — regenerate the session to prevent fixation, then mark admin.
     session.clear()
     session["admin"] = True
@@ -2487,15 +2488,15 @@ def api_update_start():
     never replacement builds of existing large ZIMs. Admin-only."""
     # Same CSRF defence as /api/ai/chat: cross-origin JSON needs a preflight.
     if (request.content_type or "").split(";")[0].strip() != "application/json":
-        return jsonify({"error": "Content-Type must be application/json"}), 415
+        return jsonify({"error": "Le Content-Type doit être application/json"}), 415
 
     state = _read_update_state()
     if state["running"]:
-        return jsonify({"error": "An update is already running"}), 409
+        return jsonify({"error": "Une mise à jour est déjà en cours"}), 409
     if not _compute_connectivity()["online"]:
-        return jsonify({"error": "No internet connection — connect the Pi first"}), 503
+        return jsonify({"error": "Pas de connexion Internet — connectez d'abord le Pi"}), 503
     if not UPDATE_SCRIPT.exists():
-        return jsonify({"error": f"Update script missing: {UPDATE_SCRIPT}"}), 500
+        return jsonify({"error": f"Script de mise à jour introuvable : {UPDATE_SCRIPT}"}), 500
 
     log_file, pid_file = _update_paths()
     try:
@@ -2513,7 +2514,7 @@ def api_update_start():
         )
         pid_file.write_text(str(proc.pid))
     except OSError as exc:
-        return jsonify({"error": f"Could not start update: {exc}"}), 500
+        return jsonify({"error": f"Impossible de lancer la mise à jour : {exc}"}), 500
 
     # Reap the child on exit so the pid check never sees a stale zombie.
     threading.Thread(target=proc.wait, daemon=True).start()
@@ -2532,17 +2533,17 @@ def api_service_restart(name):
     Admin-only. The unit name is looked up from SERVICES (never taken from the
     URL) so only known units can be targeted."""
     if (request.content_type or "").split(";")[0].strip() != "application/json":
-        return jsonify({"error": "Content-Type must be application/json"}), 415
+        return jsonify({"error": "Le Content-Type doit être application/json"}), 415
     svc = SERVICES.get(name)
     if not svc:
-        return jsonify({"error": "Unknown service"}), 404
+        return jsonify({"error": "Service inconnu"}), 404
     unit = svc.get("unit")
     if not unit:
-        return jsonify({"error": "This service has no restart control"}), 400
+        return jsonify({"error": "Ce service ne peut pas être redémarré d'ici"}), 400
     # The AI service may live on a remote host (SURVIVE_OLLAMA_HOST) we can't
     # restart from here.
     if name == "ai" and OLLAMA_IS_REMOTE:
-        return jsonify({"error": "AI runs on a remote host — restart it there"}), 400
+        return jsonify({"error": "L'IA tourne sur une machine distante — redémarrez-la là-bas"}), 400
 
     cmd = ["sudo", "-n", "/usr/bin/systemctl", "restart", unit]
     # Restarting the dashboard's own unit kills the worker handling this
@@ -2554,18 +2555,18 @@ def api_service_restart(name):
                 stderr=subprocess.DEVNULL, start_new_session=True,
             )
         except OSError as exc:
-            return jsonify({"error": f"Could not restart: {exc}"}), 500
+            return jsonify({"error": f"Impossible de redémarrer : {exc}"}), 500
         return jsonify({"restarting": unit, "detached": True}), 202
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True,
                                 timeout=30, check=False)
     except (OSError, subprocess.SubprocessError) as exc:
-        return jsonify({"error": f"Restart failed: {exc}"}), 500
+        return jsonify({"error": f"Échec du redémarrage : {exc}"}), 500
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()[:200]
-        return jsonify({"error": f"systemctl restart {unit} failed: {detail}",
-                        "hint": "run scripts/install_sudoers.sh"}), 500
+        return jsonify({"error": f"systemctl restart {unit} a échoué : {detail}",
+                        "hint": "lancez scripts/install_sudoers.sh"}), 500
     return jsonify({"restarted": unit}), 200
 
 
@@ -2676,18 +2677,18 @@ def status_page():
 
 @app.errorhandler(404)
 def not_found(_e):
-    return render_template("error.html", code=404, message="Page not found"), 404
+    return render_template("error.html", code=404, message="Page introuvable"), 404
 
 
 @app.errorhandler(403)
 def forbidden(_e):
-    return render_template("error.html", code=403, message="Access forbidden"), 403
+    return render_template("error.html", code=403, message="Accès interdit"), 403
 
 
 @app.errorhandler(500)
 def server_error(_e):
     logging.exception("Internal server error")
-    return render_template("error.html", code=500, message="Internal server error"), 500
+    return render_template("error.html", code=500, message="Erreur interne du serveur"), 500
 
 
 # Start the background search-index refresher at import time so it runs under

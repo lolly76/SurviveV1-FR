@@ -45,7 +45,7 @@ def test_kiwix_path_empty(server):
 
 def test_rag_prompt_empty_articles_admits_no_sources(server):
     prompt = server._build_rag_prompt([])
-    assert "No reference articles" in prompt
+    assert "Aucun article de référence" in prompt
 
 
 def test_rag_prompt_numbers_articles(server):
@@ -427,7 +427,7 @@ def test_update_start_403_when_no_admin_password(server):
     c = server.app.test_client()
     resp = c.post("/api/update/start", json={})
     assert resp.status_code == 403
-    assert b"admin password" in resp.data.lower()
+    assert "mot de passe administrateur".encode() in resp.data.lower()
 
 
 def test_login_page_renders(server):
@@ -600,7 +600,7 @@ def test_drug_disclaimer_gate(server):
         c = server.app.test_client()
         # Before accepting: page shows the disclaimer, not results.
         html = c.get("/drugs?q=amoxicillin").get_data(as_text=True)
-        assert "not medical advice" in html.lower() or "medical advice" in html.lower()
+        assert "avis médical" in html.lower()
         # Accept, then search works.
         token = _csrf_token(html) or _csrf_token(c.get("/drugs").get_data(as_text=True))
         c.post("/drugs/disclaimer", data={"csrf_token": token, "next": "/drugs"})

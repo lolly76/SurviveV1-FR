@@ -235,7 +235,7 @@ def test_shared_upload_download_delete(client, server, admin_password):
         payload = b"x" * 200_000  # above the 64 KB global cap: the per-route limit must apply
         resp = client.post("/shared/upload", data={"files": (io.BytesIO(payload), "../evil name.PDF")},
                            content_type="multipart/form-data", follow_redirects=True)
-        assert resp.status_code == 200 and b"Saved 1" in resp.data
+        assert resp.status_code == 200 and "1 fichier(s) enregistré(s)".encode() in resp.data
         assert (server.SHARED_DIR / "evil_name.PDF").read_bytes() == payload
         assert client.get("/serve/shared/evil_name.PDF").status_code == 200
         resp = client.post("/shared/delete", data={"name": "evil_name.PDF"})
