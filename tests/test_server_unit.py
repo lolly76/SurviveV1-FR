@@ -625,3 +625,13 @@ def test_drug_interactions_text_match(server):
         assert r2["a_label_mentions_b"] is False
     finally:
         server.DRUG_INDEX_DB.unlink(missing_ok=True)
+
+
+def test_ttl_cache_computes_on_first_call_even_right_after_boot(server, monkeypatch):
+    """Régression : monotonic() proche de 0 (machine fraîchement démarrée) ne doit
+    pas faire passer un cache vide pour un cache frais (valeur None -> erreur 500)."""
+    monkeypatch.setattr(server.time, "monotonic", lambda: 5.0)
+    cache = server._TTLCache(60.0)
+    assert cache.get(lambda: {"ok": True}) == {"ok": True}
+    # Dans le TTL : pas de recalcul
+    assert cache.get(lambda: {"ok": False}) == {"ok": True}

@@ -240,15 +240,19 @@ class _TTLCache:
 
     def __init__(self, ttl: float) -> None:
         self._ttl = ttl
-        self._ts = 0.0
+        # None = jamais calculé. Avec un 0.0 initial, une machine démarrée depuis
+        # moins de `ttl` secondes (time.monotonic() ~ uptime) renvoyait None au
+        # premier appel : pages en erreur 500 juste après un démarrage.
+        self._ts = None
         self._data = None
         self._lock = threading.Lock()
 
     def get(self, compute):
         """Return cached value, calling compute() to refresh if TTL has expired."""
         with self._lock:
-            if time.monotonic() - self._ts > self._ttl:
-                self._ts = time.monotonic()
+            now = time.monotonic()
+            if self._ts is None or now - self._ts > self._ttl:
+                self._ts = now
                 self._data = compute()
             return self._data
 
