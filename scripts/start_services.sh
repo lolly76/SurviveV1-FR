@@ -7,7 +7,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 
@@ -21,10 +21,10 @@ preflight_check() {
     # Verify storage is mounted and has at least 100MB free
     if ! mountpoint -q "$STORAGE_PATH" 2>/dev/null; then
         if [[ "$STORAGE_PATH" != "/mnt/survive" ]]; then
-            info "Storage at $STORAGE_PATH is not a separate mount — continuing"
+            info "Le stockage $STORAGE_PATH n'est pas un montage séparé — on continue"
         else
-            warn "Storage drive not mounted at $STORAGE_PATH"
-            warn "Some services may not start correctly. Mount your drive first:"
+            warn "Disque de stockage non monté sur $STORAGE_PATH"
+            warn "Certains services risquent de ne pas démarrer correctement. Montez d'abord votre disque :"
             warn "  sudo mount /dev/sda1 /mnt/survive"
         fi
     fi
@@ -32,7 +32,7 @@ preflight_check() {
     local free_kb
     free_kb=$(df -k "$STORAGE_PATH" 2>/dev/null | tail -1 | awk '{print $4}') || free_kb=0
     if [[ "$free_kb" -lt 102400 ]]; then
-        warn "Less than 100MB free on $STORAGE_PATH — services may fail to write logs"
+        warn "Moins de 100 Mo libres sur $STORAGE_PATH — les services risquent de ne pas pouvoir écrire leurs journaux"
     fi
 }
 
@@ -48,9 +48,9 @@ start_service() {
 
     if [[ "$USE_SYSTEMD" == "true" ]]; then
         if systemctl is-enabled "$unit" &>/dev/null; then
-            systemctl start "$unit" && success "$desc started" || warn "$desc failed to start"
+            systemctl start "$unit" && success "$desc démarré" || warn "$desc n'a pas démarré"
         else
-            warn "$unit not installed as systemd service — starting manually"
+            warn "$unit n'est pas installé comme service systemd — démarrage manuel"
             start_manual "$name"
         fi
     else
@@ -62,67 +62,67 @@ start_manual() {
     local name="$1"
     case "$name" in
         dashboard)
-            info "Starting dashboard on :8080..."
+            info "Démarrage du tableau de bord sur :8080..."
             source /opt/survive/venv/bin/activate 2>/dev/null || true
             cd "$REPO_DIR/web"
             PORT=8080 nohup python3 server.py > /tmp/survive_dashboard.log 2>&1 &
             echo $! > /tmp/survive_dashboard.pid
-            success "Dashboard started (PID $(cat /tmp/survive_dashboard.pid))"
+            success "Tableau de bord démarré (PID $(cat /tmp/survive_dashboard.pid))"
             ;;
         kiwix)
             KIWIX_LIB="$STORAGE_PATH/.kiwix_library.xml"
             if [[ ! -f "$KIWIX_LIB" ]]; then
-                warn "Kiwix library not found — run download scripts first"
+                warn "Bibliothèque Kiwix introuvable — lancez d'abord les scripts de téléchargement"
                 return
             fi
-            info "Starting Kiwix on :8081..."
+            info "Démarrage de Kiwix sur :8081..."
             # No --address: kiwix-serve 3.x rejects the 0.0.0.0 wildcard.
             nohup kiwix-serve \
                 --library "$KIWIX_LIB" \
                 --port 8081 \
                 > /tmp/kiwix.log 2>&1 &
             echo $! > /tmp/kiwix.pid
-            success "Kiwix started (PID $(cat /tmp/kiwix.pid))"
+            success "Kiwix démarré (PID $(cat /tmp/kiwix.pid))"
             ;;
         ollama)
-            info "Starting Ollama on :11434..."
+            info "Démarrage d'Ollama sur :11434..."
             OLLAMA_MODELS="$STORAGE_PATH/ai_models/ollama" \
             nohup ollama serve > /tmp/ollama.log 2>&1 &
             echo $! > /tmp/ollama.pid
-            success "Ollama started (PID $(cat /tmp/ollama.pid))"
+            success "Ollama démarré (PID $(cat /tmp/ollama.pid))"
             ;;
         maps)
             MARTIN_CONF="$STORAGE_PATH/maps/martin_config.yaml"
             if [[ ! -f "$MARTIN_CONF" ]]; then
-                warn "Map config not found — run download/maps.sh first"
+                warn "Configuration des cartes introuvable — lancez d'abord download/maps.sh"
                 return
             fi
             if command -v martin &>/dev/null; then
-                info "Starting Martin tile server on :3000..."
+                info "Démarrage du serveur de tuiles Martin sur :3000..."
                 nohup martin --config "$MARTIN_CONF" --listen-addresses 0.0.0.0:3000 \
                     > /tmp/martin.log 2>&1 &
                 echo $! > /tmp/martin.pid
-                success "Maps started (PID $(cat /tmp/martin.pid))"
+                success "Cartes démarrées (PID $(cat /tmp/martin.pid))"
             else
-                warn "Martin not installed — skipping maps"
+                warn "Martin n'est pas installé — cartes ignorées"
             fi
             ;;
         kolibri)
             if command -v kolibri &>/dev/null; then
-                info "Starting Kolibri on :8082..."
+                info "Démarrage de Kolibri sur :8082..."
                 KOLIBRI_HOME="$STORAGE_PATH/kolibri" \
                 nohup kolibri start --port 8082 > /tmp/kolibri.log 2>&1 &
-                success "Kolibri started"
+                success "Kolibri démarré"
             else
-                warn "Kolibri not installed"
+                warn "Kolibri n'est pas installé"
             fi
             ;;
         jellyfin)
             if command -v jellyfin &>/dev/null; then
-                info "Starting Jellyfin on :8096..."
+                info "Démarrage de Jellyfin sur :8096..."
                 systemctl start jellyfin 2>/dev/null || \
                 nohup jellyfin > /tmp/jellyfin.log 2>&1 &
-                success "Jellyfin started"
+                success "Jellyfin démarré"
             fi
             ;;
         calibre)
@@ -132,18 +132,18 @@ start_manual() {
             if [[ -n "$CPS_BIN" ]]; then
                 CALIBRE_LIB="$STORAGE_PATH/books/calibre-library"
                 if [[ ! -f "$CALIBRE_LIB/metadata.db" ]]; then
-                    warn "E-book library not built yet — run: bash scripts/build_ebook_library.sh"
-                    warn "Calibre-Web will show its setup wizard until the library exists."
+                    warn "Bibliothèque de livres numériques pas encore créée — lancez : bash scripts/build_ebook_library.sh"
+                    warn "Calibre-Web affichera son assistant de configuration tant que la bibliothèque n'existe pas."
                 fi
-                info "Starting Calibre-Web on :8083..."
+                info "Démarrage de Calibre-Web sur :8083..."
                 mkdir -p "$CALIBRE_LIB"
                 CALIBRE_DBPATH="$CALIBRE_LIB" \
                 nohup "$CPS_BIN" -p 8083 -i 127.0.0.1 \
                     > /tmp/calibre.log 2>&1 &
                 echo $! > /tmp/calibre.pid
-                success "Calibre-Web started (PID $(cat /tmp/calibre.pid))"
+                success "Calibre-Web démarré (PID $(cat /tmp/calibre.pid))"
             else
-                warn "Calibre-Web not installed"
+                warn "Calibre-Web n'est pas installé"
             fi
             ;;
     esac
@@ -157,16 +157,16 @@ print_urls() {
 
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║       SurviveV1 Access URLs            ║${NC}"
+    echo -e "${GREEN}║       Adresses de SurviveV1            ║${NC}"
     echo -e "${GREEN}╠════════════════════════════════════════╣${NC}"
-    echo -e "${GREEN}║${NC} Dashboard:   http://$LOCAL_IP:8080    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Tableau :    http://$LOCAL_IP:8080    ${GREEN}║${NC}"
     echo -e "${GREEN}║${NC}             http://$HOSTNAME.local:8080${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} Wikipedia:   http://$LOCAL_IP:8081    ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} Education:   http://$LOCAL_IP:8082    ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} E-Books:     http://$LOCAL_IP:8083    ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} Videos:      http://$LOCAL_IP:8096    ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} Maps:        http://$LOCAL_IP:3000    ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC} AI:          http://$LOCAL_IP:8080/ai ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Wikipédia:   http://$LOCAL_IP:8081    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Éducation:   http://$LOCAL_IP:8082    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Livres:      http://$LOCAL_IP:8083    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Vidéos:      http://$LOCAL_IP:8096    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} Cartes:      http://$LOCAL_IP:3000    ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC} IA:          http://$LOCAL_IP:8080/ai ${GREEN}║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -174,7 +174,7 @@ print_urls() {
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
     echo ""
-    info "Starting SurviveV1 services..."
+    info "Démarrage des services SurviveV1..."
     preflight_check
 
     start_manual dashboard
@@ -192,12 +192,12 @@ main() {
         sleep 0.5
         retries=$((retries - 1))
     done
-    [[ $retries -eq 0 ]] && warn "Dashboard did not respond within 15 s — URLs may not be ready"
+    [[ $retries -eq 0 ]] && warn "Le tableau de bord n'a pas répondu en 15 s — les adresses ne sont peut-être pas encore prêtes"
 
     print_urls
 
-    info "Stop with: bash scripts/stop_services.sh"
-    info "Status:    bash scripts/status.sh"
+    info "Arrêt :   bash scripts/stop_services.sh"
+    info "État :    bash scripts/status.sh"
 }
 
 main "$@"

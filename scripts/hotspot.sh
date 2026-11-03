@@ -43,11 +43,11 @@ error()   { echo -e "${RED}[HOTSPOT]${NC} $*" >&2; }
 # from other scripts under `set -e`.
 if ! command -v nmcli &>/dev/null; then
     if [[ "$ACTION" == "status" ]]; then
-        info "NetworkManager not available — hotspot mode unsupported on this system"
+        info "NetworkManager indisponible — point d'accès non pris en charge sur ce système"
         exit 0
     fi
-    error "NetworkManager (nmcli) is required — it is the default on Raspberry Pi OS"
-    error "Bookworm. Older dhcpcd-based systems are not supported."
+    error "NetworkManager (nmcli) est requis — c'est le réglage par défaut de Raspberry Pi OS"
+    error "Bookworm. Les anciens systèmes basés sur dhcpcd ne sont pas pris en charge."
     exit 1
 fi
 
@@ -68,7 +68,7 @@ AP_PORTS_TCP=(53 80 8080)
 firewall_open_ap() {
     command -v ufw &>/dev/null || return 0
     ufw status 2>/dev/null | grep -q "^Status: active" || return 0
-    info "Opening DHCP/DNS/HTTP/NTP/dashboard on $AP_IFACE for hotspot clients..."
+    info "Ouverture DHCP/DNS/HTTP/NTP/tableau de bord sur $AP_IFACE pour les clients du point d'accès..."
     local p
     for p in "${AP_PORTS_UDP[@]}"; do
         ufw allow in on "$AP_IFACE" to any port "$p" proto udp >/dev/null 2>&1 || true
@@ -114,19 +114,19 @@ captive_portal_disable() {
 
 case "$ACTION" in
     enable)
-        [[ $EUID -eq 0 ]] || { error "run with sudo: sudo bash scripts/hotspot.sh enable"; exit 1; }
+        [[ $EUID -eq 0 ]] || { error "lancez avec sudo : sudo bash scripts/hotspot.sh enable"; exit 1; }
 
         # WPA-PSK requires 8-63 characters; nmcli's own error is cryptic.
         if (( ${#PASS} < 8 || ${#PASS} > 63 )); then
-            error "Hotspot password must be 8-63 characters (got ${#PASS})."
-            error "Set SURVIVE_HOTSPOT_PASS in config/survive.conf"
+            error "Le mot de passe du point d'accès doit faire 8 à 63 caractères (${#PASS} fournis)."
+            error "Définissez SURVIVE_HOTSPOT_PASS dans config/survive.conf"
             exit 1
         fi
 
         # Wi-Fi country unset → AP channel selection can fail silently.
         if command -v iw &>/dev/null && iw reg get 2>/dev/null | grep -q "country 00"; then
-            warn "Wi-Fi country is unset — if the AP fails to start, run:"
-            warn "  sudo raspi-config nonint do_wifi_country US   (or your country)"
+            warn "Le pays du Wi-Fi n'est pas défini — si le point d'accès ne démarre pas, lancez :"
+            warn "  sudo raspi-config nonint do_wifi_country FR   (ou votre pays, p. ex. FR)"
         fi
 
         # Enabling the AP tears down any wlan0 client connection — if this
@@ -134,19 +134,19 @@ case "$ACTION" in
         WIFI_ACTIVE=$(nmcli -t -f NAME,TYPE,DEVICE connection show --active 2>/dev/null \
             | awk -F: '$2 == "802-11-wireless" && $3 == "wlan0" {print $1}' || true)
         if [[ -n "${SSH_CONNECTION:-}" ]] && [[ -n "$WIFI_ACTIVE" ]] && [[ "${2:-}" != "--force" ]]; then
-            warn "You appear to be connected over SSH while wlan0 is a Wi-Fi client"
-            warn "(network: $WIFI_ACTIVE). Enabling the hotspot WILL DROP that link."
-            warn "If you lose access: plug in Ethernet, or power-cycle — the hotspot"
-            warn "does not auto-start on boot."
-            echo -en "  ${YELLOW}Type 'yes' to continue:${NC} "
+            warn "Vous semblez connecté en SSH alors que wlan0 est un client Wi-Fi"
+            warn "(réseau : $WIFI_ACTIVE). Activer le point d'accès COUPERA cette liaison."
+            warn "Si vous perdez l'accès : branchez un câble Ethernet ou redémarrez — le point d'accès"
+            warn "ne démarre pas automatiquement au démarrage."
+            echo -en "  ${YELLOW}Tapez « oui » pour continuer :${NC} "
             read -r CONFIRM
-            [[ "$CONFIRM" == "yes" ]] || { info "aborted"; exit 1; }
+            [[ "$CONFIRM" == "yes" || "$CONFIRM" == "oui" ]] || { info "annulé"; exit 1; }
         fi
 
         rfkill unblock wifi 2>/dev/null || true
         nmcli radio wifi on
 
-        info "Creating access point '$SSID' on wlan0..."
+        info "Création du point d'accès « $SSID » sur wlan0..."
         nmcli connection delete "$CON_NAME" 2>/dev/null || true
         # Write the captive-portal DNS drop-in BEFORE bringing the connection
         # up — NM spawns its shared-mode dnsmasq at that moment and reads the
@@ -166,42 +166,42 @@ case "$ACTION" in
         HOSTNAME_LABEL="${SURVIVE_HOTSPOT_SSID:-$SSID}"
         echo ""
         echo -e "${GREEN}╔══════════════════════════════════════════════╗${NC}"
-        echo -e "${GREEN}║        Grid-Down Hotspot ACTIVE              ║${NC}"
+        echo -e "${GREEN}║        Point d'accès hors réseau ACTIF           ║${NC}"
         echo -e "${GREEN}╠══════════════════════════════════════════════╣${NC}"
-        echo -e "${GREEN}║${NC} Wi-Fi network:  ${HOSTNAME_LABEL}"
-        echo -e "${GREEN}║${NC} Password:       ${PASS}"
-        echo -e "${GREEN}║${NC} Dashboard:      http://10.42.0.1:8080"
+        echo -e "${GREEN}║${NC} Réseau Wi-Fi :   ${HOSTNAME_LABEL}"
+        echo -e "${GREEN}║${NC} Mot de passe :   ${PASS}"
+        echo -e "${GREEN}║${NC} Tableau de bord : http://10.42.0.1:8080"
         echo -e "${GREEN}║${NC}                 http://${SURVIVE_HOSTNAME:-survive}.local:8080"
         echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
         echo ""
-        info "Disable with: sudo bash scripts/hotspot.sh disable"
-        info "A reboot also returns the Pi to normal Wi-Fi (dead-man switch)."
+        info "Désactivation : sudo bash scripts/hotspot.sh disable"
+        info "Un redémarrage remet aussi le Pi sur le Wi-Fi normal (sécurité automatique)."
         ;;
 
     disable)
-        [[ $EUID -eq 0 ]] || { error "run with sudo: sudo bash scripts/hotspot.sh disable"; exit 1; }
+        [[ $EUID -eq 0 ]] || { error "lancez avec sudo : sudo bash scripts/hotspot.sh disable"; exit 1; }
         if hotspot_active; then
             nmcli connection down "$CON_NAME" >/dev/null 2>&1 || true
         fi
         nmcli connection delete "$CON_NAME" >/dev/null 2>&1 || true
         firewall_close_ap
         captive_portal_disable
-        success "Hotspot disabled — rejoining known Wi-Fi networks (if any)"
+        success "Point d'accès désactivé — reconnexion aux réseaux Wi-Fi connus (le cas échéant)"
         ;;
 
     status)
         if hotspot_active; then
             CLIENTS=$(iw dev wlan0 station dump 2>/dev/null | grep -c "^Station" || true)
-            success "Hotspot ACTIVE — SSID '$SSID', dashboard at http://10.42.0.1:8080"
-            info "Connected clients: ${CLIENTS:-0}"
+            success "Point d'accès ACTIF — SSID « $SSID », tableau de bord sur http://10.42.0.1:8080"
+            info "Clients connectés : ${CLIENTS:-0}"
         else
-            info "Hotspot inactive (normal Wi-Fi client mode)"
-            info "Enable with: sudo bash scripts/hotspot.sh enable"
+            info "Point d'accès inactif (mode client Wi-Fi normal)"
+            info "Activation : sudo bash scripts/hotspot.sh enable"
         fi
         ;;
 
     *)
-        error "Usage: bash scripts/hotspot.sh {enable|disable|status}"
+        error "Utilisation : bash scripts/hotspot.sh {enable|disable|status}"
         exit 1
         ;;
 esac
