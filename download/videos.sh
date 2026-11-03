@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Survival video downloader via yt-dlp
-# Downloads curated playlists from YouTube and other sources
+# SurviveV1 — Téléchargeur de vidéos de survie avec yt-dlp
+# Télécharge des chaînes et playlists YouTube francophones sélectionnées
 # =============================================================================
 set -euo pipefail
 
@@ -36,14 +36,14 @@ check_disk_space() {
     local required_gb="${1:-50}"
     local available_gb
     if ! available_gb=$(df -BG "$STORAGE_PATH" 2>/dev/null | tail -1 | awk '{print $4}' | tr -d 'G'); then
-        error "Failed to check disk space at $STORAGE_PATH"; exit 1
+        error "Impossible de vérifier l'espace disque sur $STORAGE_PATH"; exit 1
     fi
     if ! [[ "$available_gb" =~ ^[0-9]+$ ]]; then
-        error "Unexpected df output: '$available_gb'"; exit 1
+        error "Sortie de df inattendue : '$available_gb'"; exit 1
     fi
-    info "Disk space: ${available_gb}GB available (need at least ${required_gb}GB)"
+    info "Espace disque : ${available_gb} Go disponibles (minimum requis : ${required_gb} Go)"
     if (( available_gb < required_gb )); then
-        error "Less than ${required_gb}GB free on $STORAGE_PATH. Aborting video downloads."
+        error "Moins de ${required_gb} Go libres sur $STORAGE_PATH. Arrêt des téléchargements vidéo."
         exit 1
     fi
 }
@@ -64,7 +64,7 @@ check_downloads() {
         fi
     done < <(find "$VIDEO_DIR" -type f \( -name "*.mp4" -o -name "*.part" \) -print0)
     if (( broken > 0 )); then
-        warn "$broken broken/partial video file(s) detected. See $failed_log"
+        warn "$broken fichier(s) vidéo cassé(s) ou partiel(s) détecté(s). Voir $failed_log"
     fi
     return 0
 }
@@ -108,8 +108,8 @@ dl_playlist() {
         --throttled-rate 1M \
         "${BW_ARGS[@]}" \
         "$url" \
-    && success "[$category] $name done" \
-    || warn "[$category] $name had errors (some videos may have been geo-blocked)"
+    && success "[$category] $name terminé" \
+    || warn "[$category] $name : erreurs (certaines vidéos peuvent être bloquées géographiquement)"
 }
 
 
@@ -131,9 +131,9 @@ mapfile -t YTDLP_AUTH < <(_ytdlp_auth_args)
 # Drop the leading empty element produced when no auth is configured.
 [[ ${#YTDLP_AUTH[@]} -gt 0 ]] && [[ -z "${YTDLP_AUTH[0]}" ]] && YTDLP_AUTH=("${YTDLP_AUTH[@]:1}")
 if [[ ${#YTDLP_AUTH[@]} -eq 0 ]]; then
-    echo "[WARN] No YouTube credentials configured (SURVIVE_YTDLP_COOKIES /" >&2
-    echo "[WARN] SURVIVE_YTDLP_BROWSER in survive.conf). Blocked videos will be" >&2
-    echo "[WARN] skipped -- see docs/TROUBLESHOOTING.md 'YouTube bot check'." >&2
+    echo "[WARN] Aucun identifiant YouTube configuré (SURVIVE_YTDLP_COOKIES /" >&2
+    echo "[WARN] SURVIVE_YTDLP_BROWSER dans survive.conf). Les vidéos bloquées seront" >&2
+    echo "[WARN] ignorées -- voir docs/TROUBLESHOOTING.md." >&2
 fi
 
 dl_channel() {
@@ -142,7 +142,7 @@ dl_channel() {
     local url="$3"
     local max="${4:-100}"  # max videos per channel
 
-    info "[$category] Channel: $name (max $max videos)"
+    info "[$category] Chaîne : $name (max $max vidéos)"
     local BW_ARGS=()
     [[ "${SURVIVE_BANDWIDTH_LIMIT:-0}" != "0" ]] && BW_ARGS=(--limit-rate "${SURVIVE_BANDWIDTH_LIMIT}")
     yt-dlp "${YTDLP_AUTH[@]}" \
@@ -162,171 +162,128 @@ dl_channel() {
         --no-warnings \
         "${BW_ARGS[@]}" \
         "$url" \
-    && success "[$category] $name done" \
-    || warn "[$category] $name had some errors"
+    && success "[$category] $name terminé" \
+    || warn "[$category] $name : quelques erreurs"
 }
 
-# ── Curated survival content ──────────────────────────────────────────────────
+# ── Contenu francophone sélectionné ───────────────────────────────────────────
+# Chaînes en français, adresses vérifiées (identifiants /channel/UC… stables).
+# Point de départ : ajoutez vos propres sources sans toucher au script, une par
+# ligne, dans config/videos_extra.list :
+#     catégorie|nom|url|nombre_max     (nombre_max facultatif, 100 par défaut)
+# Catégories : survival medical food water shelter energy tools farming skills
+#              preparedness animal_husbandry psychology
+# Une URL contenant « playlist? » est téléchargée comme playlist, sinon comme
+# chaîne. Les lignes vides et celles commençant par # sont ignorées.
 
-# General Survival Skills
+# Survie et bushcraft
 dl_survival() {
-    info "=== General Survival ==="
-    dl_channel "survival" "Canadian Prepper" \
-        "https://www.youtube.com/@CanadianPrepper/videos" 200
-    dl_channel "survival" "SensiblePrepper" \
-        "https://www.youtube.com/@SensiblePrepper/videos" 150
-    dl_channel "survival" "City Prepping" \
-        "https://www.youtube.com/@cityprepping/videos" 150
-    dl_channel "survival" "Survival Lilly" \
-        "https://www.youtube.com/@SurvivalLilly/videos" 100
-    dl_channel "survival" "Corporals Corner" \
-        "https://www.youtube.com/@CorporalsCorner/videos" 100
-    dl_channel "survival" "Primitive Technology" \
-        "https://www.youtube.com/@primitivetechnology9550/videos" 50
+    info "=== Survie et bushcraft ==="
+    dl_channel "survival" "Invictus France — Bushcraft & Survie" \
+        "https://www.youtube.com/channel/UCKPcuCK3FyZvIDS0gB842Yg/videos" 100
+    dl_channel "survival" "Alban Cambe — Bushcraft & navigation naturelle" \
+        "https://www.youtube.com/channel/UCu0B8D0Xa8NWSMidJGS_wMw/videos" 100
+    dl_channel "survival" "Sankhoï — Survie Bushcraft" \
+        "https://www.youtube.com/channel/UCphU_Qd6MzWFGQ-arUPm6Wg/videos" 100
+    dl_channel "survival" "Skol Louarn — Bushcraft, survie, rando" \
+        "https://www.youtube.com/channel/UCHFG1iDURjUcA6ViSdsILiQ/videos" 100
 }
 
-# Medical & First Aid
+# Médical et premiers secours
 dl_medical() {
-    info "=== Medical & First Aid ==="
-    dl_channel "medical" "Medcram Medical" \
-        "https://www.youtube.com/@MedCram/videos" 200
-    dl_channel "medical" "Wilderness Medical Associates" \
-        "https://www.youtube.com/@WildernessMA/videos" 100
-    dl_channel "medical" "Rethink Survival Medical" \
-        "https://www.youtube.com/@RethinkSurvival/videos" 50
-    dl_channel "medical" "Doom and Bloom Survival Medicine" \
-        "https://www.youtube.com/@DoomandBloom/videos" 100
-    dl_channel "medical" "The Patriot Nurse" \
-        "https://www.youtube.com/@ThePatriotNurse/videos" 100
-    dl_channel "medical" "Skinny Medic TCCC" \
-        "https://www.youtube.com/@SkinnyMedic/videos" 100
-    dl_channel "medical" "Lone Star Medics" \
-        "https://www.youtube.com/@LoneStarMedics/videos" 50
-    dl_playlist "medical" "Stop the Bleed Official" \
-        "https://www.youtube.com/playlist?list=PLUHBLmZ-rPXKlFmS7gZO77Lft5WT8DXH4"
-    dl_playlist "medical" "FEMA First Aid" \
-        "https://www.youtube.com/playlist?list=PL56C96E2FBDB2CCEA"
+    info "=== Médical et premiers secours ==="
+    dl_playlist "medical" "Croix-Rouge française — Formations premiers secours" \
+        "https://www.youtube.com/playlist?list=PL9tJFzSvOEC1Si34LO1PsMMdxemHeP42A"
 }
 
-# Animal Husbandry (chickens, goats, pigs, cattle, rabbits)
-dl_animal_husbandry() {
-    info "=== Animal Husbandry ==="
-    dl_channel "animal_husbandry" "Weed em and Reap (chickens/goats)" \
-        "https://www.youtube.com/@WeedEmandReap/videos" 200
-    dl_channel "animal_husbandry" "Prairie Homestead (goats/cattle)" \
-        "https://www.youtube.com/@theprairiehomestead/videos" 150
-    dl_channel "animal_husbandry" "Jill Winger Old Fashioned On Purpose" \
-        "https://www.youtube.com/@jillwinger/videos" 100
-    dl_channel "animal_husbandry" "Becky's Homestead (rabbits/chickens)" \
-        "https://www.youtube.com/@BeckysHomestead/videos" 100
-    dl_channel "animal_husbandry" "Homestead Corner (goats)" \
-        "https://www.youtube.com/@HomesteadCorner/videos" 100
-    dl_channel "animal_husbandry" "Kathy Voth Small-Scale Grazing" \
-        "https://www.youtube.com/@KathyVoth/videos" 50
-}
-
-# Food Production & Preservation
+# Alimentation, potager et conservation
 dl_food() {
-    info "=== Food & Agriculture ==="
-    dl_channel "food" "The Elliott Homestead" \
-        "https://www.youtube.com/@TheElliottHomestead/videos" 200
-    dl_channel "food" "Justin Rhodes Homesteading" \
-        "https://www.youtube.com/@JustinRhodes/videos" 150
-    dl_channel "food" "Homesteading Family" \
-        "https://www.youtube.com/@HomesteadingFamily/videos" 200
-    dl_channel "food" "Townsends Historical Cooking" \
-        "https://www.youtube.com/@Townsends/videos" 200
-    dl_channel "farming" "Charles Dowding No-Dig" \
-        "https://www.youtube.com/@CharlesDowding1/videos" 200
-    dl_channel "farming" "Back to Reality (permaculture)" \
-        "https://www.youtube.com/@BacktoReality/videos" 100
-    dl_channel "farming" "OSU Extension" \
-        "https://www.youtube.com/@OSUExtension/videos" 100
+    info "=== Alimentation et potager ==="
+    dl_channel "food" "Popote et Potager" \
+        "https://www.youtube.com/channel/UCiusFKWbx0TV8t9WM1GLizA/videos" 150
+    dl_channel "farming" "École de permaculture du Bec Hellouin" \
+        "https://www.youtube.com/channel/UCzgsQwiy6sKt6Ne9aDXGc5Q/videos" 150
 }
 
-# Water Procurement & Purification
-dl_water() {
-    info "=== Water & Purification ==="
-    dl_channel "water" "The Prepared" \
-        "https://www.youtube.com/@ThePrepared/videos" 50
-    dl_playlist "water" "Water Purification Methods" \
-        "https://www.youtube.com/playlist?list=PLK2c-rTCIuqJAXKNNGOJr8xShz5HgONzj"
-}
-
-# Shelter & Construction
+# Abri et construction
 dl_shelter() {
-    info "=== Shelter & Construction ==="
-    dl_channel "shelter" "Essential Craftsman" \
-        "https://www.youtube.com/@EssentialCraftsman/videos" 150
-    dl_channel "shelter" "Matt Risinger Build" \
-        "https://www.youtube.com/@MattRisinger/videos" 100
-    dl_channel "shelter" "Log Cabin Builders" \
-        "https://www.youtube.com/@LogCabinBuilders/videos" 50
-    dl_channel "shelter" "Stoney Ridge Farmer" \
-        "https://www.youtube.com/@stoneyridgefarmer/videos" 100
+    info "=== Abri et construction ==="
+    dl_channel "shelter" "Maison-Construction.com" \
+        "https://www.youtube.com/@maison-construction/videos" 100
 }
 
-# Energy & Power
+# Énergie
 dl_energy() {
-    info "=== Energy & Power ==="
-    dl_channel "energy" "LDSPrepper Solar" \
-        "https://www.youtube.com/@LDSPrepper/videos" 100
-    dl_channel "energy" "Will Prowse Solar" \
-        "https://www.youtube.com/@WillProwse/videos" 150
-    dl_channel "energy" "Off Grid with Doug & Stacy" \
-        "https://www.youtube.com/@OffGridwithDougStacy/videos" 150
-    dl_channel "energy" "BPS Solar" \
-        "https://www.youtube.com/@BPSsolar/videos" 50
+    info "=== Énergie ==="
+    dl_channel "energy" "L'énergie partout" \
+        "https://www.youtube.com/channel/UCKTJiNMMxk2W0CpOxPLoUkQ/videos" 100
 }
 
-# Tools & Repair
+# Outils, réparation et basses technologies
 dl_tools() {
-    info "=== Tools & Repair ==="
-    dl_channel "tools" "This Old House" \
-        "https://www.youtube.com/@thisoldhouse/videos" 200
-    dl_channel "tools" "Paul Sellers Woodworking" \
-        "https://www.youtube.com/@PaulSellersWoodworking/videos" 150
-    dl_channel "tools" "AvE Engineering" \
-        "https://www.youtube.com/@avoandace/videos" 100
-    dl_channel "tools" "Clickspring Metalwork" \
-        "https://www.youtube.com/@clickspring/videos" 50
+    info "=== Outils, réparation et low-tech ==="
+    dl_channel "tools" "Le Coin des Bricoleurs" \
+        "https://www.youtube.com/@LECOINDESBRICOLEURS/videos" 100
+    dl_channel "tools" "Fix Ta Maison" \
+        "https://www.youtube.com/@fixtamaison/videos" 100
+    dl_channel "tools" "Robert Longechal" \
+        "https://www.youtube.com/user/robertlongechal/videos" 50
+    dl_channel "skills" "Low-tech Lab" \
+        "https://www.youtube.com/channel/UCu6mFdACj_quODcUujiT62Q/videos" 100
 }
 
-# Preparedness & Comms
+# Radio et préparation
 dl_preparedness() {
-    info "=== Preparedness & Communications ==="
-    dl_channel "preparedness" "Ham Radio Crash Course" \
-        "https://www.youtube.com/@HamRadioCrashCourse/videos" 200
-    dl_channel "preparedness" "Survival Dispatch" \
-        "https://www.youtube.com/@SurvivalDispatch/videos" 100
-    dl_channel "preparedness" "ITS Tactical" \
-        "https://www.youtube.com/@ITSTactical/videos" 100
-    dl_channel "preparedness" "FEMA Ready" \
-        "https://www.youtube.com/@FEMAReady/videos" 50
+    info "=== Radio et préparation ==="
+    dl_channel "preparedness" "Radioamateur par F4HTZ" \
+        "https://www.youtube.com/@radio.f4htz/videos" 100
+    dl_playlist "preparedness" "Cours de préparation à la licence radioamateur (F4KLH)" \
+        "https://www.youtube.com/playlist?list=PLjg_1YSBWRdtxJ1YgU-0--RgE0Q0hTWRy"
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# Sources supplémentaires de l'utilisateur (config/videos_extra.list)
+dl_extra() {
+    local list="$REPO_DIR/config/videos_extra.list"
+    [[ -f "$list" ]] || return 0
+    info "=== Sources supplémentaires ($list) ==="
+    local category name url max
+    while IFS='|' read -r category name url max; do
+        [[ -z "${category// }" || "$category" == \#* ]] && continue
+        if [[ -z "${name:-}" || -z "${url:-}" ]]; then
+            warn "Ligne ignorée (format : catégorie|nom|url|max) : $category"; continue
+        fi
+        if [[ ! -d "$VIDEO_DIR/$category" ]]; then
+            warn "Catégorie inconnue « $category » — ligne ignorée"; continue
+        fi
+        if [[ "$url" == *"playlist?"* ]]; then
+            dl_playlist "$category" "$name" "$url"
+        else
+            dl_channel "$category" "$name" "$url" "${max:-100}"
+        fi
+    done < "$list"
+}
+
+# ── Programme principal ───────────────────────────────────────────────────────
 main() {
-    info "Starting video downloads to $VIDEO_DIR"
-    info "Quality: ${QUALITY}p"
+    info "Début des téléchargements vidéo vers $VIDEO_DIR"
+    info "Qualité : ${QUALITY}p"
     check_disk_space 50
 
     if [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]; then
         dl_survival
         dl_medical
-        dl_animal_husbandry
         dl_food
-        dl_water
         dl_shelter
         dl_energy
         dl_tools
         dl_preparedness
+        dl_extra
     fi
 
     check_downloads
-    success "Video download complete"
+    success "Téléchargement des vidéos terminé"
     du -sh "$VIDEO_DIR" 2>/dev/null || true
-    info "Note: Rerun to download new videos (archive file prevents duplicates)"
+    info "Remarque : relancez pour récupérer les nouvelles vidéos (le fichier d'archive évite les doublons)"
 }
 
 main "$@"

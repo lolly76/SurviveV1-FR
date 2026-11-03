@@ -1,0 +1,9 @@
+# Sources vidéo supplémentaires (une par ligne) pour download/videos.sh
+# Format : catégorie|nom|url|nombre_max   (nombre_max facultatif, 100 par défaut)
+# Catégories : survival medical food water shelter energy tools farming skills
+#              preparedness animal_husbandry psychology
+# Une URL « playlist?list=… » est téléchargée comme playlist, le reste comme chaîne.
+#
+# Exemples (retirez le # pour activer) :
+# water|Ma chaîne sur l'eau|https://www.youtube.com/@exemple/videos|50
+# medical|Ma playlist de secourisme|https://www.youtube.com/playlist?list=PLxxxxxxxx
