@@ -67,8 +67,12 @@ check_disk_space() {
     BUDGET_GB="${SURVIVE_BUDGET_GB:-800}"
     info "Disponible : ${AVAILABLE_GB} Go | Budget : ${BUDGET_GB} Go"
     if [[ "$AVAILABLE_GB" -lt 50 ]]; then
-        error "Moins de 50 Go libres sur $STORAGE_PATH. Abandon."
-        exit 1
+        if [[ "$DRY_RUN" == "true" ]]; then
+            warn "Moins de 50 Go libres sur $STORAGE_PATH (simulation : on continue)."
+        else
+            error "Moins de 50 Go libres sur $STORAGE_PATH. Abandon."
+            exit 1
+        fi
     fi
 }
 

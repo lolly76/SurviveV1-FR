@@ -51,6 +51,63 @@ jobs:
         env:
           SURVIVE_STORAGE_PATH: /tmp/survive_test
 
+  debian-compat:
+    name: Debian ${{ matrix.debian }} (installation simulée)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        debian: ["12", "13"]
+    container: debian:${{ matrix.debian }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Paquets de base
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git curl ca-certificates python3 python3-venv python3-pip \
+            sqlite3 poppler-utils jq
+      - uses: actions/checkout@v4
+      - name: Détection matérielle (machine générique x86_64)
+        run: |
+          bash scripts/detect_hardware.sh --table
+          bash scripts/detect_hardware.sh --json | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)
+          assert d["hardware"]["HW_PLATFORM"] == "generic", d
+          assert d["modules"]["PI_USB"]["state"] == "off", d
+          assert d["modules"]["HAILO"]["state"] == "off", d
+          print("détection OK")'
+      - name: Profils de contenu
+        run: |
+          for p in leger moyen complet; do
+            cp config/survive.conf.example /tmp/c.conf
+            bash scripts/apply_profile.sh "$p" /tmp/c.conf > /dev/null
+            ( source /tmp/c.conf; echo "profil $p : budget ${SURVIVE_BUDGET_GB} Go" )
+          done
+      - name: Les paquets apt de l'installateur existent sur cette Debian
+        run: |
+          PKGS=$(awk '/^install_core_deps\(\)/,/^}/' setup/install.sh \
+                 | sed -n '/apt-get install/,/fuse3/p' | sed '1d' | tr -d '\\')
+          echo "Paquets : $PKGS"
+          [ -n "$PKGS" ]
+          # shellcheck disable=SC2086
+          apt-get install -s -y $PKGS calibre > /dev/null
+          echo "OK (simulation apt)"
+      - name: Environnement Python comme l'installateur
+        run: |
+          python3 --version
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install -q --upgrade pip
+          /tmp/venv/bin/pip install -q -r requirements.txt -r requirements-dev.txt
+      - name: Tests unitaires et de fumée
+        run: |
+          /tmp/venv/bin/python -m pytest tests -q --tb=short
+          PATH=/tmp/venv/bin:$PATH SURVIVE_STORAGE_PATH=/tmp/survive_test bash tests/test_smoke.sh
+      - name: Téléchargements en simulation
+        run: bash download/download_all.sh --dry-run --storage /tmp/survive_dry
+
   validate-configs:
     name: Validate configs
     runs-on: ubuntu-latest
