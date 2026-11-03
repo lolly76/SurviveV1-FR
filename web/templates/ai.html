@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}AI Assistant{% endblock %}
+{% block title %}Assistant IA{% endblock %}
 
 {% block head %}
 <style>
@@ -177,17 +177,17 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-title">🤖 AI Survival Assistant</div>
-  <div class="page-sub">Powered by local LLM — no internet required</div>
+  <div class="page-title">🤖 Assistant IA de survie</div>
+  <div class="page-sub">Propulsé par un LLM local — aucune connexion Internet requise</div>
 
   {% if not ai_running %}
   <div style="background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3);
               border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
-    <strong style="color: var(--danger);">⚠ AI Service Not Running</strong><br>
+    <strong style="color: var(--danger);">⚠ Service IA arrêté</strong><br>
     <span style="color: var(--text-dim); font-size: 13px;">
-      Start the AI: <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">
+      Démarrez l'IA : <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">
       bash scripts/start_services.sh</code>
-      or <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">
+      ou <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">
       ollama serve</code>
     </span>
   </div>
@@ -195,47 +195,47 @@
 
   <div class="chat-container">
 
-    <!-- Sidebar -->
+    <!-- Colonne latérale -->
     <div class="chat-sidebar">
       <div class="card">
-        <div class="card-title">Model</div>
+        <div class="card-title">Modèle</div>
         <select class="model-select" id="modelSelect" style="width:100%; margin-bottom:8px;">
           {% if models %}
             {% for m in models %}
             <option value="{{ m }}">{{ m }}</option>
             {% endfor %}
           {% else %}
-            <option value="survive">survive (default)</option>
+            <option value="survive">survive (par défaut)</option>
             <option value="gemma4:e2b">gemma4:e2b</option>
             <option value="gemma4:12b">gemma4:12b</option>
             <option value="llama3.2:1b">llama3.2:1b</option>
           {% endif %}
         </select>
         <div class="offline-notice">
-          Running 100% offline on your Raspberry Pi — CPU inference via Ollama
-          (Hailo-8L accelerates vision tasks only, not LLMs)
+          Fonctionne à 100 % hors ligne sur votre Raspberry Pi — inférence CPU via Ollama
+          (le Hailo-8L n'accélère que les tâches de vision, pas les LLM)
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">Quick Topics</div>
+        <div class="card-title">Sujets rapides</div>
         <div style="display: flex; flex-direction: column; gap: 4px;">
           {% set prompts = [
-            ('💧', 'How do I purify water?'),
-            ('🔥', 'How to start a fire with no lighter?'),
-            ('🩹', 'Basic wound care steps'),
-            ('🌿', 'How to identify edible plants?'),
-            ('🏕️', 'Build an emergency shelter'),
-            ('🌱', 'Start a survival garden'),
-            ('🔋', 'Set up solar power basics'),
-            ('📡', 'Ham radio for emergencies'),
-            ('🍖', 'Preserve food without refrigeration'),
-            ('💊', 'Antibiotics from natural sources'),
-            ('🔧', 'Fix a car without tools'),
-            ('🗺️', 'Navigate without GPS'),
+            ('💧', 'Comment purifier de l\'eau ?'),
+            ('🔥', 'Comment allumer un feu sans briquet ?'),
+            ('🩹', 'Les gestes de base pour soigner une plaie'),
+            ('🌿', 'Comment reconnaître les plantes comestibles ?'),
+            ('🏕️', 'Construire un abri de fortune'),
+            ('🌱', 'Créer un potager de survie'),
+            ('🔋', 'Les bases d\'une installation solaire'),
+            ('📡', 'La radio amateur en situation d\'urgence'),
+            ('🍖', 'Conserver les aliments sans réfrigération'),
+            ('💊', 'Antibiotiques d\'origine naturelle'),
+            ('🔧', 'Réparer une voiture sans outils'),
+            ('🗺️', 'S\'orienter sans GPS'),
           ] %}
           {% for icon, prompt in prompts %}
-          <button onclick="sendPrompt('{{ prompt }}')"
+          <button onclick='sendPrompt({{ prompt|tojson }})'
             style="background:var(--surface2); border:1px solid var(--border);
                    color:var(--text); padding:7px 10px; border-radius:var(--radius);
                    font-size:12px; text-align:left; cursor:pointer; display:flex;
@@ -249,23 +249,23 @@
       </div>
     </div>
 
-    <!-- Chat main -->
+    <!-- Zone de discussion -->
     <div class="chat-main">
       <div class="chat-header">
-        <div class="chat-title">Survival AI Assistant</div>
+        <div class="chat-title">Assistant IA de survie</div>
         <div style="display:flex; align-items:center; gap:8px;">
           {% if ai_running %}
-          <span class="badge badge-green">● Online</span>
+          <span class="badge badge-green">● En ligne</span>
           {% else %}
-          <span class="badge badge-red">● Offline</span>
+          <span class="badge badge-red">● Hors ligne</span>
           {% endif %}
-          <button onclick="clearChat()" class="btn btn-secondary btn-sm">Clear</button>
+          <button onclick="clearChat()" class="btn btn-secondary btn-sm">Effacer</button>
         </div>
       </div>
 
       <div class="chat-messages" id="chatMessages">
-        {# The bubble uses white-space: pre-wrap, so the text is built in JS to
-           avoid rendering the template's own indentation. #}
+        {# La bulle utilise white-space: pre-wrap : le texte est donc construit en JS
+           pour ne pas afficher l'indentation du gabarit. #}
         <div class="message">
           <div class="message-avatar">🤖</div>
           <div class="message-bubble" id="welcomeBubble"></div>
@@ -273,22 +273,22 @@
       </div>
 
       <div class="prompt-chips" id="promptChips">
-        <span class="chip" onclick="sendPrompt('How do I find clean water?')">💧 Find water</span>
-        <span class="chip" onclick="sendPrompt('First aid for a deep cut')">🩹 First aid</span>
-        <span class="chip" onclick="sendPrompt('How to build a fire in rain?')">🔥 Fire in rain</span>
-        <span class="chip" onclick="sendPrompt('Edible plants in North America')">🌿 Wild edibles</span>
-        <span class="chip" onclick="sendPrompt('Emergency shelter from natural materials')">🏕️ Shelter</span>
+        <span class="chip" onclick="sendPrompt('Comment trouver de l\'eau potable ?')">💧 Trouver de l'eau</span>
+        <span class="chip" onclick="sendPrompt('Premiers secours pour une coupure profonde')">🩹 Premiers secours</span>
+        <span class="chip" onclick="sendPrompt('Comment faire du feu sous la pluie ?')">🔥 Feu sous la pluie</span>
+        <span class="chip" onclick="sendPrompt('Plantes sauvages comestibles en France')">🌿 Plantes comestibles</span>
+        <span class="chip" onclick="sendPrompt('Abri de fortune avec des matériaux naturels')">🏕️ Abri</span>
       </div>
 
       <div class="chat-input-area">
         <textarea class="chat-input" id="chatInput"
-                  placeholder="Ask about survival, medical, food, water, energy..."
+                  placeholder="Posez une question sur la survie, la santé, la nourriture, l'eau, l'énergie..."
                   rows="1"
                   onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage()}"
                   oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Envoyer</button>
         <button class="btn btn-secondary" id="cancelBtn" onclick="cancelRequest()"
-                style="height:40px; display:none;">Cancel</button>
+                style="height:40px; display:none;">Annuler</button>
       </div>
     </div>
   </div>
@@ -302,32 +302,32 @@ const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 
 const WELCOME_TEXT = [
-  "Hello! I'm your offline survival AI assistant running locally on your Raspberry Pi.",
+  "Bonjour ! Je suis votre assistant IA de survie hors ligne, exécuté localement sur votre Raspberry Pi.",
   '',
-  'I can help with:',
-  '• Water purification & sourcing',
-  '• Medical emergencies & first aid',
-  '• Food production & preservation',
-  '• Shelter building',
-  '• Fire starting & navigation',
-  '• Energy systems',
-  '• Communications',
+  'Je peux vous aider pour :',
+  '• La purification et la recherche d\'eau',
+  '• Les urgences médicales et les premiers secours',
+  '• La production et la conservation des aliments',
+  '• La construction d\'abris',
+  '• L\'allumage du feu et l\'orientation',
+  '• Les systèmes d\'énergie',
+  '• Les transmissions',
   '',
-  'What survival challenge can I help you with?',
+  'Quelle difficulté de survie puis-je vous aider à résoudre ?',
 ].join('\n');
 document.getElementById('welcomeBubble').textContent = WELCOME_TEXT;
 
-// ── Conversation history (multi-turn context + persistence) ──────────────
-// Sent with each request so follow-up questions keep their context; persisted
-// in localStorage so a page reload doesn't wipe the conversation. All
-// localStorage access is try/catch-wrapped — private-browsing modes throw.
+// ── Historique de conversation (contexte multi-tours + persistance) ──────
+// Envoyé avec chaque requête pour que les questions de suivi gardent leur contexte ; conservé
+// dans localStorage pour qu'un rechargement de la page n'efface pas la conversation. Tous les accès
+// à localStorage sont dans un try/catch — les modes de navigation privée lèvent une exception.
 const HISTORY_KEY = 'survive_chat_v1';
 let chatHistory = [];
 
 function saveHistory() {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory.slice(-20)));
-  } catch (e) { /* storage unavailable — history is session-only */ }
+  } catch (e) { /* stockage indisponible — l'historique ne dure que le temps de la session */ }
 }
 
 function loadHistory() {
@@ -344,12 +344,12 @@ function loadHistory() {
 function restoreConversation() {
   chatHistory = loadHistory();
   if (!chatHistory.length) return;
-  // Re-render restored turns through addMessage (textContent — XSS-safe even
-  // though localStorage is attacker-controllable in principle).
+  // Réaffiche les tours restaurés via addMessage (textContent — à l'abri du XSS même
+  // si localStorage est en principe modifiable par un attaquant).
   chatHistory.forEach(t => addMessage(t.role === 'user' ? 'user' : 'ai', t.content));
   const note = document.createElement('div');
   note.style.cssText = 'text-align:center; font-size:11px; color:var(--text-dim); padding:4px;';
-  note.textContent = 'Restored previous conversation — Clear to start fresh.';
+  note.textContent = 'Conversation précédente restaurée — Effacer pour repartir de zéro.';
   chatMessages.appendChild(note);
   scrollToBottom();
 }
@@ -402,7 +402,7 @@ function removeTyping() {
 
 let _currentController = null;
 
-// Append a "Sources" block (clickable Kiwix links) to an AI message bubble.
+// Ajoute un bloc « Sources » (liens Kiwix cliquables) à la bulle d'un message de l'IA.
 function renderSources(msgDiv, sources) {
   if (!msgDiv || !sources || !sources.length) return;
   const bubble = msgDiv.querySelector('.message-bubble');
@@ -410,11 +410,11 @@ function renderSources(msgDiv, sources) {
   wrap.className = 'sources';
   const label = document.createElement('div');
   label.className = 'sources-label';
-  label.textContent = 'Sources from your library:';
+  label.textContent = 'Sources de votre bibliothèque :';
   wrap.appendChild(label);
   sources.forEach((s, i) => {
     const a = document.createElement('a');
-    a.href = s.url;                 // server-built http://host:8081/... link
+    a.href = s.url;                 // lien http://hôte:8081/... construit par le serveur
     a.target = '_blank';
     a.rel = 'noopener';
     a.className = 'source-link';
@@ -443,33 +443,33 @@ async function sendMessage() {
     const res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // history is captured BEFORE this exchange is pushed to it.
+      // l'historique est capturé AVANT que cet échange n'y soit ajouté.
       body: JSON.stringify({ message: msg, model, history: chatHistory }),
       signal: _currentController.signal,
     });
 
-    // Pre-stream errors (415/400/502) arrive as a single JSON object.
+    // Les erreurs avant le flux (415/400/502) arrivent sous forme d'un seul objet JSON.
     const ctype = res.headers.get('content-type') || '';
     if (ctype.includes('application/json')) {
       const data = await res.json();
       removeTyping();
-      addMessage('ai', `Error: ${data.error || 'AI service unavailable'}\n\n` +
-        'Make sure Ollama is running: bash scripts/start_services.sh');
+      addMessage('ai', `Erreur : ${data.error || 'service IA indisponible'}\n\n` +
+        'Vérifiez qu\'Ollama tourne : bash scripts/start_services.sh');
     } else if (!res.ok) {
-      // e.g. 429 rate-limit (non-JSON body from Flask-Limiter)
+      // p. ex. limite de débit 429 (corps non JSON renvoyé par Flask-Limiter)
       removeTyping();
       addMessage('ai', res.status === 429
-        ? 'Too many requests — please wait a moment before asking again.'
-        : `Request failed (HTTP ${res.status}).`);
+        ? 'Trop de requêtes — patientez un instant avant de poser une nouvelle question.'
+        : `Échec de la requête (HTTP ${res.status}).`);
     } else {
-      // Streaming NDJSON: {"sources":[...]}, then {"delta":"..."}*, then {"done":true}
+      // Flux NDJSON : {"sources":[...]}, then {"delta":"..."}*, then {"done":true}
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '', aiDiv = null, text = '', pendingSources = null;
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
-        buf += decoder.decode(value, { stream: true });  // stream:true — no split-UTF8 mojibake
+        buf += decoder.decode(value, { stream: true });  // stream:true — évite le mojibake dû aux caractères UTF-8 coupés
         let nl;
         while ((nl = buf.indexOf('\n')) >= 0) {
           const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
@@ -488,12 +488,12 @@ async function sendMessage() {
             aiDiv.querySelector('.message-bubble').textContent = text;
           }
           if (m.done) {
-            if (!aiDiv) { removeTyping(); aiDiv = addMessage('ai', '(no response)'); }
+            if (!aiDiv) { removeTyping(); aiDiv = addMessage('ai', '(aucune réponse)'); }
             renderSources(aiDiv, pendingSources);
-            // Only clean completions become history — errored/aborted
-            // exchanges are left out so a retry starts from the same state.
-            // Sources are rendered separately and never stored (they would
-            // bloat the context budget).
+            // Seules les réponses menées à terme entrent dans l'historique — les échanges en erreur
+            // ou interrompus sont exclus pour qu'une nouvelle tentative reparte du même état.
+            // Les sources sont affichées à part et jamais stockées (elles
+            // alourdiraient le budget de contexte).
             if (text) {
               chatHistory.push({ role: 'user', content: msg });
               chatHistory.push({ role: 'assistant', content: text });
@@ -502,14 +502,14 @@ async function sendMessage() {
           }
         }
       }
-      removeTyping();  // safety: clear indicator if stream ended without deltas
+      removeTyping();  // sécurité : retire l'indicateur si le flux s'est terminé sans contenu
     }
   } catch (e) {
     removeTyping();
     if (e.name === 'AbortError') {
-      addMessage('ai', 'Request cancelled.');
+      addMessage('ai', 'Requête annulée.');
     } else {
-      addMessage('ai', 'Connection error. Make sure the AI service is running.\n\nRun: ollama serve');
+      addMessage('ai', 'Erreur de connexion. Vérifiez que le service IA est démarré.\n\nExécutez : ollama serve');
     }
   }
 
@@ -533,8 +533,8 @@ function sendPrompt(prompt) {
 function clearChat() {
   chatMessages.innerHTML = '';
   chatHistory = [];
-  try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* unavailable */ }
-  addMessage('ai', 'Chat cleared. How can I help with your survival needs?');
+  try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* indisponible */ }
+  addMessage('ai', 'Discussion effacée. Comment puis-je vous aider pour vos besoins de survie ?');
 }
 
 restoreConversation();

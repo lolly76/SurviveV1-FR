@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}System Status{% endblock %}
+{% block title %}État du système{% endblock %}
 
 {% block head %}
 <style>
@@ -40,47 +40,48 @@
 {% endblock %}
 
 {% block content %}
+{% set cat_labels = {'zim': 'Archives ZIM', 'videos': 'Vidéos', 'books': 'Livres', 'pdfs': 'PDF', 'maps': 'Cartes'} %}
 <div class="container">
-  <div class="page-title">📊 System Status</div>
-  <div class="page-sub">Real-time status of all SurviveV1 services and content</div>
+  <div class="page-title">📊 État du système</div>
+  <div class="page-sub">État en temps réel de tous les services et contenus de SurviveV1</div>
 
-  <!-- Storage overview -->
+  <!-- Vue d'ensemble du stockage -->
   <div class="stat-grid">
     <div class="stat-card">
       <div class="stat-val" style="color:var(--accent);">{{ storage.used_gb }}</div>
-      <div class="stat-label">GB Used</div>
+      <div class="stat-label">Go utilisés</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:var(--accent2);">{{ storage.free_gb }}</div>
-      <div class="stat-label">GB Free</div>
+      <div class="stat-label">Go libres</div>
     </div>
     <div class="stat-card">
       <div class="stat-val">{{ storage.total_gb }}</div>
-      <div class="stat-label">GB Total</div>
+      <div class="stat-label">Go au total</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:{{ 'var(--danger)' if storage.percent > 90 else 'var(--warning)' if storage.percent > 75 else 'var(--accent)' }};">
         {{ storage.percent }}%
       </div>
-      <div class="stat-label">Disk Used</div>
+      <div class="stat-label">Disque utilisé</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:var(--accent);">
         {{ services.values()|selectattr('running')|list|length }}
       </div>
-      <div class="stat-label">Services Up</div>
+      <div class="stat-label">Services actifs</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" style="color:var(--text-dim);">
         {{ services.values()|rejectattr('running')|list|length }}
       </div>
-      <div class="stat-label">Services Down</div>
+      <div class="stat-label">Services arrêtés</div>
     </div>
   </div>
 
-  <!-- System health: thermals/power are what silently ruin CPU inference -->
+  <!-- Santé du système : la température et l'alimentation dégradent en silence l'inférence CPU -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-title">System Health</div>
+    <div class="card-title">Santé du système</div>
     <div id="throttleWarning" style="display:none; background:rgba(248,81,73,0.1);
          border:1px solid rgba(248,81,73,0.4); border-radius:var(--radius);
          padding:10px 14px; margin-bottom:12px; font-size:13px; color:var(--danger);
@@ -91,39 +92,39 @@
              style="color:{{ 'var(--danger)' if system.temperature_c >= 80 else 'var(--warning)' if system.temperature_c >= 70 else 'var(--accent)' }};">
           {{ system.temperature_c }}°C
         </div>
-        <div class="stat-label">CPU Temp</div>
+        <div class="stat-label">Temp. CPU</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" data-sys="load">{{ system.load.avg_1m }} / {{ system.load.cores }}</div>
-        <div class="stat-label">Load / Cores</div>
+        <div class="stat-label">Charge / cœurs</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" data-sys="ram"
              style="color:{{ 'var(--danger)' if system.memory.used_percent >= 90 else 'var(--text)' }};">
           {{ system.memory.used_percent }}%
         </div>
-        <div class="stat-label">RAM Used</div>
+        <div class="stat-label">RAM utilisée</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" data-sys="swap">{{ system.memory.swap_used_percent }}%</div>
-        <div class="stat-label">Swap Used</div>
+        <div class="stat-label">Swap utilisé</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val" data-sys="uptime">{{ system.uptime_days }}d</div>
-        <div class="stat-label">Uptime</div>
+        <div class="stat-val" data-sys="uptime">{{ system.uptime_days }} j</div>
+        <div class="stat-label">Disponibilité</div>
       </div>
     </div>
     <div id="throttleNote" style="margin-top:10px; font-size:12px; color:var(--warning); display:none;"></div>
   </div>
 
-  <!-- 800 GB content budget gauge -->
+  <!-- Jauge du budget de contenu de 800 Go -->
   {% set budget_gb = 800 %}
   {% set budget_pct = [(storage.used_gb / budget_gb * 100)|round(1), 100]|min %}
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-title">Content Download Budget ({{ storage.used_gb }} / {{ budget_gb }} GB)</div>
+    <div class="card-title">Budget de téléchargement des contenus ({{ storage.used_gb }} / {{ budget_gb }} Go)</div>
     <div style="margin: 8px 0 4px; font-size:12px; color:var(--text-dim); display:flex; justify-content:space-between;">
-      <span>{{ budget_pct }}% of target downloaded</span>
-      <span>{{ (budget_gb - storage.used_gb)|round(1) }} GB remaining to fill</span>
+      <span>{{ budget_pct }} % de l'objectif téléchargé</span>
+      <span>{{ (budget_gb - storage.used_gb)|round(1) }} Go restant à remplir</span>
     </div>
     <div class="progress" style="height:14px;">
       <div class="progress-bar {{ 'danger' if budget_pct > 95 else 'warning' if budget_pct > 80 else '' }}"
@@ -132,22 +133,22 @@
     <div style="display:flex; gap:24px; margin-top:8px; font-size:12px; color:var(--text-dim);">
       {% for cat, stats in content.items() %}
       {% if stats.exists and stats.size_gb > 0 %}
-      <span>{{ cat|title }}: {{ stats.size_gb }} GB</span>
+      <span>{{ cat_labels.get(cat, cat|title) }} : {{ stats.size_gb }} Go</span>
       {% endif %}
       {% endfor %}
     </div>
   </div>
 
-  <!-- Download progress per category -->
+  <!-- Progression des téléchargements par catégorie -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-title">Downloads
-      (<span id="dlComplete">{{ downloads.complete }}</span>/{{ downloads.total }} complete)</div>
+    <div class="card-title">Téléchargements
+      (<span id="dlComplete">{{ downloads.complete }}</span>/{{ downloads.total }} terminés)</div>
     {% for cat in downloads.categories %}
     {% set pct = [(cat.size_gb / cat.budget_gb * 100)|round, 100]|min if cat.budget_gb else 0 %}
     <div class="content-row" data-dl-cat="{{ cat.id }}">
       <div class="content-info">
         <div class="content-name">{{ cat.name }}</div>
-        <div class="content-meta">{{ cat.size_gb }} / {{ cat.budget_gb }} GB</div>
+        <div class="content-meta">{{ cat.size_gb }} / {{ cat.budget_gb }} Go</div>
         <div class="progress" style="height:5px; margin-top:5px;">
           <div class="progress-bar" style="width:{{ pct }}%; height:5px;"></div>
         </div>
@@ -155,8 +156,8 @@
       <span class="badge {{ 'badge-green' if cat.status == 'complete'
                             else 'badge-yellow' if cat.status == 'in_progress'
                             else 'badge-red' }}" data-dl-badge="{{ cat.id }}">
-        {{ 'COMPLETE' if cat.status == 'complete'
-           else 'DOWNLOADING' if cat.status == 'in_progress' else 'PENDING' }}
+        {{ 'TERMINÉ' if cat.status == 'complete'
+           else 'TÉLÉCHARGEMENT' if cat.status == 'in_progress' else 'EN ATTENTE' }}
       </span>
     </div>
     {% endfor %}
@@ -172,10 +173,10 @@
       {% if is_admin %}
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <button id="updateBtn" class="btn btn-primary btn-sm" onclick="startUpdate()">
-          🔄 Update All Content</button>
+          🔄 Mettre à jour tous les contenus</button>
         <span id="updateNote" style="font-size:12px; color:var(--text-dim);">
-          Fetches new videos, books, PDFs, reference additions, and AI model
-          updates. Existing large archives are kept as-is. Needs internet.
+          Récupère les nouvelles vidéos, livres, PDF, ajouts de référence et mises à jour
+          des modèles d'IA. Les grandes archives existantes sont conservées telles quelles. Nécessite Internet.
         </span>
       </div>
       <pre id="updateLog" style="display:none; margin-top:10px; max-height:220px; overflow:auto;
@@ -183,19 +184,19 @@
            padding:10px; font-family:var(--mono); font-size:11px; white-space:pre-wrap;"></pre>
       <div id="schedule" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px;
            padding-top:12px; border-top:1px solid var(--border);">
-        <button id="schedBtn" class="btn btn-secondary btn-sm" onclick="toggleSchedule()" disabled>&#9201; Nightly auto-update</button>
-        <span id="schedNote" style="font-size:12px; color:var(--text-dim);">Checking timer&hellip;</span>
+        <button id="schedBtn" class="btn btn-secondary btn-sm" onclick="toggleSchedule()" disabled>&#9201; Mise à jour automatique nocturne</button>
+        <span id="schedNote" style="font-size:12px; color:var(--text-dim);">Vérification du minuteur&hellip;</span>
       </div>
       {% else %}
       <div style="font-size:12px; color:var(--text-dim);">
-        &#128273; <a href="/login" style="color:var(--accent);">Log in as admin</a>
-        to update content and manage services.
+        &#128273; <a href="/login" style="color:var(--accent);">Connectez-vous en administrateur</a>
+        pour mettre à jour les contenus et gérer les services.
       </div>
       {% endif %}
     </div>
     <div style="margin-top:12px; font-size:12px; color:var(--text-dim);">
-      Start: <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">bash download/download_all.sh</code>
-      &nbsp;·&nbsp; Resume: <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">bash download/download_all.sh --resume</code>
+      Démarrer : <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">bash download/download_all.sh</code>
+      &nbsp;·&nbsp; Reprendre : <code style="background:var(--surface2); padding:2px 6px; border-radius:4px;">bash download/download_all.sh --resume</code>
     </div>
   </div>
 
@@ -214,13 +215,13 @@
         {% if is_admin and svc.unit %}
           <button class="btn btn-secondary btn-sm" style="margin-right:8px;"
                   data-restart="{{ name }}" onclick="restartService('{{ name }}')"
-                  title="Restart {{ svc.name }}">↻</button>
+                  title="Redémarrer {{ svc.name }}">↻</button>
         {% endif %}
         {% if svc.running %}
           <a href="http://localhost:{{ svc.port }}" target="_blank" data-service="{{ name }}"
-             class="badge badge-green" style="text-decoration:none;">● UP</a>
+             class="badge badge-green" style="text-decoration:none;">● EN MARCHE</a>
         {% else %}
-          <span class="badge badge-red" data-service="{{ name }}">● DOWN</span>
+          <span class="badge badge-red" data-service="{{ name }}">● ARRÊTÉ</span>
         {% endif %}
       </div>
       {% endfor %}
@@ -228,27 +229,27 @@
       <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
                   display:flex; align-items:center; gap:10px;">
         <button onclick="refreshStatus(true)" id="refreshBtn"
-                class="btn btn-secondary btn-sm">Refresh Status</button>
+                class="btn btn-secondary btn-sm">Actualiser l'état</button>
         <span id="refreshNote" style="font-size:11px; color:var(--text-dim);">
-          Auto-refreshes every 15 s
+          Actualisation automatique toutes les 15 s
         </span>
       </div>
     </div>
 
-    <!-- Content inventory -->
+    <!-- Inventaire des contenus -->
     <div class="card">
-      <div class="card-title">Content Inventory</div>
+      <div class="card-title">Inventaire des contenus</div>
       {% set content_icons = {'zim': '📚', 'videos': '🎬', 'books': '📖', 'pdfs': '📄', 'maps': '🗺️'} %}
       {% for cat, stats in content.items() %}
       <div class="content-row">
         <div class="content-icon">{{ content_icons.get(cat, '📦') }}</div>
         <div class="content-info">
-          <div class="content-name">{{ cat|title }}</div>
+          <div class="content-name">{{ cat_labels.get(cat, cat|title) }}</div>
           <div class="content-meta">
             {% if stats.exists %}
-              {{ stats.count }} files • {{ stats.size_gb }} GB
+              {{ stats.count }} fichiers • {{ stats.size_gb }} Go
             {% else %}
-              Not downloaded yet
+              Pas encore téléchargé
             {% endif %}
           </div>
         </div>
@@ -263,16 +264,16 @@
 
   </div>
 
-  <!-- Recent files -->
+  <!-- Fichiers récents -->
   {% if recent %}
   <div class="card" style="margin-top: 20px;">
-    <div class="card-title">Recently Downloaded</div>
+    <div class="card-title">Téléchargés récemment</div>
     <table class="file-table">
       <thead>
         <tr>
-          <th>File</th>
+          <th>Fichier</th>
           <th>Type</th>
-          <th>Size</th>
+          <th>Taille</th>
           <th>Date</th>
           <th></th>
         </tr>
@@ -282,11 +283,11 @@
         <tr>
           <td>{{ f.name }}</td>
           <td><span class="badge badge-blue">{{ f.path.split('/')[0] }}</span></td>
-          <td style="color:var(--text-dim);">{{ f.size_mb }} MB</td>
+          <td style="color:var(--text-dim);">{{ f.size_mb }} Mo</td>
           <td style="color:var(--text-dim);">{{ f.modified[:10] }}</td>
           <td>
             <a href="/serve/{{ f.path }}" class="btn btn-secondary btn-sm"
-               target="_blank">Open</a>
+               target="_blank">Ouvrir</a>
           </td>
         </tr>
         {% endfor %}
@@ -295,19 +296,19 @@
   </div>
   {% endif %}
 
-  <!-- Commands reference -->
+  <!-- Référence des commandes -->
   <div class="card" style="margin-top: 20px;">
-    <div class="card-title">Management Commands</div>
+    <div class="card-title">Commandes de gestion</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
       {% set commands = [
-        ('Start all services', 'bash scripts/start_services.sh'),
-        ('Stop all services', 'bash scripts/stop_services.sh'),
-        ('Check status', 'bash scripts/status.sh'),
-        ('Download all content', 'bash download/download_all.sh'),
-        ('Update content', 'bash scripts/update_content.sh'),
-        ('Sync to cloud', 'bash sync/sync_to_cloud.sh gdrive'),
-        ('Download Wikipedia', 'bash download/kiwix_content.sh --only wikipedia'),
-        ('Download videos', 'bash download/videos.sh'),
+        ('Démarrer tous les services', 'bash scripts/start_services.sh'),
+        ('Arrêter tous les services', 'bash scripts/stop_services.sh'),
+        ('Vérifier l\'état', 'bash scripts/status.sh'),
+        ('Télécharger tous les contenus', 'bash download/download_all.sh'),
+        ('Mettre à jour les contenus', 'bash scripts/update_content.sh'),
+        ('Synchroniser vers le cloud', 'bash sync/sync_to_cloud.sh gdrive'),
+        ('Télécharger Wikipédia', 'bash download/kiwix_content.sh --only wikipedia'),
+        ('Télécharger les vidéos', 'bash download/videos.sh'),
       ] %}
       {% for label, cmd in commands %}
       <div style="background: var(--surface2); border: 1px solid var(--border);
@@ -324,28 +325,28 @@
 
 {% block scripts %}
 <script>
-// Live status refresh — updates service badges in place, no page reload.
+// Actualisation en direct de l'état — met à jour les pastilles des services sans recharger la page.
 function applyStatus(data) {
   Object.entries(data.services || {}).forEach(([name, svc]) => {
     const badge = document.querySelector(`[data-service="${name}"]`);
     if (!badge) return;
     if (svc.running) {
       badge.className = 'badge badge-green';
-      badge.textContent = '● UP';
+      badge.textContent = '● EN MARCHE';
     } else {
       badge.className = 'badge badge-red';
-      badge.textContent = '● DOWN';
+      badge.textContent = '● ARRÊTÉ';
     }
   });
 }
 
 const DL_BADGE = {
-  complete:    ['badge badge-green',  'COMPLETE'],
-  in_progress: ['badge badge-yellow', 'DOWNLOADING'],
-  pending:     ['badge badge-red',    'PENDING'],
+  complete:    ['badge badge-green',  'TERMINÉ'],
+  in_progress: ['badge badge-yellow', 'TÉLÉCHARGEMENT'],
+  pending:     ['badge badge-red',    'EN ATTENTE'],
 };
 
-// Update the Downloads card in place from /api/downloads.
+// Met à jour la carte Téléchargements sur place à partir de /api/downloads.
 function applyDownloads(data) {
   const done = document.getElementById('dlComplete');
   if (done) done.textContent = data.complete;
@@ -368,7 +369,7 @@ function applyDownloads(data) {
   if (logLine && data.active_log) logLine.textContent = data.active_log.line;  // textContent — safe
 }
 
-// Update the System Health card in place from /api/system.
+// Met à jour la carte Santé du système sur place à partir de /api/system.
 function applySystem(sys) {
   const set = (key, text) => {
     const el = document.querySelector(`[data-sys="${key}"]`);
@@ -378,7 +379,7 @@ function applySystem(sys) {
   set('load', sys.load.avg_1m + ' / ' + sys.load.cores);
   set('ram', sys.memory.used_percent + '%');
   set('swap', sys.memory.swap_used_percent + '%');
-  set('uptime', sys.uptime_days + 'd');
+  set('uptime', sys.uptime_days + ' j');
   const tempEl = document.querySelector('[data-sys="temp"]');
   if (tempEl) {
     tempEl.style.color = sys.temperature_c >= 80 ? 'var(--danger)'
@@ -390,14 +391,14 @@ function applySystem(sys) {
   if (th.undervoltage || th.throttled || th.soft_temp_limit) {
     warning.style.display = 'block';
     warning.textContent = th.undervoltage
-      ? '⚠ UNDER-VOLTAGE detected — use the official 27 W PSU; the AI and SD card are at risk.'
-      : '⚠ CPU is throttling right now — check cooling; AI responses will be slow.';
+      ? '⚠ SOUS-TENSION détectée — utilisez l\'alimentation officielle de 27 W ; l\'IA et la carte SD sont en danger.'
+      : '⚠ Le CPU bride sa fréquence en ce moment — vérifiez le refroidissement ; les réponses de l\'IA seront lentes.';
   } else {
     warning.style.display = 'none';
   }
   if (!th.throttled && !th.undervoltage && th.occurred_since_boot) {
     noteEl.style.display = 'block';
-    noteEl.textContent = 'Throttling occurred earlier this boot — check cooling/PSU before long AI sessions.';
+    noteEl.textContent = 'Un bridage s\'est produit plus tôt depuis le démarrage — vérifiez le refroidissement et l\'alimentation avant de longues sessions d\'IA.';
   } else {
     noteEl.style.display = 'none';
   }
@@ -406,7 +407,7 @@ function applySystem(sys) {
 function refreshStatus(manual) {
   const btn = document.getElementById('refreshBtn');
   const note = document.getElementById('refreshNote');
-  if (manual) { btn.disabled = true; note.textContent = 'Refreshing…'; }
+  if (manual) { btn.disabled = true; note.textContent = 'Actualisation…'; }
   Promise.all([
     fetch('/api/status', { cache: 'no-store' }).then(r => r.json()),
     fetch('/api/downloads', { cache: 'no-store' }).then(r => r.json()),
@@ -416,34 +417,34 @@ function refreshStatus(manual) {
       applyStatus(status);
       applyDownloads(downloads);
       applySystem(system);
-      note.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      note.textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR');
     })
-    .catch(() => { note.textContent = 'Refresh failed — dashboard unreachable'; })
+    .catch(() => { note.textContent = 'Échec de l\'actualisation — tableau de bord injoignable'; })
     .finally(() => { btn.disabled = false; });
 }
 
 setInterval(() => refreshStatus(false), 15000);
 
-// ── One-click content update ────────────────────────────────────────────────
+// ── Mise à jour des contenus en un clic ────────────────────────────────────────────────
 let updatePollTimer = null;
 
 function renderUpdate(st) {
   const btn = document.getElementById('updateBtn');
   const note = document.getElementById('updateNote');
   const log = document.getElementById('updateLog');
-  if (!btn) return;  // guest view — the Update button is admin-only
+  if (!btn) return;  // vue invité — le bouton de mise à jour est réservé à l'administrateur
   if (st.running) {
     btn.disabled = true;
-    btn.textContent = '⏳ Updating…';
-    note.textContent = 'Update running — large downloads can take hours. ' +
-                       'Safe to close this page; progress resumes here.';
+    btn.textContent = '⏳ Mise à jour…';
+    note.textContent = 'Mise à jour en cours — les gros téléchargements peuvent durer des heures. ' +
+                       'Vous pouvez fermer cette page ; la progression reprendra ici.';
   } else {
     btn.disabled = false;
-    btn.textContent = '🔄 Update All Content';
+    btn.textContent = '🔄 Mettre à jour tous les contenus';
     if (st.exit_code === 0) {
-      note.textContent = 'Last update completed successfully.';
+      note.textContent = 'La dernière mise à jour s\'est terminée avec succès.';
     } else if (st.exit_code !== null && st.exit_code !== undefined) {
-      note.textContent = 'Last update finished with errors — details in the log below.';
+      note.textContent = 'La dernière mise à jour s\'est terminée avec des erreurs — détails dans le journal ci-dessous.';
     }
   }
   if (st.log_tail && st.log_tail.length) {
@@ -465,11 +466,11 @@ function pollUpdate() {
 }
 
 function startUpdate() {
-  if (!confirm('Start a full content update?\n\nThis downloads new videos, ' +
-               'books, and reference content in the background and can run ' +
-               'for a long time. Existing large archives are not re-downloaded.')) return;
+  if (!confirm('Lancer une mise à jour complète des contenus ?\n\nElle télécharge en arrière-plan les nouvelles vidéos, ' +
+               'les livres et les contenus de référence, et peut durer ' +
+               'longtemps. Les grandes archives existantes ne sont pas retéléchargées.')) return;
   const note = document.getElementById('updateNote');
-  note.textContent = 'Starting…';
+  note.textContent = 'Démarrage…';
   fetch('/api/update/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -478,20 +479,20 @@ function startUpdate() {
     .then(async r => {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
-        note.textContent = d.error || ('Could not start update (HTTP ' + r.status + ')');
+        note.textContent = d.error || ('Impossible de lancer la mise à jour (HTTP ' + r.status + ')');
         return;
       }
       pollUpdate();
     })
-    .catch(() => { note.textContent = 'Could not reach the dashboard.'; });
+    .catch(() => { note.textContent = 'Tableau de bord injoignable.'; });
 }
 
 if (document.getElementById('updateBtn')) {
-  pollUpdate();  // restore button/log state on page load (admin view only)
+  pollUpdate();  // restaure l'état du bouton et du journal au chargement (vue administrateur uniquement)
   pollSchedule();
 }
 
-// ── Nightly auto-update timer (admin) ───────────────────────────────────────
+// ── Minuteur de mise à jour automatique nocturne (admin) ───────────────────────────────────────
 let schedEnabled = false;
 function renderSchedule(s) {
   const btn = document.getElementById('schedBtn');
@@ -499,17 +500,17 @@ function renderSchedule(s) {
   if (!btn) return;
   if (!s.available) {
     btn.disabled = true;
-    note.textContent = 'Timer not installed — run: sudo bash scripts/generate_services.sh';
+    note.textContent = 'Minuteur non installé — exécutez : sudo bash scripts/generate_services.sh';
     return;
   }
   schedEnabled = !!s.enabled;
   btn.disabled = false;
-  btn.textContent = schedEnabled ? '⏱ Nightly auto-update: ON' : '⏱ Nightly auto-update: OFF';
+  btn.textContent = schedEnabled ? '⏱ Mise à jour automatique nocturne : OUI' : '⏱ Mise à jour automatique nocturne : NON';
   btn.className = 'btn btn-sm ' + (schedEnabled ? 'btn-primary' : 'btn-secondary');
-  const cap = s.rate_limit_kbps ? ', capped at ' + s.rate_limit_kbps + ' KB/s' : '';
+  const cap = s.rate_limit_kbps ? ', limité à ' + s.rate_limit_kbps + ' Ko/s' : '';
   note.textContent = schedEnabled
-    ? 'Runs at ' + s.time + cap + (s.next_run ? '. Next: ' + s.next_run : '') + (s.last_run ? '. Last: ' + s.last_run : '')
-    : 'Off. When on, gap-fill downloads run at ' + s.time + cap + ' and skip if offline.';
+    ? 'S\'exécute à ' + s.time + cap + (s.next_run ? '. Prochaine : ' + s.next_run : '') + (s.last_run ? '. Dernière : ' + s.last_run : '')
+    : 'Désactivée. Une fois activée, les téléchargements des contenus manquants s\'exécutent à ' + s.time + cap + ' et sont ignorés hors ligne.';
 }
 function pollSchedule() {
   fetch('/api/update/schedule', { cache: 'no-store' }).then(r => r.json()).then(renderSchedule).catch(() => {});
@@ -525,16 +526,16 @@ function toggleSchedule() {
   })
     .then(async r => {
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) { note.textContent = d.error || ('Failed (HTTP ' + r.status + ')'); btn.disabled = false; return; }
+      if (!r.ok) { note.textContent = d.error || ('Échec (HTTP ' + r.status + ')'); btn.disabled = false; return; }
       renderSchedule(d);
     })
-    .catch(() => { note.textContent = 'Could not reach the dashboard.'; btn.disabled = false; });
+    .catch(() => { note.textContent = 'Tableau de bord injoignable.'; btn.disabled = false; });
 }
 
-// ── Per-service restart (admin) ─────────────────────────────────────────────
+// ── Redémarrage d'un service (admin) ─────────────────────────────────────────────
 function restartService(name) {
   const btn = document.querySelector(`[data-restart="${name}"]`);
-  if (!btn || !confirm('Restart the ' + name + ' service?')) return;
+  if (!btn || !confirm('Redémarrer le service ' + name + ' ?')) return;
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = '…';
@@ -546,12 +547,12 @@ function restartService(name) {
     .then(async r => {
       const d = await r.json().catch(() => ({}));
       if (!r.ok && r.status !== 202) {
-        alert(d.error || ('Restart failed (HTTP ' + r.status + ')'));
+        alert(d.error || ('Échec du redémarrage (HTTP ' + r.status + ')'));
       }
-      // Give the unit a moment, then refresh badges.
+      // Laisse un instant à l'unité, puis actualise les pastilles.
       setTimeout(() => refreshStatus(false), 3000);
     })
-    .catch(() => alert('Could not reach the dashboard.'))
+    .catch(() => alert('Tableau de bord injoignable.'))
     .finally(() => { btn.disabled = false; btn.textContent = original; });
 }
 </script>
