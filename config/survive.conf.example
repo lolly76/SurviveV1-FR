@@ -13,6 +13,8 @@ CONTENT_WIKIPEDIA="Y"
 CONTENT_WIKIPEDIA_NOPIC="N"
 CONTENT_WIKIBOOKS="Y"
 CONTENT_STACKEXCHANGE="Y"
+# Sites Stack Exchange pratiques en ANGLAIS (~40 Go) : aucun équivalent français
+CONTENT_STACKEXCHANGE_EN="N"
 CONTENT_GUTENBERG="Y"
 CONTENT_KOLIBRI="Y"
 CONTENT_VIDEOS="Y"
@@ -20,9 +22,12 @@ CONTENT_MAPS="Y"
 CONTENT_PDFS="Y"
 CONTENT_AI_MODELS="Y"
 CONTENT_IFIX="Y"
-# Curated extras (~7 GB): Kiwix post-disaster/medicine/water/food/knots
-# collections, Appropedia, Energypedia, PhET simulations, Wikiversity
+# Extras FR sélectionnés (~4 Go) : Ekopédia, Cuisine Libre, simulations PhET,
+# Wikiversité, Vikidia
 CONTENT_EXPANSION="Y"
+# Extras EN (~3 Go), sans équivalent français : collections Kiwix catastrophes/
+# secours/eau/alimentation/nœuds, Appropedia, Energypedia
+CONTENT_EXPANSION_EN="N"
 # Offline app installers (~1 GB): Kiwix Android/Desktop, F-Droid, VLC, so
 # guests joining the hotspot can install the reader apps with no internet.
 CONTENT_APPS="Y"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Kiwix ZIM file downloader
-# Downloads Wikipedia, Wikibooks, Stack Exchange, iFixit, Gutenberg, and more
+# SurviveV1 — Téléchargeur de fichiers ZIM Kiwix
+# Télécharge Wikipédia FR, Wikilivres, iFixit, Gutenberg FR, Khan Academy FR, etc.
 # =============================================================================
 set -euo pipefail
 
@@ -257,70 +257,85 @@ download_zim() {
     fi
 }
 
-# ── Kiwix catalog (use latest available) ─────────────────────────────────────
-# URLs point to the Kiwix download mirror. Date-stamped ZIMs auto-resolve to latest.
+# ── Catalogue Kiwix (toujours la dernière version disponible) ────────────────
+# Les URLs pointent vers le miroir de téléchargement de Kiwix. Les ZIM datés
+# sont automatiquement remplacés par leur dernière version (resolve_zim_url).
+# Version FR : on privilégie les ZIM en français. Les rares ressources sans
+# équivalent français sont regroupées dans des options « EN » désactivées par
+# défaut (CONTENT_STACKEXCHANGE_EN, CONTENT_EXPANSION_EN).
 KIWIX_MIRROR="https://download.kiwix.org/zim"
 
-# ── Wikipedia ─────────────────────────────────────────────────────────────────
+# ── Wikipédia ─────────────────────────────────────────────────────────────────
 dl_wikipedia() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "wikipedia" ]] && return
 
     if [[ "${CONTENT_WIKIPEDIA:-Y}" =~ [Yy] ]]; then
-        info "=== Wikipedia (Full, with images) ==="
-        # Full Wikipedia with images ~100GB
-        download_zim "Wikipedia EN" \
-            "$KIWIX_MIRROR/wikipedia/wikipedia_en_all_maxi_2026-02.zim" \
+        info "=== Wikipédia FR (complète, avec images) ==="
+        # Wikipédia FR complète avec images : ~52 Go
+        download_zim "Wikipédia FR" \
+            "$KIWIX_MIRROR/wikipedia/wikipedia_fr_all_maxi_2026-05.zim" \
             "$ZIM_DIR/wikipedia"
     fi
 
     if [[ "${CONTENT_WIKIPEDIA_NOPIC:-N}" =~ [Yy] ]]; then
-        info "=== Wikipedia (No pictures) ==="
-        # No-picture version ~22GB
-        download_zim "Wikipedia EN (no-pic)" \
-            "$KIWIX_MIRROR/wikipedia/wikipedia_en_all_nopic_2026-06.zim" \
+        info "=== Wikipédia FR (sans images) ==="
+        # Version sans images : ~12 Go
+        download_zim "Wikipédia FR (sans images)" \
+            "$KIWIX_MIRROR/wikipedia/wikipedia_fr_all_nopic_2026-05.zim" \
             "$ZIM_DIR/wikipedia"
     fi
 }
 
-# ── Wikibooks + Wikivoyage + Wikisource ──────────────────────────────────────
+# ── Wikilivres + Wikivoyage + Wikisource + Wiktionnaire ──────────────────────
 dl_wikibooks() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "wikibooks" ]] && return
     [[ "${CONTENT_WIKIBOOKS:-Y}" =~ [Yy] ]] || return
 
-    info "=== Wikibooks, Wikivoyage, Wikisource ==="
-    download_zim "Wikibooks EN" \
-        "$KIWIX_MIRROR/wikibooks/wikibooks_en_all_maxi_2026-04.zim" \
+    info "=== Wikilivres, Wikivoyage, Wikisource, Wiktionnaire ==="
+    download_zim "Wikilivres FR" \
+        "$KIWIX_MIRROR/wikibooks/wikibooks_fr_all_maxi_2026-10.zim" \
         "$ZIM_DIR/reference"
-    download_zim "Wikivoyage EN" \
-        "$KIWIX_MIRROR/wikivoyage/wikivoyage_en_all_maxi_2026-06.zim" \
+    download_zim "Wikivoyage FR" \
+        "$KIWIX_MIRROR/wikivoyage/wikivoyage_fr_all_maxi_2026-10.zim" \
         "$ZIM_DIR/reference"
-    download_zim "Wikisource EN" \
-        "$KIWIX_MIRROR/wikisource/wikisource_en_all_maxi_2026-05.zim" \
+    # Wikisource FR : ~11 Go sans images (15 Go avec) — textes littéraires et
+    # documents d'archives ; à désactiver si le disque est juste.
+    download_zim "Wikisource FR" \
+        "$KIWIX_MIRROR/wikisource/wikisource_fr_all_nopic_2025-09.zim" \
         "$ZIM_DIR/reference"
-    download_zim "Wiktionary EN" \
-        "$KIWIX_MIRROR/wiktionary/wiktionary_en_all_nopic_2026-05.zim" \
+    download_zim "Wiktionnaire FR" \
+        "$KIWIX_MIRROR/wiktionary/wiktionary_fr_all_nopic_2026-08.zim" \
         "$ZIM_DIR/reference"
 }
 
-# ── iFixit repair guides ──────────────────────────────────────────────────────
+# ── iFixit : guides de réparation ─────────────────────────────────────────────
 dl_ifix() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "ifix" ]] && return
     [[ "${CONTENT_IFIX:-Y}" =~ [Yy] ]] || return
 
-    info "=== iFixit Repair Guides ==="
-    download_zim "iFixit EN" \
-        "$KIWIX_MIRROR/ifixit/ifixit_en_all_2025-12.zim" \
+    info "=== iFixit : guides de réparation (FR) ==="
+    download_zim "iFixit FR" \
+        "$KIWIX_MIRROR/ifixit/ifixit_fr_all_2026-03.zim" \
         "$ZIM_DIR/skills"
 }
 
 # ── Stack Exchange ─────────────────────────────────────────────────────────────
+# Il n'existe pas de Stack Exchange francophone (hors « French Language »).
+# Les sites pratiques en anglais sont donc proposés en option :
+# CONTENT_STACKEXCHANGE_EN=Y (≈ 40 Go) ; le site French Language Stack Exchange
+# (90 Mo) est toujours téléchargé avec CONTENT_STACKEXCHANGE=Y.
 dl_stackexchange() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "stackexchange" ]] && return
     [[ "${CONTENT_STACKEXCHANGE:-Y}" =~ [Yy] ]] || return
 
-    info "=== Stack Exchange collections ==="
+    info "=== Stack Exchange ==="
+    download_zim "French Language Stack Exchange" \
+        "$KIWIX_MIRROR/stack_exchange/french.stackexchange.com_mul_all_2026-10.zim" \
+        "$ZIM_DIR/skills"
+
+    [[ "${CONTENT_STACKEXCHANGE_EN:-N}" =~ [Yy] ]] || return
+    info "=== Stack Exchange (EN, option) ==="
     declare -A SE_PACKAGES=(
-        ["Stack Overflow"]="$KIWIX_MIRROR/stack_exchange/stackoverflow.com_en_all_2023-11.zim"
         ["Super User"]="$KIWIX_MIRROR/stack_exchange/superuser.com_en_all_2026-02.zim"
         ["DIY"]="$KIWIX_MIRROR/stack_exchange/diy.stackexchange.com_en_all_2026-02.zim"
         ["Cooking"]="$KIWIX_MIRROR/stack_exchange/cooking.stackexchange.com_en_all_2026-02.zim"
@@ -329,10 +344,6 @@ dl_stackexchange() {
         ["Gardening"]="$KIWIX_MIRROR/stack_exchange/gardening.stackexchange.com_en_all_2026-02.zim"
         ["Medical Sciences"]="$KIWIX_MIRROR/stack_exchange/medicalsciences.stackexchange.com_en_all_2026-02.zim"
         ["Sustainability"]="$KIWIX_MIRROR/stack_exchange/sustainability.stackexchange.com_en_all_2026-02.zim"
-        ["Biology"]="$KIWIX_MIRROR/stack_exchange/biology.stackexchange.com_en_all_2026-02.zim"
-        ["Chemistry"]="$KIWIX_MIRROR/stack_exchange/chemistry.stackexchange.com_en_all_2026-02.zim"
-        ["Physics"]="$KIWIX_MIRROR/stack_exchange/physics.stackexchange.com_en_all_2026-02.zim"
-        ["Engineering"]="$KIWIX_MIRROR/stack_exchange/engineering.stackexchange.com_en_all_2026-02.zim"
         ["Electronics"]="$KIWIX_MIRROR/stack_exchange/electronics.stackexchange.com_en_all_2026-02.zim"
         ["Unix/Linux"]="$KIWIX_MIRROR/stack_exchange/unix.stackexchange.com_en_all_2026-02.zim"
     )
@@ -342,106 +353,127 @@ dl_stackexchange() {
     done
 }
 
-# ── Project Gutenberg ─────────────────────────────────────────────────────────
+# ── Projet Gutenberg (livres en français) ─────────────────────────────────────
 dl_gutenberg() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "gutenberg" ]] && return
     [[ "${CONTENT_GUTENBERG:-Y}" =~ [Yy] ]] || return
 
-    info "=== Project Gutenberg (~60k books) ==="
-    download_zim "Gutenberg EN" \
-        "$KIWIX_MIRROR/gutenberg/gutenberg_en_all_2025-11.zim" \
+    info "=== Projet Gutenberg (livres en français) ==="
+    # Le nom daté est remplacé par la dernière version publiée (resolve_zim_url).
+    download_zim "Gutenberg FR" \
+        "$KIWIX_MIRROR/gutenberg/gutenberg_fr_all_2022-10.zim" \
         "$ZIM_DIR/books"
 }
 
-# ── Khan Academy (Kiwix version) ──────────────────────────────────────────────
+# ── Khan Academy (version Kiwix) ──────────────────────────────────────────────
 dl_khan() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "khan" ]] && return
 
-    info "=== Khan Academy (Kiwix mini versions) ==="
-    # Note: Full Khan Academy via Kolibri is preferred. These are smaller ZIM versions.
-    download_zim "Khan Academy EN" \
-        "$KIWIX_MIRROR/other/khanacademy_en_all_2023-03.zim" \
+    info "=== Khan Academy FR (version Kiwix) ==="
+    # Remarque : la version Kolibri est préférée (download/kolibri_content.sh).
+    # ZIM complet FR : ~94 Go.
+    download_zim "Khan Academy FR" \
+        "$KIWIX_MIRROR/other/khanacademy_fr_all_2023-03.zim" \
         "$ZIM_DIR/education"
 }
 
-# ── Medical resources ─────────────────────────────────────────────────────────
+# ── Ressources médicales ──────────────────────────────────────────────────────
+# MedlinePlus et WikiMed (mdwiki) n'existent qu'en anglais : on s'appuie sur
+# le sous-ensemble « médecine » de Wikipédia FR (~0,8 Go avec images), en plus
+# de la Wikipédia FR complète. Les guides médicaux PDF sont dans
+# download/gaps_content.sh et download/mental_health.sh.
 dl_medical() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "medical" ]] && return
 
-    info "=== Medical References ==="
-    download_zim "Medline Plus" \
-        "$KIWIX_MIRROR/zimit/medlineplus.gov_en_all_2025-01.zim" \
-        "$ZIM_DIR/medicine"
-    download_zim "WikiMed" \
-        "$KIWIX_MIRROR/other/mdwiki_en_all_maxi_2025-11.zim" \
+    info "=== Références médicales (FR) ==="
+    download_zim "Wikipédia FR — Médecine" \
+        "$KIWIX_MIRROR/wikipedia/wikipedia_fr_medicine_maxi_2026-10.zim" \
         "$ZIM_DIR/medicine"
 }
 
-# ── TED Talks ─────────────────────────────────────────────────────────────────
-# These ZIMs carry the actual talk videos, playable offline in the browser —
-# the reliable video source now that YouTube blocks automated downloads.
+# ── Conférences TED ───────────────────────────────────────────────────────────
+# Ces ZIM contiennent les vidéos des conférences, lisibles hors ligne dans le
+# navigateur. Ils sont multilingues (« mul ») : voix originale, sous-titres
+# disponibles dans de nombreuses langues dont le français.
 dl_ted() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "ted" ]] && return
 
-    info "=== TED Talks (offline video) ==="
+    info "=== Conférences TED (vidéos hors ligne, sous-titres FR) ==="
     download_zim "TED Technology" \
-        "$KIWIX_MIRROR/ted/ted_mul_technology_2026-01.zim" \
+        "$KIWIX_MIRROR/ted/ted_mul_technology_2026-09.zim" \
         "$ZIM_DIR/education"
     download_zim "TED Health Care" \
-        "$KIWIX_MIRROR/ted/ted_mul_health-care_2026-04.zim" \
+        "$KIWIX_MIRROR/ted/ted_mul_health-care_2026-09.zim" \
         "$ZIM_DIR/education"
     download_zim "TED Public Health" \
-        "$KIWIX_MIRROR/ted/ted_mul_public-health_2026-04.zim" \
+        "$KIWIX_MIRROR/ted/ted_mul_public-health_2026-09.zim" \
         "$ZIM_DIR/education"
     download_zim "TED Mental Health" \
-        "$KIWIX_MIRROR/ted/ted_mul_mental-health_2026-05.zim" \
+        "$KIWIX_MIRROR/ted/ted_mul_mental-health_2026-09.zim" \
         "$ZIM_DIR/education"
-    # Largest and least survival-critical — keep it the final download of
-    # the whole run so a full disk can only ever cost us this one.
+    # Le plus gros et le moins vital — dernier téléchargement de toute
+    # l'exécution, pour qu'un disque plein ne coûte que celui-ci.
     download_zim "TED Science" \
-        "$KIWIX_MIRROR/ted/ted_mul_science_2026-05.zim" \
+        "$KIWIX_MIRROR/ted/ted_mul_science_2026-09.zim" \
         "$ZIM_DIR/education"
 }
 
-# ── Expansion pack: purpose-built survival + off-grid + education ZIMs ───────
-# Curated additions for machines with spare space (~7 GB total). The zimgit-*
-# collections are Kiwix's own hand-picked disaster libraries.
+# ── Pack d'extension FR : autonomie, cuisine, éducation ──────────────────────
+# Ajouts sélectionnés pour les machines qui ont de la place (~4 Go au total).
 dl_expansion() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "expansion" ]] && return
     [[ "${CONTENT_EXPANSION:-Y}" =~ [Yy] ]] || return
 
-    info "=== Expansion pack: survival collections ==="
-    download_zim "Post-disaster Library" \
+    info "=== Pack d'extension : vie autonome et cuisine ==="
+    download_zim "Ekopédia (écologie pratique, autonomie)" \
+        "$KIWIX_MIRROR/other/ekopedia_fr_all_maxi_2021-03.zim" \
+        "$ZIM_DIR/skills"
+    download_zim "Cuisine Libre (recettes)" \
+        "$KIWIX_MIRROR/other/cuisinelibre.org_fr_all_2026-08.zim" \
+        "$ZIM_DIR/skills"
+
+    info "=== Pack d'extension : éducation ==="
+    download_zim "PhET — simulations scientifiques FR" \
+        "$KIWIX_MIRROR/phet/phet_fr_all_2026-08.zim" \
+        "$ZIM_DIR/education"
+    download_zim "Wikiversité FR" \
+        "$KIWIX_MIRROR/wikiversity/wikiversity_fr_all_maxi_2026-08.zim" \
+        "$ZIM_DIR/education"
+    download_zim "Vikidia FR (encyclopédie simplifiée)" \
+        "$KIWIX_MIRROR/vikidia/vikidia_fr_all_maxi_2026-09.zim" \
+        "$ZIM_DIR/education"
+}
+
+# ── Pack d'extension EN (option) : ressources sans équivalent français ───────
+# Les collections « zimgit » de Kiwix (catastrophes, eau, secours, nœuds),
+# Appropedia et Energypedia n'existent qu'en anglais. ~3 Go au total.
+# Activer avec CONTENT_EXPANSION_EN=Y dans config/survive.conf.
+dl_expansion_en() {
+    [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "expansion_en" ]] && return
+    [[ "${CONTENT_EXPANSION_EN:-N}" =~ [Yy] ]] || return
+
+    info "=== Pack d'extension EN : collections de survie (anglais) ==="
+    download_zim "Post-disaster Library (EN)" \
         "$KIWIX_MIRROR/other/zimgit-post-disaster_en_2024-05.zim" \
         "$ZIM_DIR/skills"
-    download_zim "Emergency Medicine Collection" \
+    download_zim "Emergency Medicine Collection (EN)" \
         "$KIWIX_MIRROR/other/zimgit-medicine_en_2024-08.zim" \
         "$ZIM_DIR/medicine"
-    download_zim "Water Purification Collection" \
+    download_zim "Water Purification Collection (EN)" \
         "$KIWIX_MIRROR/other/zimgit-water_en_2024-08.zim" \
         "$ZIM_DIR/skills"
-    download_zim "Food Preparation Collection" \
+    download_zim "Food Preparation Collection (EN)" \
         "$KIWIX_MIRROR/other/zimgit-food-preparation_en_2025-04.zim" \
         "$ZIM_DIR/skills"
-    download_zim "Knots Guide" \
+    download_zim "Knots Guide (EN)" \
         "$KIWIX_MIRROR/other/zimgit-knots_en_2024-08.zim" \
         "$ZIM_DIR/skills"
-
-    info "=== Expansion pack: off-grid living ==="
-    download_zim "Appropedia (appropriate technology)" \
+    download_zim "Appropedia (EN)" \
         "$KIWIX_MIRROR/other/appropedia_en_all_maxi_2026-02.zim" \
         "$ZIM_DIR/skills"
-    download_zim "Energypedia (off-grid energy)" \
+    download_zim "Energypedia (EN)" \
         "$KIWIX_MIRROR/other/energypedia_en_all_maxi_2026-06.zim" \
         "$ZIM_DIR/skills"
-
-    info "=== Expansion pack: education ==="
-    download_zim "PhET Science Simulations" \
-        "$KIWIX_MIRROR/phet/phet_en_all_2026-05.zim" \
-        "$ZIM_DIR/education"
-    download_zim "Wikiversity EN" \
-        "$KIWIX_MIRROR/wikiversity/wikiversity_en_all_maxi_2026-05.zim" \
-        "$ZIM_DIR/education"
 }
 
 # ── Register all ZIMs with kiwix-serve ───────────────────────────────────────
@@ -470,6 +502,7 @@ main() {
     dl_khan
     dl_medical
     dl_expansion
+    dl_expansion_en
     # TED goes last (Science alone is 15 GB): on a nearly-full drive the
     # least-critical content should be what a disk-full failure lands on.
     dl_ted
