@@ -9,9 +9,9 @@ function show(id, btn) {
 function copyCode(btn) {
   const pre = btn.parentElement.querySelector('pre');
   navigator.clipboard.writeText(pre.innerText).then(() => {
-    btn.textContent = 'Copied!';
+    btn.textContent = 'Copié !';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => {
     const sel = window.getSelection();
     const range = document.createRange();
