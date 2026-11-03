@@ -336,16 +336,16 @@ dl_stackexchange() {
     [[ "${CONTENT_STACKEXCHANGE_EN:-N}" =~ [Yy] ]] || return
     info "=== Stack Exchange (anglais, option) ==="
     declare -A SE_PACKAGES=(
-        ["Super User"]="$KIWIX_MIRROR/stack_exchange/superuser.com_en_all_2026-02.zim"
-        ["DIY"]="$KIWIX_MIRROR/stack_exchange/diy.stackexchange.com_en_all_2026-02.zim"
-        ["Cooking"]="$KIWIX_MIRROR/stack_exchange/cooking.stackexchange.com_en_all_2026-02.zim"
-        ["Ham Radio"]="$KIWIX_MIRROR/stack_exchange/ham.stackexchange.com_en_all_2026-02.zim"
-        ["Outdoors"]="$KIWIX_MIRROR/stack_exchange/outdoors.stackexchange.com_en_all_2026-02.zim"
-        ["Gardening"]="$KIWIX_MIRROR/stack_exchange/gardening.stackexchange.com_en_all_2026-02.zim"
-        ["Medical Sciences"]="$KIWIX_MIRROR/stack_exchange/medicalsciences.stackexchange.com_en_all_2026-02.zim"
-        ["Sustainability"]="$KIWIX_MIRROR/stack_exchange/sustainability.stackexchange.com_en_all_2026-02.zim"
-        ["Electronics"]="$KIWIX_MIRROR/stack_exchange/electronics.stackexchange.com_en_all_2026-02.zim"
-        ["Unix/Linux"]="$KIWIX_MIRROR/stack_exchange/unix.stackexchange.com_en_all_2026-02.zim"
+        ["Super User"]="$KIWIX_MIRROR/stack_exchange/superuser.com_en_all_2026-10.zim"
+        ["DIY"]="$KIWIX_MIRROR/stack_exchange/diy.stackexchange.com_en_all_2026-10.zim"
+        ["Cooking"]="$KIWIX_MIRROR/stack_exchange/cooking.stackexchange.com_en_all_2026-10.zim"
+        ["Ham Radio"]="$KIWIX_MIRROR/stack_exchange/ham.stackexchange.com_en_all_2026-10.zim"
+        ["Outdoors"]="$KIWIX_MIRROR/stack_exchange/outdoors.stackexchange.com_en_all_2026-10.zim"
+        ["Gardening"]="$KIWIX_MIRROR/stack_exchange/gardening.stackexchange.com_en_all_2026-10.zim"
+        ["Medical Sciences"]="$KIWIX_MIRROR/stack_exchange/medicalsciences.stackexchange.com_en_all_2026-10.zim"
+        ["Sustainability"]="$KIWIX_MIRROR/stack_exchange/sustainability.stackexchange.com_en_all_2026-10.zim"
+        ["Electronics"]="$KIWIX_MIRROR/stack_exchange/electronics.stackexchange.com_en_all_2026-10.zim"
+        ["Unix/Linux"]="$KIWIX_MIRROR/stack_exchange/unix.stackexchange.com_en_all_2026-10.zim"
     )
 
     for name in "${!SE_PACKAGES[@]}"; do
@@ -361,7 +361,7 @@ dl_gutenberg() {
     info "=== Projet Gutenberg (livres en français) ==="
     # Le nom daté est remplacé par la dernière version publiée (resolve_zim_url).
     download_zim "Gutenberg FR" \
-        "$KIWIX_MIRROR/gutenberg/gutenberg_fr_all_2022-10.zim" \
+        "$KIWIX_MIRROR/gutenberg/gutenberg_fr_all_2026-01.zim" \
         "$ZIM_DIR/books"
 }
 

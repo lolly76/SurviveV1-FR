@@ -28,6 +28,7 @@ jobs:
           grep -rhoE 'https?://[A-Za-z0-9._~:/?#\[\]@!$&'"'"'()*+,;=%-]+' \
               download/ setup/ sync/ scripts/ config/ 2>/dev/null \
             | sed -E 's/[")''`]+$//' \
+            | grep -vE '\$|localhost|127\.0\.0\.1|10\.42\.|\.local|exemple\.fr|^https?://[^/]*$' \
             | sort -u > .url_health/urls.txt
           wc -l .url_health/urls.txt
           fail=0
