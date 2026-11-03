@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Kolibri educational content downloader
-# Downloads Khan Academy, CK-12, and other educational channels offline
+# SurviveV1 — Téléchargeur de contenus éducatifs Kolibri
+# Télécharge la chaîne Khan Academy en français pour une utilisation hors ligne
 # =============================================================================
 set -euo pipefail
 
@@ -23,88 +23,72 @@ done
 export KOLIBRI_HOME
 mkdir -p "$KOLIBRI_HOME"
 
-BLUE='\033[0;34m'; GREEN='\033[0;32m'; NC='\033[0m'
+BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()    { echo -e "${BLUE}[KOLIBRI]${NC} $*"; }
 success() { echo -e "${GREEN}[KOLIBRI]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[KOLIBRI]${NC} $*"; }
 
-# ── Kolibri channel IDs ──────────────────────────────────────────────────────
-# Find channel IDs at: https://kolibri-demo.learningequality.org
-
-# Khan Academy specific channels
+# ── Identifiants de chaînes Kolibri ──────────────────────────────────────────
+# Chaîne Khan Academy en français (arbres thématiques France + Belgique :
+# mathématiques, sciences, informatique, économie, etc.). Identifiant relevé
+# dans la documentation du projet openzim/khan-chef (chaîne Kolibri publiée).
+# Autres chaînes : https://studio.learningequality.org/ (catalogue Kolibri).
 KHAN_CHANNELS=(
-    "fe6fc4fa09514da89ccc4b42c3c27c19"  # Khan Academy Math
-    "a93e45a96ce147b68da3f4cac4378e82"  # Khan Academy Science
-    "f9d3e0e46e3c4890816e4b4b8c45b7b2"  # Khan Academy Computing
-    "3a9e1bf58fc14c3d85a7e6fccabb8017"  # Khan Academy Biology
-    "6c7a0e748cfc4572af1a4cf39e6c2c6b"  # Khan Academy Chemistry
-    "a523ac6a569b499782b6982a40a2ddd3"  # Khan Academy Physics
-    "b9e1f8af94bd47929c3ef0a4f6b5b474"  # Khan Academy Medicine/Health
-    "d56a9de4d0a54e88a891df0a73e70be8"  # Khan Academy Agriculture
-    "e34282d9d6894a2386d07a8e3b38e756"  # Khan Academy Engineering
+    "878ec2e6f88c5c268b1be6f202833cd4"  # Khan Academy (Français)
 )
 
-# ── Import channel ──────────────────────────────────────────────────────────
+# ── Import d'une chaîne ─────────────────────────────────────────────────────
 import_channel() {
     local name="$1"
     local channel_id="$2"
 
-    info "Importing: $name ($channel_id)"
+    info "Import : $name ($channel_id)"
     kolibri manage importchannel network "$channel_id" 2>/dev/null || {
-        info "Trying with token..."
-        kolibri manage importchannel network "$channel_id" --token="$channel_id" 2>/dev/null || \
-        warn "Could not import $name"
-        return
+        warn "Impossible d'importer la chaîne $name"
+        return 0
     }
 
-    info "Importing content for: $name"
-    kolibri manage importcontent network "$channel_id" 2>/dev/null || \
-        warn "Content import failed for $name"
+    info "Import du contenu : $name"
+    kolibri manage importcontent network "$channel_id" 2>/dev/null || {
+        warn "L'import du contenu a échoué pour $name"
+        return 0
+    }
 
-    success "Imported: $name"
+    success "Importé : $name"
 }
 
 # ── Start Kolibri server briefly for import ───────────────────────────────────
 start_kolibri() {
-    info "Starting Kolibri..."
+    info "Démarrage de Kolibri..."
     kolibri start --background 2>/dev/null
     sleep 5
 }
 
 stop_kolibri() {
-    info "Stopping Kolibri..."
+    info "Arrêt de Kolibri..."
     kolibri stop 2>/dev/null || true
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Programme principal ───────────────────────────────────────────────────────
 main() {
-    info "Starting Kolibri content download to: $KOLIBRI_HOME"
+    info "Début du téléchargement du contenu Kolibri vers : $KOLIBRI_HOME"
 
-    # Initialize Kolibri if not done
+    # Initialiser Kolibri si ce n'est pas déjà fait
     kolibri manage migrate 2>/dev/null || true
     kolibri manage createdefaultfacility 2>/dev/null || true
 
     start_kolibri
 
-    # Import Khan Academy channels (most valuable for survival knowledge)
+    # Khan Academy en français (le plus précieux pour l'apprentissage)
     for channel_id in "${KHAN_CHANNELS[@]}"; do
-        import_channel "Khan Academy" "$channel_id"
-    done
-
-    # Import other channels
-    declare -A OTHER_CHANNELS=(
-        ["CK-12"]="c89efbfd13ae437bb62b7ae7fd826cc4"
-        ["PhET Simulations"]="ad25730a52814f10b98d09a8f5bde26e"
-    )
-
-    for name in "${!OTHER_CHANNELS[@]}"; do
-        import_channel "$name" "${OTHER_CHANNELS[$name]}"
+        import_channel "Khan Academy (Français)" "$channel_id"
     done
 
     stop_kolibri
 
-    success "Kolibri content download complete"
-    info "Content location: $KOLIBRI_HOME"
-    info "Access at: http://localhost:8082 (after starting services)"
+    success "Téléchargement du contenu Kolibri terminé"
+    info "Emplacement du contenu : $KOLIBRI_HOME"
+    info "Accès : http://localhost:8082 (une fois les services démarrés)"
     du -sh "$KOLIBRI_HOME" 2>/dev/null || true
 }
 
