@@ -1,157 +1,157 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — One-click bootstrap
+# SurviveV1 — Amorçage en un clic
 #
-# Usage (on a fresh Raspberry Pi 5):
+# Utilisation (sur un Raspberry Pi 5 tout neuf) :
 #   curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/main/install/bootstrap.sh | bash
 #
-# The script:
-#   1. Checks minimum requirements (aarch64, Bookworm, internet)
-#   2. Installs git if missing
-#   3. Clones the repo
-#   4. Launches the interactive installation wizard
+# Le script :
+#   1. Vérifie la configuration minimale (aarch64, Bookworm, Internet)
+#   2. Installe git s'il manque
+#   3. Clone le dépôt
+#   4. Lance l'assistant d'installation interactif
 #
-# Override defaults with environment variables:
-#   SURVIVE_REPO   - Git repo URL  (default: https://github.com/lolly76/SurviveV1-FR.git)
-#   SURVIVE_BRANCH - Branch/tag    (default: main)
-#   SURVIVE_DIR    - Clone target  (default: /home/$SUDO_USER/SurviveV1 or ~/SurviveV1)
+# Valeurs par défaut modifiables par variables d'environnement :
+#   SURVIVE_REPO   - URL du dépôt Git  (défaut : https://github.com/lolly76/SurviveV1-FR.git)
+#   SURVIVE_BRANCH - Branche ou étiquette  (défaut : main)
+#   SURVIVE_DIR    - Dossier de clonage    (défaut : /home/$SUDO_USER/SurviveV1 ou ~/SurviveV1)
 # =============================================================================
 set -euo pipefail
 
 SURVIVE_REPO="${SURVIVE_REPO:-https://github.com/lolly76/SurviveV1-FR.git}"
 SURVIVE_BRANCH="${SURVIVE_BRANCH:-main}"
 
-# Resolve clone target: prefer the invoking user's home directory so root-cloned
-# files don't end up owned by root with the wrong permissions.
+# Dossier de clonage : on préfère le dossier personnel de l'utilisateur appelant,
+# pour que les fichiers clonés en root n'appartiennent pas à root par erreur.
 REAL_USER="${SUDO_USER:-${USER:-pi}}"
 REAL_HOME=$(getent passwd "$REAL_USER" 2>/dev/null | cut -d: -f6 || echo "/home/$REAL_USER")
 SURVIVE_DIR="${SURVIVE_DIR:-${REAL_HOME}/SurviveV1}"
 
-# ── Colours ───────────────────────────────────────────────────────────────────
+# ── Couleurs ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
 
 info()  { echo -e "  ${BLUE}→${NC}  $*"; }
 ok()    { echo -e "  ${GREEN}✓${NC}  $*"; }
 warn()  { echo -e "  ${YELLOW}!${NC}  $*"; }
-die()   { echo -e "\n${RED}[ERROR]${NC} $*" >&2; exit 1; }
+die()   { echo -e "\n${RED}[ERREUR]${NC} $*" >&2; exit 1; }
 
-# ── Banner ────────────────────────────────────────────────────────────────────
+# ── Bannière ────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}"
 echo "  ╔════════════════════════════════════════════╗"
-echo "  ║    SurviveV1 — Offline Survival System    ║"
-echo "  ║         One-Click Bootstrap Installer     ║"
+echo "  ║  SurviveV1-FR — Survie hors ligne (FR)    ║"
+echo "  ║      Installateur en un clic              ║"
 echo "  ╚════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo ""
 
-# ── Step 1: Minimum system requirements ───────────────────────────────────────
-info "Checking system requirements..."
+# ── Étape 1 : configuration minimale ───────────────────────────────────────
+info "Vérification de la configuration requise..."
 
-# Architecture — must be 64-bit ARM
+# Architecture : ARM 64 bits obligatoire
 ARCH=$(uname -m)
 if [[ "$ARCH" != "aarch64" ]]; then
-    die "Unsupported architecture: ${ARCH}\n" \
-        "  SurviveV1 is designed for Raspberry Pi 5 (aarch64).\n" \
-        "  64-bit Raspberry Pi OS is required."
+    die "Architecture non prise en charge : ${ARCH}\n" \
+        "  SurviveV1 est conçu pour le Raspberry Pi 5 (aarch64).\n" \
+        "  Raspberry Pi OS 64 bits est requis."
 fi
-ok "Architecture: ${ARCH}"
+ok "Architecture : ${ARCH}"
 
-# RAM — warn if under 4 GB
+# RAM : avertissement en dessous de 4 Go
 RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 0)
 if (( RAM_MB < 3800 )); then
-    warn "RAM: ${RAM_MB} MB — 4 GB minimum recommended (some services may be slow)"
+    warn "RAM : ${RAM_MB} Mo — 4 Go minimum recommandés (certains services peuvent être lents)"
 else
-    ok "RAM: ${RAM_MB} MB"
+    ok "RAM : ${RAM_MB} Mo"
 fi
 
-# OS — Raspberry Pi OS Bookworm (Debian 12) or Trixie (Debian 13)
+# Système : Raspberry Pi OS Bookworm (Debian 12) ou Trixie (Debian 13)
 if grep -qi "bookworm\|trixie" /etc/os-release 2>/dev/null; then
     OS_NAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
-    ok "OS: Raspberry Pi OS (${OS_NAME})"
+    ok "Système : Raspberry Pi OS (${OS_NAME})"
 elif grep -q "Bullseye\|bullseye" /etc/os-release 2>/dev/null; then
-    warn "OS: Bullseye detected — Bookworm or newer is recommended"
+    warn "Système : Bullseye détecté — Bookworm ou plus récent recommandé"
 elif grep -q "ID=debian\|ID=raspbian" /etc/os-release 2>/dev/null; then
     OS_NAME=$(. /etc/os-release && echo "$PRETTY_NAME")
-    warn "OS: ${OS_NAME} — untested, may work"
+    warn "Système : ${OS_NAME} — non testé, peut fonctionner"
 else
-    die "Unsupported OS. Raspberry Pi OS (Bookworm) is required."
+    die "Système non pris en charge. Raspberry Pi OS (Bookworm) est requis."
 fi
 
-# Internet
+# Accès Internet
 if ! curl -sf --max-time 10 https://github.com >/dev/null 2>&1; then
-    die "No internet access. SurviveV1 requires internet during setup\n" \
-        "  (the system runs 100%% offline afterward)."
+    die "Pas d'accès à Internet. SurviveV1 en a besoin pendant l'installation\n" \
+        "  (le système fonctionne ensuite 100 %% hors ligne)."
 fi
-ok "Internet: connected"
+ok "Internet : connecté"
 
 echo ""
 
-# ── Step 2: Ensure git is installed ───────────────────────────────────────────
+# ── Étape 2 : vérifier que git est installé ───────────────────────────────────────────
 if ! command -v git &>/dev/null; then
-    info "git not found — installing..."
-    # Need apt, so need root
+    info "git introuvable — installation..."
+    # apt est nécessaire, donc les droits root aussi
     if [[ $EUID -ne 0 ]]; then
         sudo apt-get update -qq && sudo apt-get install -y -qq git
     else
         apt-get update -qq && apt-get install -y -qq git
     fi
-    ok "git installed"
+    ok "git installé"
 else
     ok "git: $(git --version)"
 fi
 
-# ── Step 3: Clone or update the repository ────────────────────────────────────
+# ── Étape 3 : cloner ou mettre à jour le dépôt ────────────────────────────────────
 echo ""
-info "Repository: ${SURVIVE_REPO}  (branch: ${SURVIVE_BRANCH})"
-info "Clone target: ${SURVIVE_DIR}"
+info "Dépôt : ${SURVIVE_REPO}  (branche : ${SURVIVE_BRANCH})"
+info "Dossier de clonage : ${SURVIVE_DIR}"
 echo ""
 
 if [[ -d "${SURVIVE_DIR}/.git" ]]; then
-    warn "Repository already exists at ${SURVIVE_DIR}"
+    warn "Le dépôt existe déjà dans ${SURVIVE_DIR}"
     ask_update() {
-        echo -en "  ${BOLD}Update to latest ${SURVIVE_BRANCH}? [Y/n]${NC} "
-        # Under `curl | bash` stdin is the (exhausted) script pipe, not the
-        # keyboard — read from the terminal directly, defaulting to yes.
-        read -r ans < /dev/tty 2>/dev/null || ans=y
-        if [[ "${ans:-y}" =~ ^[Yy]$ ]]; then
+        echo -en "  ${BOLD}Mettre à jour vers la dernière version de ${SURVIVE_BRANCH} ? [O/n]${NC} "
+        # Avec `curl | bash`, stdin est le tube du script (épuisé), pas le clavier :
+        # on lit directement le terminal, avec « oui » par défaut.
+        read -r ans < /dev/tty 2>/dev/null || ans=o
+        if [[ "${ans:-o}" =~ ^[YyOo] ]]; then
             git -C "${SURVIVE_DIR}" fetch origin
             git -C "${SURVIVE_DIR}" checkout "${SURVIVE_BRANCH}"
             git -C "${SURVIVE_DIR}" pull --ff-only origin "${SURVIVE_BRANCH}"
-            ok "Repository updated"
+            ok "Dépôt mis à jour"
         else
-            info "Using existing repository"
+            info "Utilisation du dépôt existant"
         fi
     }
     ask_update
 else
-    info "Cloning SurviveV1..."
+    info "Clonage de SurviveV1..."
     git clone --branch "${SURVIVE_BRANCH}" --depth 1 \
         "${SURVIVE_REPO}" "${SURVIVE_DIR}" \
-        || die "Failed to clone repository. Check your network and try again."
-    # Fix ownership — clone ran as root but files should belong to the real user
+        || die "Échec du clonage du dépôt. Vérifiez votre réseau et réessayez."
+    # Corriger les droits : le clonage s'est fait en root mais les fichiers doivent appartenir à l'utilisateur
     if [[ $EUID -eq 0 ]] && [[ -n "$REAL_USER" ]] && id "$REAL_USER" &>/dev/null; then
         chown -R "${REAL_USER}:${REAL_USER}" "${SURVIVE_DIR}"
     fi
-    ok "Repository cloned to ${SURVIVE_DIR}"
+    ok "Dépôt cloné dans ${SURVIVE_DIR}"
 fi
 
-# ── Step 4: Launch the wizard ─────────────────────────────────────────────────
+# ── Étape 4 : lancer l'assistant ─────────────────────────────────────────────────
 echo ""
-info "Launching installation wizard..."
+info "Lancement de l'assistant d'installation..."
 echo ""
 
 WIZARD="${SURVIVE_DIR}/install/wizard.sh"
-[[ -f "$WIZARD" ]] || die "Wizard not found at ${WIZARD} — clone may be incomplete."
+[[ -f "$WIZARD" ]] || die "Assistant introuvable (${WIZARD}) — le clonage est peut-être incomplet."
 chmod +x "$WIZARD"
 
-# Elevate to root for the wizard (installer requires root for apt, systemd, etc.)
+# Passage en root pour l'assistant (apt, systemd, etc. l'exigent).
 #
-# stdin handling is critical here: under `curl | bash`, stdin is the pipe that
-# carried this script and is at EOF — the wizard's interactive `read` calls
-# would all fail instantly (and its `set -e` would exit silently at the very
-# first prompt). Hand the wizard the real terminal instead.
+# La gestion de stdin est critique : avec `curl | bash`, stdin est le tube qui
+# a transporté ce script, déjà en fin de fichier — tous les `read` interactifs
+# de l'assistant échoueraient aussitôt (et `set -e` l'arrêterait en silence dès
+# la première question). On lui donne donc le vrai terminal.
 SUDO_CMD=()
 [[ $EUID -ne 0 ]] && SUDO_CMD=(sudo)
 if [[ -t 0 ]]; then
@@ -159,6 +159,6 @@ if [[ -t 0 ]]; then
 elif [[ -r /dev/tty ]]; then
     exec "${SUDO_CMD[@]}" bash "$WIZARD" < /dev/tty
 else
-    die "No interactive terminal available for the wizard.\n" \
-        "  Run it directly instead:  cd ${SURVIVE_DIR} && sudo bash install/wizard.sh"
+    die "Aucun terminal interactif disponible pour l'assistant.\n" \
+        "  Lancez-le directement :  cd ${SURVIVE_DIR} && sudo bash install/wizard.sh"
 fi
