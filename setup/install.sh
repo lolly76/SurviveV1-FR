@@ -37,19 +37,19 @@ error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 # impossible to diagnose. Always say what died and where.
 _on_error() {
     local rc=$1 line=$2 cmd=$3
-    error "Installation failed (exit ${rc}) at line ${line}: ${cmd}"
-    error "Full log: $LOG_FILE"
-    error "Fix the issue above, then re-run: sudo bash setup/install.sh"
+    error "Échec de l'installation (code ${rc}) à la ligne ${line} : ${cmd}"
+    error "Journal complet : $LOG_FILE"
+    error "Corrigez le problème ci-dessus, puis relancez : sudo bash setup/install.sh"
 }
 trap '_on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
 require_root() {
-    [[ $EUID -eq 0 ]] || { error "Run with sudo: sudo bash $0"; exit 1; }
+    [[ $EUID -eq 0 ]] || { error "Lancez avec sudo : sudo bash $0"; exit 1; }
 }
 
 # ── Enable and start everything ───────────────────────────────────────────────
 enable_core_services() {
-    info "Enabling services to start on boot (and starting them now)..."
+    info "Activation des services au démarrage (et démarrage immédiat)..."
     systemctl daemon-reload
     local units=(survive-dashboard kiwix ollama martin-tiles calibre-web)
     if command -v kolibri &>/dev/null || [[ -x /opt/survive/venv/bin/kolibri ]]; then
@@ -60,9 +60,9 @@ enable_core_services() {
         systemctl reset-failed "$u" 2>/dev/null || true
         systemctl enable "$u" 2>/dev/null || true
         if systemctl restart "$u" 2>/dev/null; then
-            success "$u started"
+            success "$u démarré"
         else
-            warn "$u failed to start — check: journalctl -u $u -n 20"
+            warn "$u n'a pas démarré — vérifiez : journalctl -u $u -n 20"
         fi
     done
 }
@@ -76,7 +76,7 @@ cat << 'EOF'
   ___) | |_| | |   \ V /| |\ V /  __/ \ V /  / /
  |____/ \__,_|_|    \_/ |_| \_/ \___|  \_/  /_/
 
-   Offline Survival Repository — Raspberry Pi 5 Edition
+   Base de connaissances de survie hors ligne — Édition française, Raspberry Pi 5
 EOF
 }
 
@@ -89,25 +89,25 @@ update_system() {
     local free_mb
     free_mb=$(df -Pm / | awk 'NR==2 {print $4}')
     if (( free_mb < 2048 )); then
-        error "Only ${free_mb} MB free on the root filesystem — apt needs ~2 GB."
-        error "Common causes and fixes:"
-        error "  sudo apt-get clean                        # drop cached .deb files"
-        error "  # Files hidden UNDER the storage mountpoint from an early download:"
+        error "Seulement ${free_mb} Mo libres sur le système de fichiers racine — apt a besoin d'environ 2 Go."
+        error "Causes fréquentes et solutions :"
+        error "  sudo apt-get clean                        # vider le cache des paquets .deb"
+        error "  # Fichiers cachés SOUS le point de montage du stockage (téléchargement précoce) :"
         error "  sudo mount --bind / /tmp/rootview && sudo du -sh /tmp/rootview/mnt/survive"
         error "  sudo rm -rf /tmp/rootview/mnt/survive/* && sudo umount /tmp/rootview"
-        error "  du -sh ~/.ollama /usr/share/ollama        # stray AI models on the SD card"
+        error "  du -sh ~/.ollama /usr/share/ollama        # modèles d'IA égarés sur la carte SD"
         exit 1
     fi
 
-    info "Updating system packages..."
+    info "Mise à jour des paquets système..."
     apt-get update -qq
     apt-get upgrade -y -qq
-    success "System updated"
+    success "Système à jour"
 }
 
 # ── Core dependencies ─────────────────────────────────────────────────────────
 install_core_deps() {
-    info "Installing core dependencies..."
+    info "Installation des dépendances de base..."
     apt-get install -y -qq \
         git curl wget aria2 rsync \
         python3 python3-pip python3-venv python3-dev \
@@ -126,31 +126,31 @@ install_core_deps() {
         rclone \
         chrony \
         fuse3
-    success "Core dependencies installed"
+    success "Dépendances de base installées"
 }
 
 # ── NTP time server for hotspot clients ───────────────────────────────────────
 configure_chrony() {
-    info "Configuring chrony to serve time on the hotspot subnet..."
+    info "Configuration de chrony pour fournir l'heure aux appareils du point d'accès Wi-Fi..."
     if [[ -d /etc/chrony/conf.d ]] && [[ -f "$REPO_DIR/config/chrony-survive.conf" ]]; then
         install -m 644 "$REPO_DIR/config/chrony-survive.conf" \
             /etc/chrony/conf.d/survive.conf
         systemctl restart chrony 2>/dev/null || systemctl restart chronyd 2>/dev/null || true
-        success "chrony serving time to 10.42.0.0/24 (grid-down safe)"
+        success "chrony fournit l'heure à 10.42.0.0/24 (fonctionne sans réseau)"
     else
-        info "chrony conf.d not present -- skipping NTP server config"
+        info "chrony conf.d absent -- configuration du serveur NTP ignorée"
     fi
 }
 
 # ── Python virtual environment ────────────────────────────────────────────────
 setup_python_env() {
-    info "Setting up Python virtual environment..."
+    info "Création de l'environnement virtuel Python..."
     VENV_DIR="/opt/survive/venv"
     python3 -m venv "$VENV_DIR"
     source "$VENV_DIR/bin/activate"
     pip install -q --upgrade pip
     pip install -q -r "$REPO_DIR/requirements.txt"
-    success "Python environment ready at $VENV_DIR"
+    success "Environnement Python prêt dans $VENV_DIR"
 }
 
 # ── yt-dlp ────────────────────────────────────────────────────────────────────
@@ -161,35 +161,35 @@ setup_python_env() {
 MIN_YTDLP_VERSION="2026.02.21"
 
 install_ytdlp() {
-    info "Installing yt-dlp..."
+    info "Installation de yt-dlp..."
     curl -sL -o /usr/local/bin/yt-dlp \
         "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
     chmod 0755 /usr/local/bin/yt-dlp
-    command -v yt-dlp &>/dev/null || { error "yt-dlp install failed"; exit 1; }
+    command -v yt-dlp &>/dev/null || { error "Échec de l'installation de yt-dlp"; exit 1; }
     local ver
     ver="$(yt-dlp --version 2>/dev/null)"
     if [[ "$(printf '%s\n%s\n' "$MIN_YTDLP_VERSION" "$ver" | sort -V | head -1)" \
           != "$MIN_YTDLP_VERSION" ]]; then
-        warn "yt-dlp $ver < required $MIN_YTDLP_VERSION (security fixes)"
+        warn "yt-dlp $ver < $MIN_YTDLP_VERSION requis (correctifs de sécurité)"
     fi
-    success "yt-dlp installed ($ver)"
+    success "yt-dlp installé ($ver)"
 }
 
 # ── Kiwix tools ───────────────────────────────────────────────────────────────
 install_kiwix() {
-    info "Installing Kiwix tools..."
+    info "Installation des outils Kiwix..."
     if command -v kiwix-serve &>/dev/null && command -v kiwix-manage &>/dev/null; then
-        success "Kiwix tools already present"
+        success "Outils Kiwix déjà présents"
         return
     fi
 
     # Preferred: the distro package — signed, maintained, and matched to the OS.
     if apt-get install -y -qq kiwix-tools && command -v kiwix-serve &>/dev/null; then
-        success "Kiwix tools installed from apt"
+        success "Outils Kiwix installés depuis apt"
         return
     fi
 
-    warn "kiwix-tools unavailable via apt — falling back to the upstream build"
+    warn "kiwix-tools indisponible via apt — repli sur la version du projet Kiwix"
     # kiwix-tools is NOT on download.openzim.org any more (that host now carries
     # only libzim/zim-tools). The unversioned filename below always resolves to
     # the current release, so this cannot rot the way a pinned version does.
@@ -199,9 +199,9 @@ install_kiwix() {
     # No -q: a download failure must be visible, not silent.
     if ! wget -O "$tmp/kiwix-tools.tar.gz" "$url"; then
         rm -rf "$tmp"
-        error "Could not download Kiwix tools from:"
+        error "Impossible de télécharger les outils Kiwix depuis :"
         error "  $url"
-        error "Check internet access, then re-run: sudo bash setup/install.sh"
+        error "Vérifiez l'accès à Internet, puis relancez : sudo bash setup/install.sh"
         exit 1
     fi
     tar -xzf "$tmp/kiwix-tools.tar.gz" -C "$tmp"
@@ -210,16 +210,16 @@ install_kiwix() {
     cp "$tmp"/kiwix-tools_*/kiwix-search /usr/local/bin/ 2>/dev/null || true
     chmod +x /usr/local/bin/kiwix-*
     rm -rf "$tmp"
-    command -v kiwix-serve &>/dev/null || { error "kiwix-serve install failed"; exit 1; }
-    command -v kiwix-manage &>/dev/null || { error "kiwix-manage install failed"; exit 1; }
-    success "Kiwix tools installed"
+    command -v kiwix-serve &>/dev/null || { error "Échec de l'installation de kiwix-serve"; exit 1; }
+    command -v kiwix-manage &>/dev/null || { error "Échec de l'installation de kiwix-manage"; exit 1; }
+    success "Outils Kiwix installés"
 }
 
 # ── Kolibri (Khan Academy offline) ───────────────────────────────────────────
 install_kolibri() {
-    info "Installing Kolibri..."
+    info "Installation de Kolibri..."
     if command -v kolibri &>/dev/null || [[ -x /opt/survive/venv/bin/kolibri ]]; then
-        success "Kolibri already installed"
+        success "Kolibri déjà installé"
         return 0
     fi
 
@@ -229,7 +229,7 @@ install_kolibri() {
        && [[ -s /tmp/kolibri_install.sh ]]; then
         bash /tmp/kolibri_install.sh || true
     else
-        warn "Could not fetch the Kolibri installer script"
+        warn "Impossible de récupérer le script d'installation de Kolibri"
     fi
     if ! command -v kolibri &>/dev/null; then
         /opt/survive/venv/bin/pip install -q kolibri || true
@@ -239,39 +239,39 @@ install_kolibri() {
     # unconditionally, so a failed install looked like a success and the
     # dashboard tile stayed DOWN with no explanation.
     if command -v kolibri &>/dev/null || [[ -x /opt/survive/venv/bin/kolibri ]]; then
-        success "Kolibri installed"
+        success "Kolibri installé"
         return 0
     fi
-    warn "Kolibri did NOT install (often a Python version conflict —"
-    warn "this system has Python $(python3 -V 2>&1 | awk '{print $2}'))."
-    warn "The Education tile will stay DOWN. Khan Academy content is also"
-    warn "available as a Kiwix ZIM, which needs no extra service."
+    warn "Kolibri n'a PAS été installé (souvent un conflit de version de Python —"
+    warn "ce système a Python $(python3 -V 2>&1 | awk '{print $2}'))."
+    warn "La tuile Éducation restera à l'arrêt. Le contenu Khan Academy existe aussi"
+    warn "sous forme de ZIM Kiwix, qui ne demande aucun service supplémentaire."
     return 1
 }
 
 # ── Calibre + Calibre-Web ─────────────────────────────────────────────────────
 install_calibre() {
-    info "Installing Calibre..."
+    info "Installation de Calibre..."
     apt-get install -y -qq calibre || {
         wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | bash /dev/stdin
     }
 
-    info "Installing Calibre-Web..."
+    info "Installation de Calibre-Web..."
     /opt/survive/venv/bin/pip install -q calibreweb
 
     # Build the Calibre library from any ebooks already downloaded. Safe no-op
     # if none exist yet — books_pdfs.sh rebuilds it after each download.
     bash "$(dirname "${BASH_SOURCE[0]}")/../scripts/build_ebook_library.sh" || true
-    success "Calibre + Calibre-Web installed"
+    success "Calibre + Calibre-Web installés"
 }
 
 # ── Martin tile server (offline maps) ─────────────────────────────────────────
 install_martin() {
     if command -v martin &>/dev/null; then
-        success "Martin already installed ($(command -v martin))"
+        success "Martin déjà installé ($(command -v martin))"
         return 0
     fi
-    info "Installing Martin tile server..."
+    info "Installation du serveur de tuiles Martin..."
 
     # Do NOT pin a version: the previously hardcoded v0.14.3 asset is gone from
     # GitHub (404), which is why the maps tile never came up. Ask the API for
@@ -287,13 +287,13 @@ install_martin() {
           | grep -E '\.tar\.gz$' | head -1) || true
 
     if [[ -z "$url" ]]; then
-        warn "Could not determine a Martin release for $(uname -m)."
-        warn "Install manually from https://github.com/maplibre/martin/releases"
-        warn "and re-run: sudo bash scripts/generate_services.sh"
+        warn "Impossible de déterminer une version de Martin pour $(uname -m)."
+        warn "Installez-le à la main depuis https://github.com/maplibre/martin/releases"
+        warn "puis relancez : sudo bash scripts/generate_services.sh"
         return 1
     fi
 
-    info "Downloading $(basename "$url")"
+    info "Téléchargement de $(basename "$url")"
     local tmp
     tmp=$(mktemp -d)
     if wget -q -O "$tmp/martin.tar.gz" "$url"; then
@@ -304,12 +304,12 @@ install_martin() {
         [[ -n "$bin" ]] || bin=$(find "$tmp" -type f -name martin | head -1)
         if [[ -n "$bin" ]]; then
             install -m 0755 "$bin" /usr/local/bin/martin
-            success "Martin installed ($(/usr/local/bin/martin --version 2>&1 | head -1))"
+            success "Martin installé ($(/usr/local/bin/martin --version 2>&1 | head -1))"
         else
-            warn "No martin binary inside the archive"
+            warn "Aucun binaire martin dans l'archive"
         fi
     else
-        warn "Martin download failed: $url"
+        warn "Échec du téléchargement de Martin : $url"
     fi
     rm -rf "$tmp"
     command -v martin &>/dev/null
@@ -317,9 +317,9 @@ install_martin() {
 
 # ── Jellyfin (video streaming) ────────────────────────────────────────────────
 install_jellyfin() {
-    info "Installing Jellyfin media server..."
+    info "Installation du serveur multimédia Jellyfin..."
     curl -fsSL https://repo.jellyfin.org/install-debuntu.sh | bash || {
-        warn "Jellyfin install script failed, trying manual method..."
+        warn "Le script d'installation de Jellyfin a échoué, essai de la méthode manuelle..."
         curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key \
             | gpg --dearmor -o /usr/share/keyrings/jellyfin.gpg
         echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=arm64] \
@@ -327,14 +327,14 @@ install_jellyfin() {
             > /etc/apt/sources.list.d/jellyfin.list
         apt-get update -qq && apt-get install -y -qq jellyfin
     }
-    success "Jellyfin installed"
+    success "Jellyfin installé"
 }
 
 # ── Ollama (local LLM) ────────────────────────────────────────────────────────
 install_ollama() {
-    info "Installing Ollama for local AI..."
+    info "Installation d'Ollama pour l'IA locale..."
     curl -fsSL https://ollama.ai/install.sh | sh
-    command -v ollama &>/dev/null || { error "Ollama install failed"; exit 1; }
+    command -v ollama &>/dev/null || { error "Échec de l'installation d'Ollama"; exit 1; }
 
     # The vendor installer registers its own ollama.service running as the
     # 'ollama' system user, whose models live in /usr/share/ollama/.ollama —
@@ -344,16 +344,16 @@ install_ollama() {
     # Retire the vendor unit here; install_services() then installs ours, which
     # points OLLAMA_MODELS at the storage drive.
     if systemctl list-unit-files ollama.service &>/dev/null; then
-        info "Disabling the vendor ollama.service (its models would fill the SD card)"
+        info "Désactivation de l'ollama.service d'origine (ses modèles rempliraient la carte SD)"
         systemctl disable --now ollama.service 2>/dev/null || true
     fi
-    success "Ollama installed"
+    success "Ollama installé"
 }
 
 # ── Storage setup ─────────────────────────────────────────────────────────────
 setup_storage() {
     STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
-    info "Setting up storage at $STORAGE_PATH..."
+    info "Préparation du stockage dans $STORAGE_PATH..."
 
     mkdir -p "$STORAGE_PATH"/{zim,videos,books,pdfs,maps,kolibri,ai_models,misc}
     mkdir -p "$STORAGE_PATH"/.sync
@@ -365,22 +365,22 @@ setup_storage() {
     chown -R "$SUDO_USER:$SUDO_USER" "$STORAGE_PATH" 2>/dev/null || \
     chown -R "pi:pi" "$STORAGE_PATH" 2>/dev/null || true
 
-    success "Storage configured at $STORAGE_PATH"
+    success "Stockage configuré dans $STORAGE_PATH"
 }
 
 # ── Nginx configuration ───────────────────────────────────────────────────────
 configure_nginx() {
-    info "Configuring Nginx reverse proxy..."
+    info "Configuration du proxy inverse Nginx..."
     cp "$REPO_DIR/config/nginx.conf" /etc/nginx/sites-available/survive
     ln -sfn /etc/nginx/sites-available/survive /etc/nginx/sites-enabled/survive
     rm -f /etc/nginx/sites-enabled/default
     nginx -t && systemctl reload nginx
-    success "Nginx configured"
+    success "Nginx configuré"
 }
 
 # ── Firewall ──────────────────────────────────────────────────────────────────
 configure_firewall() {
-    info "Configuring firewall..."
+    info "Configuration du pare-feu..."
     ufw --force reset
     ufw default deny incoming
     ufw default allow outgoing
@@ -403,20 +403,20 @@ configure_firewall() {
     # Allow from loopback for inter-service communication
     ufw allow in on lo
     ufw --force enable
-    success "Firewall configured (backend ports locked to localhost)"
+    success "Pare-feu configuré (port Ollama fermé, services accessibles depuis le réseau local)"
 }
 
 # ── Samba share ───────────────────────────────────────────────────────────────
 # SAMBA_HOSTS_ALLOW restricts the share to specified IPs/CIDRs. Default is
 # local-only; override in config/survive.conf (e.g. "127.0.0.1 192.168.1.").
 configure_samba() {
-    info "Configuring Samba for local file sharing..."
+    info "Configuration de Samba pour le partage de fichiers local..."
     STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
     local hosts_allow="${SAMBA_HOSTS_ALLOW:-127.0.0.1 192.168. 10.}"
     cat > /etc/samba/smb.conf << SAMBA
 [global]
    workgroup = SURVIVE
-   server string = SurviveV1 Knowledge Server
+   server string = Serveur de connaissances SurviveV1
    security = user
    map to guest = bad user
    dns proxy = no
@@ -431,7 +431,7 @@ configure_samba() {
    # Require a real user rather than anonymous guest access.
    guest ok = no
    valid users = @survive
-   comment = Survival Knowledge Repository
+   comment = Base de connaissances de survie
 SAMBA
     # Create a 'survive' group and add the default user, if present.
     getent group survive >/dev/null || groupadd survive
@@ -440,13 +440,13 @@ SAMBA
         usermod -aG survive "$SUDO_USER"
     fi
     systemctl restart smbd nmbd
-    success "Samba share configured (hosts allow: $hosts_allow)"
-    info "Set a Samba password with: sudo smbpasswd -a <username>"
+    success "Partage Samba configuré (hôtes autorisés : $hosts_allow)"
+    info "Définissez un mot de passe Samba avec : sudo smbpasswd -a <utilisateur>"
 }
 
 # ── Install systemd services ──────────────────────────────────────────────────
 install_services() {
-    info "Installing systemd services..."
+    info "Installation des services systemd..."
     # The unit files ship with User=pi, but the real login may be anything
     # (Raspberry Pi Imager lets users pick a name). Substitute the invoking
     # user so services actually start on non-'pi' systems.
@@ -458,7 +458,7 @@ install_services() {
             -e "s|/home/pi/SurviveV1|${REPO_DIR}|g" "$unit" \
             > "/etc/systemd/system/$(basename "$unit")"
     done
-    info "Services will run as user: ${svc_user}"
+    info "Les services s'exécuteront sous l'utilisateur : ${svc_user}"
     systemctl daemon-reload
     systemctl enable survive-dashboard.service
     systemctl enable kiwix.service
@@ -470,27 +470,27 @@ install_services() {
     # Stays inactive (ConditionPathExists) until download/comms.sh has run.
     systemctl enable survive-meshtastic.service 2>/dev/null || true
     systemctl enable survive-meshcore.service 2>/dev/null || true
-    success "Systemd services installed"
+    success "Services systemd installés"
 }
 
 # ── Hailo AI Hat setup ────────────────────────────────────────────────────────
 setup_ai_hat() {
     if [[ "${SKIP_AI_HAT:-false}" == "true" ]]; then
-        warn "Skipping AI Hat setup (SKIP_AI_HAT=true)"
+        warn "Configuration de l'AI Hat ignorée (SKIP_AI_HAT=true)"
         return
     fi
-    info "Setting up Hailo AI Hat..."
-    bash "$SCRIPT_DIR/install_ai_hat.sh" || warn "AI Hat setup failed — see docs/ai_hat_setup.md"
+    info "Configuration de l'AI Hat Hailo..."
+    bash "$SCRIPT_DIR/install_ai_hat.sh" || warn "Échec de la configuration de l'AI Hat — voir docs/ai_hat_setup.md"
 }
 
 # ── Avahi mDNS ────────────────────────────────────────────────────────────────
 configure_avahi() {
-    info "Configuring mDNS (survive.local)..."
+    info "Configuration du mDNS (survive.local)..."
     cat > /etc/avahi/services/survive.service << 'XML'
 <?xml version="1.0" standalone='no'?>
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 <service-group>
-  <name replace-wildcards="yes">SurviveV1 on %h</name>
+  <name replace-wildcards="yes">SurviveV1 sur %h</name>
   <service>
     <type>_http._tcp</type>
     <port>8080</port>
@@ -499,19 +499,19 @@ configure_avahi() {
 </service-group>
 XML
     systemctl restart avahi-daemon
-    success "Accessible at http://survive.local:8080"
+    success "Accessible sur http://survive.local:8080"
 }
 
 # ── Create /opt/survive structure ─────────────────────────────────────────────
 setup_opt_survive() {
-    info "Setting up /opt/survive..."
+    info "Préparation de /opt/survive..."
     mkdir -p /opt/survive/{venv,logs,db}
     cp -r "$REPO_DIR/web" /opt/survive/
     cp -r "$REPO_DIR/config" /opt/survive/
     ln -sfn "$REPO_DIR/data" /opt/survive/data
     REAL_USER="${SUDO_USER:-pi}"
     chown -R "$REAL_USER:$REAL_USER" /opt/survive
-    success "/opt/survive ready"
+    success "/opt/survive prêt"
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -520,8 +520,8 @@ main() {
     require_root
 
     echo ""
-    info "Starting SurviveV1 installation..."
-    info "Log: $LOG_FILE"
+    info "Démarrage de l'installation de SurviveV1..."
+    info "Journal : $LOG_FILE"
     echo ""
 
     update_system
@@ -532,7 +532,7 @@ main() {
     install_kiwix
     install_ollama
     setup_storage
-    bash "$SCRIPT_DIR/pi5_storage.sh" || warn "Pi 5 storage hardening skipped"
+    bash "$SCRIPT_DIR/pi5_storage.sh" || warn "Réglages de stockage du Pi 5 ignorés"
     configure_nginx
     configure_firewall
     configure_samba
@@ -540,7 +540,7 @@ main() {
     configure_chrony
     install_services
     bash "$REPO_DIR/scripts/install_sudoers.sh" \
-        || warn "Sudoers install failed — service restart buttons will be inert"
+        || warn "Échec de l'installation de sudoers — les boutons de redémarrage des services seront inactifs"
 
     # Content services. These were previously commented out, which shipped a
     # dashboard advertising Kolibri, Calibre-Web and Jellyfin on a machine where
@@ -548,27 +548,27 @@ main() {
     # Now gated by the content flags, so disabling a category also skips paying
     # for its (large) dependencies.
     if [[ "${CONTENT_KOLIBRI:-Y}" =~ [Yy] ]]; then
-        install_kolibri || warn "Kolibri install failed — dashboard tile will stay DOWN"
+        install_kolibri || warn "Échec de l'installation de Kolibri — la tuile du tableau de bord restera à l'arrêt"
     else
-        info "CONTENT_KOLIBRI=N — skipping Kolibri"
+        info "CONTENT_KOLIBRI=N — Kolibri ignoré"
     fi
 
     if [[ "${CONTENT_GUTENBERG:-Y}" =~ [Yy] ]] || [[ "${CONTENT_PDFS:-Y}" =~ [Yy] ]]; then
-        install_calibre || warn "Calibre-Web install failed — dashboard tile will stay DOWN"
+        install_calibre || warn "Échec de l'installation de Calibre-Web — la tuile du tableau de bord restera à l'arrêt"
     else
-        info "No book/PDF content selected — skipping Calibre-Web"
+        info "Aucun livre/PDF sélectionné — Calibre-Web ignoré"
     fi
 
     if [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]; then
-        install_martin || warn "Martin install failed — Maps tile will stay DOWN"
+        install_martin || warn "Échec de l'installation de Martin — la tuile Cartes restera à l'arrêt"
     else
-        info "CONTENT_MAPS=N — skipping Martin tile server"
+        info "CONTENT_MAPS=N — serveur de tuiles Martin ignoré"
     fi
 
     if [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]; then
-        install_jellyfin || warn "Jellyfin install failed — dashboard tile will stay DOWN"
+        install_jellyfin || warn "Échec de l'installation de Jellyfin — la tuile du tableau de bord restera à l'arrêt"
     else
-        info "CONTENT_VIDEOS=N — skipping Jellyfin"
+        info "CONTENT_VIDEOS=N — Jellyfin ignoré"
     fi
 
     # The Hailo stack is hardware-specific (8L vs 10H need different drivers)
@@ -580,7 +580,7 @@ main() {
     # Running it earlier resolved them as "not installed" and baked in the
     # wrong ExecStart.
     if [[ -x "$REPO_DIR/scripts/generate_services.sh" ]]; then
-        bash "$REPO_DIR/scripts/generate_services.sh" || warn "generate_services.sh failed"
+        bash "$REPO_DIR/scripts/generate_services.sh" || warn "Échec de generate_services.sh"
     fi
 
     # The installer used to END with "Enable and start with: <commands>" —
@@ -591,14 +591,14 @@ main() {
 
     echo ""
     success "============================================"
-    success "SurviveV1 installation complete!"
+    success "Installation de SurviveV1 terminée !"
     success "============================================"
     echo ""
-    info "Next steps:"
-    echo "  1. Download content:  bash download/download_all.sh"
-    echo "  2. Start services:    bash scripts/start_services.sh"
-    echo "  3. Open dashboard:    http://localhost:8080"
-    echo "  4. Network access:    http://survive.local:8080"
+    info "Étapes suivantes :"
+    echo "  1. Télécharger le contenu :  bash download/download_all.sh"
+    echo "  2. Démarrer les services :   bash scripts/start_services.sh"
+    echo "  3. Ouvrir le tableau de bord : http://localhost:8080"
+    echo "  4. Accès par le réseau :     http://survive.local:8080"
     echo ""
 }
 
