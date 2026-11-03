@@ -68,7 +68,7 @@ nano ~/SurviveV1/config/survive.conf
 
 # Réglages principaux :
 # SURVIVE_STORAGE_PATH="/mnt/survive"
-# MAP_REGION="north-america"  (ou votre région)
+# MAP_REGION="france"        (ou europe, world, etc.)
 # CONTENT_VIDEOS="Y"          (mettre N pour ignorer)
 ```
 
@@ -81,20 +81,20 @@ nano ~/SurviveV1/config/survive.conf
 bash download/download_all.sh
 
 # Ou télécharger certaines catégories seulement :
-bash download/kiwix_content.sh          # Wikipédia (~100 Go)
+bash download/kiwix_content.sh          # Wikipédia FR et ZIM français (~90 Go)
 bash download/videos.sh                  # Vidéos de survie (~150 Go)
 bash download/books_pdfs.sh              # PDF/livres (~20 Go)
-bash download/maps.sh --region us        # Cartes des États-Unis (~20 Go)
-bash download/kolibri_content.sh         # Khan Academy (~200 Go)
+bash download/maps.sh --region france    # Cartes de France (~5 Go)
+bash download/kolibri_content.sh         # Khan Academy FR (~200 Go)
 ```
 
 **Durées de téléchargement (connexion à 100 Mbit/s) :**
 
 | Contenu | Taille | Durée estimée |
 |---------|--------|---------------|
-| Wikipédia | 100 Go | ~3 heures |
+| Wikipédia FR | 52 Go | ~1,5 heure |
 | Vidéos | 150 Go | ~4 heures |
-| Cartes (États-Unis) | 20 Go | ~30 min |
+| Cartes (France) | 5 Go | ~10 min |
 | Khan Academy | 200 Go | ~5 heures |
 | PDF/livres | 20 Go | ~30 min |
 

@@ -10,20 +10,20 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 
 | Catégorie | Sources |
 |-----------|---------|
-| **Référence** | Wikipédia complète (EN), Wikibooks, Wikivoyage |
-| **Médical** | Where There Is No Doctor, Manuel Merck, guides de premiers secours |
-| **Savoir-faire** | Guides de réparation iFixit, Stack Exchange (DIY, Cuisine, Radioamateur) |
-| **Éducation** | Khan Academy, Projet Gutenberg (60 000+ livres), CK-12 |
-| **Vidéos de survie** | Playlists YouTube téléchargées avec yt-dlp |
-| **Cartes** | Tuiles OpenStreetMap hors ligne (région au choix) |
-| **Livres / PDF** | Manuels militaires, autosuffisance, permaculture, ingénierie |
+| **Référence** | Wikipédia FR complète, Wikilivres, Wikivoyage, Wikisource et Wiktionnaire en français, Vikidia, Wikiversité FR |
+| **Médical** | Sous-ensemble « Médecine » de Wikipédia FR, *Là où il n'y a pas de docteur* (Hesperian, chapitres en français), vidéos de formation aux premiers secours de la Croix-Rouge française |
+| **Savoir-faire** | Guides de réparation iFixit (FR), Ekopédia, Cuisine Libre, French Language Stack Exchange |
+| **Éducation** | Khan Academy en français (Kolibri et ZIM Kiwix), Projet Gutenberg (livres en français), simulations PhET FR |
+| **Vidéos de survie** | Chaînes YouTube francophones (bushcraft, potager, permaculture, énergie, bricolage, radio) téléchargées avec yt-dlp ; liste extensible dans `config/videos_extra.list` |
+| **Cartes** | Tuiles OpenStreetMap hors ligne, **France métropolitaine par défaut** (région au choix), mémo pour récupérer les cartes IGN |
+| **Livres / PDF** | Guide gouvernemental « Tous responsables » (SGDSN), chapitres Hesperian en français, séchage solaire (GRET) ; liste extensible dans `config/pdfs_extra.list` |
 | **Assistant IA** | LLM local (Ollama) avec recherche dans la bibliothèque hors ligne (CPU ; le Hailo-8L n'accélère pas les LLM) |
-| **Cartes et repères** | Cartes routières dans le navigateur (sans serveur de tuiles), repères enregistrés avec notes, import/export GPX/GeoJSON, calque satellite, cartes PDF officielles des parcs nationaux |
-| **Gestionnaire de bibliothèque** | Parcourir le catalogue Kiwix dans toutes les langues, télécharger des ZIM depuis le tableau de bord, enregistrer des fichiers copiés à la main |
+| **Cartes et repères** | Cartes routières dans le navigateur (sans serveur de tuiles), repères enregistrés avec notes, import/export GPX/GeoJSON, calque satellite |
+| **Gestionnaire de bibliothèque** | Parcourir le catalogue Kiwix (français par défaut), télécharger des ZIM depuis le tableau de bord, enregistrer des fichiers copiés à la main |
 | **Notes et fichiers partagés** | Carnet Markdown partagé et dépôt pour vos propres documents, tous deux stockés sur le disque |
-| **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence |
+| **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence en France |
 
-> Les sources de contenu sont pour l'instant celles du projet d'origine (en anglais). Leur remplacement par des équivalents francophones est en cours.
+> **Avancement de la francisation des sources.** Fait : ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF. À venir : référence des médicaments (encore basée sur les notices américaines de la FDA, en anglais), contenus « experts » et santé mentale, dépôt d'applications. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN` dans `config/survive.conf`).
 
 ---
 
@@ -183,19 +183,22 @@ bash ai/query.sh "Comment purifier de l'eau sans produits chimiques ?"
 
 ## Budget de stockage (~800 Go)
 
+Estimations pour les sources françaises (les ZIM Kiwix datés sont remplacés par leur dernière version publiée).
+
 | Contenu | Taille |
 |---------|--------|
-| Wikipédia EN (avec images) | ~100 Go |
-| Wikibooks + Wikivoyage | ~5 Go |
-| Stack Exchange (tout) | ~80 Go |
-| Projet Gutenberg | ~60 Go |
-| Khan Academy (Kolibri) | ~200 Go |
-| Vidéos de survie / médicales | ~150 Go |
-| OpenStreetMap (monde) | ~70 Go |
-| PDF + manuels | ~20 Go |
+| Wikipédia FR (avec images) | ~52 Go (12 Go sans images) |
+| Wikilivres, Wikivoyage, Wikisource, Wiktionnaire FR | ~17 Go |
+| iFixit FR | ~3,5 Go |
+| Projet Gutenberg FR | ~15 Go (estimation) |
+| Khan Academy FR (ZIM Kiwix) | ~94 Go |
+| Khan Academy FR (Kolibri) | ~200 Go |
+| Conférences TED (sous-titres FR) | ~39 Go |
+| Vidéos de survie | ~150 Go |
+| OpenStreetMap France | ~5 Go (monde : ~70 Go) |
+| PDF + manuels, pack d'extension FR | ~25 Go |
 | Modèles LLM (IA) | ~50 Go |
-| Réserve | ~65 Go |
-| **Total** | **~800 Go** |
+| Réserve | variable |
 
 ---
 
