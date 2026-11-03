@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # SurviveV1 — AI query CLI
-# Usage: bash ai/query.sh "How do I purify water?"
-#        bash ai/query.sh --model phi3:mini "How do I set a broken bone?"
+# Utilisation : bash ai/query.sh "Comment purifier de l'eau ?"
+#        bash ai/query.sh --model phi3:mini "Comment immobiliser une fracture ?"
 # =============================================================================
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,7 +26,7 @@ done
 
 # ── Check Ollama ──────────────────────────────────────────────────────────────
 if ! curl -sf http://localhost:11434 &>/dev/null; then
-    echo "Starting Ollama..."
+    echo "Démarrage d'Ollama..."
     ollama serve &>/dev/null &
     sleep 3
 fi
@@ -36,10 +36,10 @@ if ! ollama list 2>/dev/null | grep -q "^${MODEL}"; then
     # Try to find any installed model
     FALLBACK=$(ollama list 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}')
     if [[ -n "$FALLBACK" ]]; then
-        echo "Model '$MODEL' not found, using $FALLBACK"
+        echo "Modèle « $MODEL » introuvable, utilisation de $FALLBACK"
         MODEL="$FALLBACK"
     else
-        echo "No AI models installed. Run: bash ai/setup_ollama.sh"
+        echo "Aucun modèle d'IA installé. Lancez : bash ai/setup_ollama.sh"
         exit 1
     fi
 fi
@@ -75,26 +75,26 @@ print("\n".join(out[:3]))
 
 # ── Interactive mode ──────────────────────────────────────────────────────────
 if [[ "$INTERACTIVE" == "true" ]] || [[ -z "${QUERY:-}" ]]; then
-    echo "SurviveV1 AI Assistant (model: $MODEL)"
-    echo "Type 'exit' or Ctrl+C to quit"
+    echo "Assistant IA SurviveV1 (modèle : $MODEL)"
+    echo "Tapez « exit » ou Ctrl+C pour quitter"
     echo ""
     exec ollama run "$MODEL"
 fi
 
 # ── Single query ──────────────────────────────────────────────────────────────
 echo ""
-echo "Query: $QUERY"
-echo "Model: $MODEL"
+echo "Question : $QUERY"
+echo "Modèle : $MODEL"
 echo "─────────────────────────────────────"
 
 CONTEXT=$(get_context "$QUERY" || true)
 if [[ -n "$CONTEXT" ]]; then
-    echo "(grounding answer in $(printf '%s\n' "$CONTEXT" | grep -c '^- ') reference article(s) from your library)"
+    echo "(réponse appuyée sur $(printf '%s\n' "$CONTEXT" | grep -c '^- ') article(s) de référence de votre bibliothèque)"
     echo ""
-    PROMPT="Reference excerpts from the offline library:
+    PROMPT="Extraits de référence de la bibliothèque hors ligne :
 ${CONTEXT}
 
-Using the excerpts above where relevant, answer concisely: ${QUERY}"
+En t'appuyant sur les extraits ci-dessus lorsqu'ils sont pertinents, réponds de façon concise : ${QUERY}"
 else
     PROMPT="$QUERY"
 fi

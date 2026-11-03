@@ -33,10 +33,10 @@ detect_hailo() {
         local hw
         hw=$(hailortcli fw-control identify 2>/dev/null | awk -F: '/Device Architecture/ {print $2}' | tr -d ' ')
         if [[ -n "$hw" ]]; then
-            info "Detected Hailo device: $hw"
+            info "Périphérique Hailo détecté : $hw"
             if [[ "$hw" == *"HAILO8"* ]] && [[ "$hw" != *"HAILO10"* ]]; then
-                warn "Hailo-8L cannot accelerate LLMs (vision-only, 13 TOPS)."
-                warn "Ollama will run on CPU. See docs/ai_hat_setup.md."
+                warn "Le Hailo-8L ne peut pas accélérer les LLM (vision uniquement, 13 TOPS)."
+                warn "Ollama tournera sur le processeur. Voir docs/ai_hat_setup.md."
             fi
         fi
     fi
@@ -55,27 +55,27 @@ start_ollama() {
         running_dir=$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null \
                       | sed -n 's/^OLLAMA_MODELS=//p' | head -1)
         if [[ "$running_dir" != "$MODELS_DIR" ]]; then
-            warn "Ollama is running with models in ${running_dir:-/usr/share/ollama/.ollama (default)}"
-            warn "Restarting it against $MODELS_DIR so models land on your storage drive"
+            warn "Ollama tourne avec ses modèles dans ${running_dir:-/usr/share/ollama/.ollama (par défaut)}"
+            warn "Redémarrage sur $MODELS_DIR pour que les modèles aillent sur votre disque de stockage"
             systemctl stop ollama 2>/dev/null || true
             pkill -x ollama 2>/dev/null || true
             sleep 2
             if pgrep -x ollama &>/dev/null; then
-                warn "Could not stop the running server — re-run this script with sudo,"
-                warn "or models will be written to ${running_dir:-the SD card}."
+                warn "Impossible d'arrêter le serveur en cours — relancez ce script avec sudo,"
+                warn "sinon les modèles seront écrits dans ${running_dir:-la carte SD}."
             fi
         fi
     fi
 
     if ! pgrep -x ollama &>/dev/null; then
-        info "Starting Ollama server (models: $MODELS_DIR)..."
+        info "Démarrage du serveur Ollama (modèles : $MODELS_DIR)..."
         OLLAMA_MODELS="$MODELS_DIR" ollama serve &>/var/log/survive_ollama.log &
         sleep 4
     fi
     if curl -s http://localhost:11434 &>/dev/null; then
-        success "Ollama is running"
+        success "Ollama est en marche"
     else
-        warn "Ollama may not be ready yet -- waiting..."
+        warn "Ollama n'est peut-être pas encore prêt -- attente..."
         sleep 5
     fi
 }
@@ -92,7 +92,7 @@ start_ollama() {
 pull_models() {
     local ram_mb
     ram_mb=$(total_ram_mb)
-    info "Detected ${ram_mb} MB total RAM"
+    info "RAM totale détectée : ${ram_mb} Mo"
 
     # ONE model per RAM tier. These gates used to be cumulative, so a 16 GB Pi
     # downloaded every tier -- 35 GB of models where ~9 GB was wanted, and the
@@ -112,23 +112,23 @@ pull_models() {
     if [[ "${PULL_ALL:-false}" == "true" ]]; then
         models=("gemma4:12b" "gemma3:12b-it-q4_K_M" "gemma4:e4b" "gemma3:4b" \
                 "gemma4:e2b" "$fallback")
-        warn "--all requested: pulling every tier (~35 GB)"
+        warn "--all demandé : téléchargement de tous les niveaux (~35 Go)"
     else
-        info "RAM tier -> $primary  (+ $fallback as a fast fallback)"
-        info "Use '--all' to fetch every tier instead."
+        info "Niveau selon la RAM -> $primary  (+ $fallback en secours rapide)"
+        info "Utilisez « --all » pour récupérer tous les niveaux."
     fi
 
     local free_gb
     free_gb=$(df -BG "$MODELS_DIR" | tail -1 | awk '{print $4}' | tr -d 'G')
     if [[ "$free_gb" =~ ^[0-9]+$ ]] && (( free_gb < 15 )); then
-        warn "Only ${free_gb} GB free at $MODELS_DIR -- downloads may fail"
+        warn "Seulement ${free_gb} Go libres dans $MODELS_DIR -- les téléchargements risquent d'échouer"
     fi
 
     for model in "${models[@]}"; do
-        info "Pulling $model..."
+        info "Téléchargement de $model..."
         OLLAMA_MODELS="$MODELS_DIR" ollama pull "$model" \
-            && success "$model downloaded" \
-            || warn "$model failed -- check disk space"
+            && success "$model téléchargé" \
+            || warn "$model : échec -- vérifiez l'espace disque"
     done
 }
 
@@ -152,10 +152,10 @@ select_base_model() {
 # ── Create survival-optimized Modelfile ──────────────────────────────────────
 create_survival_model() {
     local base_model="$1"
-    info "Creating survival-optimized model from $base_model..."
+    info "Création du modèle de survie à partir de $base_model..."
     local MODELFILE="$REPO_DIR/ai/Modelfile.survival"
     if [[ ! -f "$MODELFILE" ]]; then
-        warn "Modelfile not found at $MODELFILE -- skipping survive model creation"
+        warn "Modelfile introuvable : $MODELFILE -- création du modèle survive ignorée"
         return
     fi
     # Patch the FROM line at build time so the correct base is baked in.
@@ -163,22 +163,22 @@ create_survival_model() {
     TMP_MF=$(mktemp)
     sed "s|^FROM .*|FROM ${base_model}|" "$MODELFILE" > "$TMP_MF"
     OLLAMA_MODELS="$MODELS_DIR" ollama create survive -f "$TMP_MF" \
-        && success "Custom 'survive' model created (base: $base_model)" \
-        || warn "Custom model creation failed"
+        && success "Modèle « survive » créé (base : $base_model)" \
+        || warn "Échec de la création du modèle"
     rm -f "$TMP_MF"
 }
 
 # ── Test models ───────────────────────────────────────────────────────────────
 test_models() {
-    info "Testing installed models..."
+    info "Test des modèles installés..."
     MODELS_LIST=$(OLLAMA_MODELS="$MODELS_DIR" ollama list 2>/dev/null | tail -n +2 | awk '{print $1}')
 
     if [[ -z "$MODELS_LIST" ]]; then
-        warn "No models installed yet"
+        warn "Aucun modèle installé pour l'instant"
         return
     fi
 
-    echo "Installed models:"
+    echo "Modèles installés :"
     OLLAMA_MODELS="$MODELS_DIR" ollama list
 
     # Test with the best available model in priority order.
@@ -191,25 +191,25 @@ test_models() {
     done
 
     if [[ -n "$TEST_MODEL" ]]; then
-        info "Quick test with $TEST_MODEL..."
+        info "Test rapide avec $TEST_MODEL..."
         RESPONSE=$(OLLAMA_MODELS="$MODELS_DIR" ollama run "$TEST_MODEL" \
-            "In one sentence: how do you purify water by boiling?" 2>/dev/null || echo "FAILED")
-        echo "Response: $RESPONSE"
+            "En une phrase : comment purifier de l'eau en la faisant bouillir ?" 2>/dev/null || echo "ÉCHEC")
+        echo "Réponse : $RESPONSE"
     else
-        warn "No testable model found"
+        warn "Aucun modèle testable trouvé"
     fi
 }
 
 # ── Print usage ───────────────────────────────────────────────────────────────
 print_usage() {
-    success "Ollama setup complete!"
+    success "Configuration d'Ollama terminée !"
     echo ""
-    echo "  List models:    ollama list"
-    echo "  Chat with AI:   ollama run survive"
-    echo "  Quick query:    ollama run gemma4:e2b 'How do I start a fire?'"
-    echo "  Web UI:         http://localhost:8080/ai"
+    echo "  Lister les modèles : ollama list"
+    echo "  Discuter avec l'IA : ollama run survive"
+    echo "  Question rapide :   ollama run gemma4:e2b 'Comment allumer un feu ?'"
+    echo "  Interface web :     http://localhost:8080/ai"
     echo ""
-    echo "  Models stored:  $MODELS_DIR"
+    echo "  Modèles stockés :   $MODELS_DIR"
     du -sh "$MODELS_DIR" 2>/dev/null || true
 }
 
@@ -228,7 +228,7 @@ main() {
         pull-all) PULL_ALL=true pull_models ;;
         test) start_ollama && test_models ;;
         list) OLLAMA_MODELS="$MODELS_DIR" ollama list ;;
-        *) echo "Usage: $0 [setup|pull|pull-all|test|list]" ;;
+        *) echo "Utilisation : $0 [setup|pull|pull-all|test|list]" ;;
     esac
 }
 

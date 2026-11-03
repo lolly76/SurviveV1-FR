@@ -15,23 +15,23 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ── Check for Hailo device ────────────────────────────────────────────────────
 check_hailo_device() {
-    info "Checking for Hailo AI Hat..."
+    info "Recherche de l'AI Hat Hailo..."
     if lspci 2>/dev/null | grep -i hailo; then
-        success "Hailo device detected via PCIe"
+        success "Périphérique Hailo détecté via PCIe"
         return 0
     elif ls /dev/hailo* 2>/dev/null; then
-        success "Hailo device found at /dev/hailo*"
+        success "Périphérique Hailo trouvé dans /dev/hailo*"
         return 0
     else
-        warn "Hailo device not detected. Continuing with CPU-only setup."
-        warn "Make sure the AI Hat is properly seated in the M.2 slot."
+        warn "Périphérique Hailo non détecté. Poursuite avec une installation sur CPU seulement."
+        warn "Vérifiez que l'AI Hat est bien enfiché dans le connecteur M.2."
         return 1
     fi
 }
 
 # ── Install Hailo Software Suite ──────────────────────────────────────────────
 install_hailo_suite() {
-    info "Installing Hailo Software Suite (HailoRT)..."
+    info "Installation de la suite logicielle Hailo (HailoRT)..."
 
     # Add Hailo repository
     curl -fsSL https://hailo.ai/hailo-apt-key.gpg | gpg --dearmor \
@@ -47,12 +47,12 @@ install_hailo_suite() {
         hailort-dev \
         python3-hailort
 
-    success "Hailo Runtime installed"
+    success "Environnement d'exécution Hailo installé"
 }
 
 # ── Install Hailo Raspberry Pi examples ──────────────────────────────────────
 install_hailo_examples() {
-    info "Installing Hailo Raspberry Pi examples..."
+    info "Installation des exemples Hailo pour Raspberry Pi..."
     EXAMPLES_DIR="/opt/survive/hailo_examples"
     if [[ ! -d "$EXAMPLES_DIR" ]]; then
         git clone --depth 1 \
@@ -61,12 +61,12 @@ install_hailo_examples() {
     fi
     cd "$EXAMPLES_DIR"
     bash setup_env.sh || true
-    success "Hailo examples at $EXAMPLES_DIR"
+    success "Exemples Hailo dans $EXAMPLES_DIR"
 }
 
 # ── Configure Ollama with Hailo backend ──────────────────────────────────────
 configure_ollama_hailo() {
-    info "Configuring Ollama to use Hailo NPU..."
+    info "Configuration d'Ollama pour le NPU Hailo..."
 
     # Create Ollama systemd override for Hailo
     mkdir -p /etc/systemd/system/ollama.service.d
@@ -78,12 +78,12 @@ EOF
 
     systemctl daemon-reload
     systemctl restart ollama || true
-    success "Ollama configured for Hailo acceleration"
+    success "Ollama configuré pour l'accélération Hailo"
 }
 
 # ── Pull recommended models ───────────────────────────────────────────────────
 pull_ai_models() {
-    info "Pulling AI models optimized for Raspberry Pi..."
+    info "Téléchargement des modèles d'IA adaptés au Raspberry Pi..."
     STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
     export OLLAMA_MODELS="$STORAGE_PATH/ai_models/ollama"
     mkdir -p "$OLLAMA_MODELS"
@@ -102,19 +102,19 @@ pull_ai_models() {
 
     for model in "${!MODELS[@]}"; do
         size_desc="${MODELS[$model]}"
-        info "Pulling $model ($size_desc)..."
-        ollama pull "$model" && success "$model ready" || warn "$model failed, skipping"
+        info "Téléchargement de $model ($size_desc)..."
+        ollama pull "$model" && success "$model prêt" || warn "$model : échec, ignoré"
     done
 }
 
 # ── Test AI setup ─────────────────────────────────────────────────────────────
 test_ai() {
-    info "Testing AI setup..."
+    info "Test de la configuration IA..."
     TEST_RESPONSE=$(ollama run tinyllama "Respond with just 'OK'" 2>/dev/null || echo "FAIL")
     if [[ "$TEST_RESPONSE" == *"OK"* ]] || [[ "$TEST_RESPONSE" != "FAIL" ]]; then
-        success "AI is working!"
+        success "L'IA fonctionne !"
     else
-        warn "AI test failed — check ollama status"
+        warn "Échec du test de l'IA — vérifiez l'état d'Ollama"
     fi
 }
 
@@ -122,14 +122,14 @@ test_ai() {
 main() {
     source "${REPO_DIR}/config/survive.conf" 2>/dev/null || true
 
-    info "=== Hailo AI Hat Setup ==="
+    info "=== Configuration de l'AI Hat Hailo ==="
 
     if check_hailo_device; then
-        install_hailo_suite || warn "Hailo suite install failed, using CPU only"
-        install_hailo_examples || warn "Examples install failed"
+        install_hailo_suite || warn "Échec de l'installation de la suite Hailo, CPU seulement"
+        install_hailo_examples || warn "Échec de l'installation des exemples"
         configure_ollama_hailo
     else
-        info "Setting up CPU-only AI stack..."
+        info "Mise en place de la pile IA sur CPU seulement..."
     fi
 
     if [[ "${CONTENT_AI_MODELS:-Y}" == "Y" ]] || [[ "${CONTENT_AI_MODELS:-Y}" == "y" ]]; then
@@ -138,9 +138,9 @@ main() {
 
     test_ai
 
-    success "AI Hat setup complete"
-    info "Use: ollama run phi3:mini 'Your question here'"
-    info "Or visit: http://localhost:8080/ai"
+    success "Configuration de l'AI Hat terminée"
+    info "Utilisation : ollama run phi3:mini 'Votre question ici'"
+    info "Ou rendez-vous sur : http://localhost:8080/ai"
 }
 
 main "$@"

@@ -1,110 +1,111 @@
-# Hailo AI Hat Setup for Raspberry Pi 5
+# Installation du Hailo AI Hat sur Raspberry Pi 5
 
-The Hailo-8L AI Hat provides up to **13 TOPS** of neural processing acceleration,
-significantly speeding up AI inference tasks.
+Le Hailo-8L AI Hat apporte jusqu'à **13 TOPS** d'accélération pour les réseaux
+de neurones de vision.
 
-> **Important — Hailo-8L does NOT accelerate LLMs.** The 8L is a *vision*
-> accelerator (object detection, segmentation, pose). It cannot run the
-> decoder-only transformer kernels that Ollama needs, so `ollama run …` on
-> SurviveV1 executes **100% on the Pi's CPU** regardless of whether the 8L
-> is installed. Only the newer **Hailo-10H** on the AI HAT+ 2 (40 TOPS,
-> 8 GB onboard RAM) supports LLM acceleration, via the `hailo-ollama`
-> community backend.
+> **Important — le Hailo-8L n'accélère PAS les LLM.** Le 8L est un
+> accélérateur de *vision* (détection d'objets, segmentation, pose). Il ne sait
+> pas exécuter les noyaux de transformeurs décodeurs dont Ollama a besoin :
+> `ollama run …` sur SurviveV1 s'exécute donc **à 100 % sur le processeur du
+> Pi**, que le 8L soit installé ou non. Seul le **Hailo-10H** de l'AI HAT+ 2
+> (40 TOPS, 8 Go de RAM embarquée) peut accélérer des LLM, via les paquets
+> `hailo-gen-ai` (installation : `sudo bash scripts/setup_hailo10.sh`).
 >
-> If you have an 8L, keep it for camera / vision workloads; pick smaller
-> models (`tinyllama`, `llama3.2:1b`) for the AI assistant.
+> Avec un 8L, gardez-le pour la caméra et la vision ; pour l'assistant IA,
+> choisissez des modèles plus petits (`llama3.2:1b`, `gemma4:e2b`).
 
 ---
 
-## Hardware Setup
+## Installation matérielle
 
-1. Power off your Raspberry Pi 5 completely
-2. Attach the Hailo AI Hat to the M.2 HAT+ connector on the Pi 5
-3. Secure with the included standoffs
-4. The Hailo chip appears as a PCIe device at boot
+1. Éteignez complètement le Raspberry Pi 5
+2. Fixez l'AI Hat sur le connecteur M.2 HAT+ du Pi 5
+3. Serrez-le avec les entretoises fournies
+4. La puce Hailo apparaît comme un périphérique PCIe au démarrage
 
 ---
 
-## Verify Hardware
+## Vérifier le matériel
 
 ```bash
-# Check PCIe device
+# Vérifier le périphérique PCIe
 lspci | grep -i hailo
-# Expected: Hailo Technologies Ltd. Hailo-8L AI Processor
+# Attendu : Hailo Technologies Ltd. Hailo-8L AI Processor
 
-# Check device node
+# Vérifier le nœud de périphérique
 ls /dev/hailo*
-# Expected: /dev/hailo0
+# Attendu : /dev/hailo0
 ```
 
 ---
 
-## Software Installation
+## Installation logicielle
 
 ```bash
-# Install Hailo driver and runtime
+# Installer le pilote et l'environnement d'exécution Hailo
 sudo bash setup/install_ai_hat.sh
 
-# Or manually:
-pip3 install hailort
-sudo apt-get install hailort hailort-dev
+# Hailo-10H uniquement (pilote et paquets différents de ceux du 8L) :
+sudo bash scripts/setup_hailo10.sh
 ```
 
 ---
 
-## Performance Benchmarks (RPi 5 + Hailo-8L)
+## Ce que le Hailo apporte (et n'apporte pas)
 
-| Task | CPU Only | With AI Hat |
-|------|----------|-------------|
-| Image classification | ~400ms | ~15ms |
-| Object detection | ~1200ms | ~30ms |
-| Text generation (7B model) | ~2 tok/s | ~8 tok/s |
-| Question answering | ~3s | ~0.8s |
+| Usage | Processeur seul | Avec Hailo-8L |
+|-------|-----------------|---------------|
+| Classification d'images | lent | très rapide (vision) |
+| Détection d'objets | lent | très rapide (vision) |
+| Génération de texte (LLM, Ollama) | processeur | **identique : processeur** |
+
+Les anciens chiffres de gain sur la génération de texte ne s'appliquent pas :
+avec un 8L, le LLM tourne sur le processeur.
 
 ---
 
-## Compatible Models
+## Modèles compatibles
 
-The Hailo-8L works best with quantized models compiled for the Hailo architecture.
-Pre-compiled models are available at:
+Les modèles de vision compilés pour l'architecture Hailo se trouvent ici :
 
 - https://github.com/hailo-ai/hailo_model_zoo
 - https://github.com/hailo-ai/hailo-rpi5-examples
 
-For LLM inference, Ollama handles the AI Hat automatically when detected.
+Pour les LLM, Ollama reste sur le processeur, même avec un Hailo-10H ; le
+déport sur NPU passe par les paquets `hailo-gen-ai` de Hailo.
 
 ---
 
-## Running Without AI Hat
+## Fonctionner sans AI Hat
 
-If you don't have the AI Hat, the system falls back to CPU inference:
-- tinyllama: ~2-3 tokens/second on RPi 5
-- phi3:mini: ~1-2 tokens/second
-- Still very usable for survival queries
+Sans AI Hat, tout fonctionne sur le processeur :
+- `llama3.2:1b` : réponses rapides, qualité plus limitée
+- `gemma4:e2b` : ~8-12 jetons/s sur Pi 5, le modèle `survive` par défaut
+- Largement utilisable pour des questions de survie
 
-Set in config: `SKIP_AI_HAT="true"`
+Dans la configuration : `SKIP_AI_HAT="true"`
 
 ---
 
-## Troubleshooting
+## Dépannage
 
-**AI Hat not detected:**
+**AI Hat non détecté :**
 ```bash
-# Check PCIe is enabled
-grep -i pcie /boot/config.txt
-# Should have: dtparam=pciex1_gen=3
+# Vérifier que le PCIe est activé
+grep -i pcie /boot/firmware/config.txt
+# Doit contenir : dtparam=pciex1_gen=3
 
-# Enable PCIe if missing:
-echo "dtparam=pciex1_gen=3" | sudo tee -a /boot/config.txt
+# Activer le PCIe s'il manque :
+echo "dtparam=pciex1_gen=3" | sudo tee -a /boot/firmware/config.txt
 sudo reboot
 ```
 
-**Slow inference despite AI Hat:**
-```bash
-# Check Hailo is being used
-hailortcli fw-control identify
-# Should show device info
+Message « Hailo devices not found » alors que la puce est visible avec
+`lspci` : le mauvais pilote est installé (`hailo-all` pour le 8L,
+`hailo-h10-all` pour le 10H). Relancez le script d'installation adapté.
 
-# Check Ollama is configured for Hailo
-systemctl cat ollama | grep HAILO
+**Vérifier que le Hailo répond :**
+```bash
+hailortcli fw-control identify
+# Doit afficher les informations du périphérique
 ```
