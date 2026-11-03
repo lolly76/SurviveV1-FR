@@ -1,33 +1,33 @@
-# PLAN-unit-tests: pytest suite for the server's pure logic
+# PLAN-unit-tests : suite pytest pour la logique pure du serveur
 
-**Rank: #5.**
+**Rang : n° 5.**
 
-## Goal
+## Objectif
 
-Quality assurance is 23 black-box smoke assertions against a live server —
-excellent for route contracts, blind to the logic that now carries the most
-risk: FTS query sanitisation, RAG prompt budgeting, XML parsing of Kiwix
-responses, download-status derivation, ANSI stripping, history validation
-(once PLAN-chat-memory lands). Each recent feature was hand-verified with
-ad-hoc scripts that were then thrown away; this plan turns those throwaway
-harnesses into a permanent `pytest` suite wired into CI.
+L'assurance qualité se résume à 23 assertions de fumée « boîte noire » contre un serveur en
+marche — excellentes pour les contrats de routes, aveugles à la logique qui porte désormais le
+plus de risque : assainissement des requêtes FTS, budget du prompt RAG, analyse XML des
+réponses de Kiwix, calcul de l'état des téléchargements, retrait des codes ANSI, validation de
+l'historique (une fois PLAN-chat-memory livré). Chaque fonctionnalité récente a été vérifiée à
+la main avec des scripts ad hoc ensuite jetés ; ce plan transforme ces bancs d'essai jetables
+en suite `pytest` permanente, branchée sur la CI.
 
-## Exact files to touch
+## Fichiers exacts à modifier
 
-| File | Change |
-|------|--------|
-| `tests/test_server_unit.py` | NEW — the suite |
-| `tests/conftest.py` | NEW — env + import fixture |
-| `requirements-dev.txt` | NEW — `pytest`, `pylint` |
-| `.github/workflows/test.yml` | run pytest in the `python` job |
-| `Makefile` | `unit` target; `test` becomes lint + unit + smoke |
-| `CLAUDE.md` | test-commands section update |
+| Fichier | Changement |
+|---------|------------|
+| `tests/test_server_unit.py` | NOUVEAU — la suite |
+| `tests/conftest.py` | NOUVEAU — environnement + fixture d'import |
+| `requirements-dev.txt` | NOUVEAU — `pytest`, `pylint` |
+| `.github/workflows/test.yml` | lancer pytest dans le job `python` |
+| `Makefile` | cible `unit` ; `test` devient lint + unit + smoke |
+| `CLAUDE.md` | mise à jour de la section des commandes de test |
 
-## Implementation order
+## Ordre de mise en œuvre
 
-1. **`tests/conftest.py`** — the import problem is the whole trick here:
-   `web/server.py` reads `SURVIVE_STORAGE_PATH` **at import time** and starts
-   a daemon refresher thread on import. So:
+1. **`tests/conftest.py`** — le problème d'import est toute l'astuce :
+   `web/server.py` lit `SURVIVE_STORAGE_PATH` **à l'import** et démarre un fil de
+   rafraîchissement en arrière-plan dès l'import. Donc :
    ```python
    import os, sys, pytest
    from pathlib import Path
@@ -37,76 +37,78 @@ harnesses into a permanent `pytest` suite wired into CI.
        storage = tmp_path_factory.mktemp("storage")
        os.environ["SURVIVE_STORAGE_PATH"] = str(storage)
        sys.path.insert(0, str(Path(__file__).parent.parent / "web"))
-       import server as srv          # first import happens HERE, after env is set
+       import server as srv          # le premier import se fait ICI, après la définition de l'environnement
        return srv
    ```
-   The refresher thread sleeps 60+ s before its first build, so it is inert
-   for the life of the test run — do not try to kill it, just don't wait on it.
-   Session scope: exactly one import; per-test module reloads re-run Flask
-   route registration and explode with "View function mapping is overwriting".
+   Le fil de rafraîchissement dort plus de 60 s avant sa première construction : il est donc
+   inerte pendant toute la durée des tests — ne pas chercher à le tuer, simplement ne pas
+   l'attendre. Portée « session » : un seul import ; recharger le module à chaque test refait
+   l'enregistrement des routes Flask et échoue avec « View function mapping is overwriting ».
 
-2. **`tests/test_server_unit.py`** — grouped by feature, ~25 tests:
-   - `_strip_html`: tags stripped, script/style contents dropped, whitespace
-     collapsed, `<b>` highlight tags from Kiwix removed.
-   - `_kiwix_path`: absolute URL → path+fragment; already-relative passthrough;
-     empty/None-ish input.
-   - `_build_rag_prompt`: empty articles → contains "No reference articles";
-     with articles → numbered `[1]`, `[2]` lines and instruction sentence.
-   - `_fts_sanitize`/`_query_search_index` inputs: syntax bomb `water AND "`,
-     unicode, empty string, 200-char input — via a real
-     `_rebuild_search_index()` against seeded files in the tmp storage
-     (touch 5 files incl. `Where_There_Is_No_Doctor.pdf`), then assert
-     "doctor" matches, prefix `doct` matches, bomb returns `[]`.
-   - `_index_meta`: missing DB → `{built_at: None, count: 0}`; after rebuild
-     → correct count.
-   - `_compute_download_status`: no progress file → all pending; write
-     `kiwix\n` + unknown line `garbage\n` → kiwix complete, garbage ignored;
-     ANSI-laden log tail stripped (reuse the exact bytes from the round-1
-     debug session); log > 500 bytes → only tail read (build a 10 KB log).
-   - `_sources_for`: host substitution.
-   - Flask test client (`server.app.test_client()`):
-     `/serve/../../etc/passwd`-style traversal → 403/404, `/health` → 200,
-     `/api/ai/chat` wrong content-type → 415, bad model name
-     `../evil` → 400. (No Ollama/Kiwix needed — all pre-stream.)
-   - Model-name regex: parametrize valid (`survive`, `gemma4:12b`,
-     `a.b-c_d:1`) and invalid (`a/b`, 101 chars, empty, `a b`).
-3. **`requirements-dev.txt`**: `pytest>=7`, `pylint>=3`. CI installs
+2. **`tests/test_server_unit.py`** — regroupé par fonctionnalité, ~25 tests :
+   - `_strip_html` : balises retirées, contenu de script/style supprimé, espaces réduits,
+     balises `<b>` de surbrillance de Kiwix retirées.
+   - `_kiwix_path` : URL absolue → chemin+fragment ; chemin déjà relatif inchangé ;
+     entrée vide/None.
+   - `_build_rag_prompt` : aucun article → contient le message d'absence d'articles de
+     référence ; avec articles → lignes numérotées `[1]`, `[2]` et phrase de consigne.
+   - Entrées de `_fts_sanitize`/`_query_search_index` : bombe de syntaxe `water AND "`,
+     unicode, chaîne vide, entrée de 200 caractères — via un vrai
+     `_rebuild_search_index()` sur des fichiers créés dans le stockage temporaire
+     (5 fichiers dont `Where_There_Is_No_Doctor.pdf`), puis vérifier que « doctor » trouve,
+     que le préfixe `doct` trouve et que la bombe renvoie `[]`.
+   - `_index_meta` : base absente → `{built_at: None, count: 0}` ; après reconstruction →
+     nombre correct.
+   - `_compute_download_status` : pas de fichier de progression → tout en attente ; écrire
+     `kiwix\n` + une ligne inconnue `garbage\n` → kiwix terminé, garbage ignoré ; fin de
+     journal pleine de codes ANSI nettoyée (reprendre les octets exacts de la session de
+     débogage du tour 1) ; journal > 500 octets → seule la fin est lue (construire un journal
+     de 10 Ko).
+   - `_sources_for` : substitution de l'hôte.
+   - Client de test Flask (`server.app.test_client()`) : traversée de chemin du type
+     `/serve/../../etc/passwd` → 403/404, `/health` → 200, `/api/ai/chat` avec un mauvais
+     content-type → 415, mauvais nom de modèle `../evil` → 400. (Ni Ollama ni Kiwix
+     nécessaires — tout se joue avant le flux.)
+   - Regex du nom de modèle : paramétrer les valides (`survive`, `gemma4:12b`, `a.b-c_d:1`) et
+     les invalides (`a/b`, 101 caractères, vide, `a b`).
+3. **`requirements-dev.txt`** : `pytest>=7`, `pylint>=3`. La CI installe
    `-r requirements.txt -r requirements-dev.txt`.
-4. **CI**: in the `python` job, after pylint, add
-   `python -m pytest tests/ -q --tb=short`. pytest ignores
-   `test_smoke.sh` automatically (not a .py file).
-5. **Makefile**: `unit: ; python3 -m pytest tests/ -q` and chain
+4. **CI** : dans le job `python`, après pylint, ajouter
+   `python -m pytest tests/ -q --tb=short`. pytest ignore `test_smoke.sh` automatiquement
+   (ce n'est pas un fichier .py).
+5. **Makefile** : `unit: ; python3 -m pytest tests/ -q` et enchaîner
    `test: lint unit smoke`.
 
-## Edge cases a weaker model would miss
+## Cas limites qu'un modèle moins attentif manquerait
 
-- **Import-order trap**: importing `server` at module top of the test file
-  runs before the env fixture — every test then indexes the developer's real
-  `/mnt/survive` or repo `data/`. The lazy import inside the fixture is the
-  entire reason conftest.py exists. Never `from server import X` at top level.
-- **One import per session**: `importlib.reload(server)` re-registers routes
-  on the same Flask app object → `AssertionError: View function mapping...`.
-  Session-scoped fixture, not function-scoped.
-- **The refresher thread + tmp_path**: pytest deletes tmp dirs at session
-  end; if the run somehow exceeds ~60 s the thread's first build targets a
-  still-existing dir (fine), but never assert on files the thread may create
-  — tests must not race it. Keep the suite under a minute (it will be ~5 s).
-- **`_TTLCache` pollution between tests**: `_downloads_cache` memoises for
-  15 s — tests that mutate `.download_progress` must call the *compute*
-  function directly (`_compute_download_status()`), never the cached wrapper.
-  Same for content stats (60 s TTL): seed all files BEFORE the first call, or
-  call `_compute_content_stats` directly.
-- **Windows-style CRLF in progress files**: `read_text().splitlines()`
-  handles `\r\n`; write one entry with `\r\n` in the test to lock that in.
-- **CI has no `sqlite3` CLI** (discovered in round 1) — all DB assertions go
-  through Python's `sqlite3` module, never `subprocess`.
+- **Piège de l'ordre d'import** : importer `server` en haut du fichier de test s'exécute avant
+  la fixture d'environnement — chaque test indexe alors le vrai `/mnt/survive` du développeur
+  ou le dossier `data/` du dépôt. L'import différé dans la fixture est la seule raison d'être
+  de conftest.py. Ne jamais faire `from server import X` au niveau du module.
+- **Un seul import par session** : `importlib.reload(server)` réenregistre les routes sur le
+  même objet Flask → `AssertionError: View function mapping...`. Fixture à portée session,
+  pas à portée fonction.
+- **Le fil de rafraîchissement et tmp_path** : pytest supprime les dossiers temporaires en fin
+  de session ; si l'exécution dépasse ~60 s, la première construction du fil vise un dossier
+  encore existant (sans conséquence), mais ne jamais vérifier des fichiers que le fil peut
+  créer — les tests ne doivent pas courir contre lui. Garder la suite sous la minute (elle
+  durera ~5 s).
+- **Pollution de `_TTLCache` entre tests** : `_downloads_cache` mémorise pendant 15 s — les
+  tests qui modifient `.download_progress` doivent appeler directement la fonction de
+  *calcul* (`_compute_download_status()`), jamais l'enveloppe en cache. Idem pour les
+  statistiques de contenu (TTL 60 s) : créer tous les fichiers AVANT le premier appel, ou
+  appeler `_compute_content_stats` directement.
+- **CRLF de style Windows dans les fichiers de progression** : `read_text().splitlines()`
+  gère `\r\n` ; écrire une entrée avec `\r\n` dans le test pour verrouiller ce comportement.
+- **La CI n'a pas de commande `sqlite3`** (découvert au tour 1) — toutes les vérifications de
+  base passent par le module Python `sqlite3`, jamais par `subprocess`.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-1. `python3 -m pytest tests/ -q` → all pass, < 30 s, zero network access
-   (run once with Wi-Fi off / in the CI sandbox to prove it).
-2. `make test` runs lint → unit → smoke and exits 0.
-3. CI workflow shows the pytest step green on the branch.
-4. Deleting the body of `_ANSI_RE.sub` (mutation check) makes at least one
-   test fail — i.e. the suite actually guards the ANSI stripping.
-5. Existing smoke tests remain untouched and green (23/23).
+1. `python3 -m pytest tests/ -q` → tout passe, < 30 s, aucun accès réseau (le vérifier une
+   fois Wi-Fi coupé / dans le bac à sable de la CI).
+2. `make test` enchaîne lint → unit → smoke et se termine avec le code 0.
+3. Le workflow de CI montre l'étape pytest au vert sur la branche.
+4. Supprimer le corps de `_ANSI_RE.sub` (contrôle par mutation) fait échouer au moins un
+   test — c'est-à-dire que la suite protège réellement le retrait des codes ANSI.
+5. Les tests de fumée existants restent intacts et au vert (23/23).

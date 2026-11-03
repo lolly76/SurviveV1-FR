@@ -1,110 +1,114 @@
-# PLAN-download-visibility: Show download progress in the dashboard
+# PLAN-download-visibility : afficher la progression des téléchargements dans le tableau de bord
 
-**Rank: #5.**
+**Rang : n° 5.**
 
-## Goal
+## Objectif
 
-`download_all.sh` runs for **days**, headless, inside tmux. The only way to
-see how the 800 GB acquisition is going is to SSH in and tail logs. The
-dashboard — the product's face — shows nothing about the single longest
-operation a new user experiences.
+`download_all.sh` tourne pendant des **jours**, sans écran, dans tmux. Le seul moyen de savoir
+où en est l'acquisition des 800 Go est de se connecter en SSH et de suivre les journaux. Le
+tableau de bord — la vitrine du produit — n'affiche rien de la plus longue opération qu'un
+nouvel utilisateur vive.
 
-After this change, a "Downloads" card on `/status` (and a compact line on the
-home page) shows: which categories are complete / in progress / pending,
-per-category size on disk vs the documented budget, and the last activity
-line from the current download log. Data comes from artifacts the downloader
-already writes (`.download_progress`, `.logs/*.log`) plus the existing
-content-stats cache — no changes to the download pipeline's behavior.
+Après ce changement, une carte « Téléchargements » sur `/status` (et une ligne compacte sur la
+page d'accueil) montre : quelles catégories sont terminées / en cours / en attente, la taille
+par catégorie sur le disque par rapport au budget documenté, et la dernière ligne d'activité
+du journal de téléchargement en cours. Les données viennent d'éléments que le téléchargeur
+écrit déjà (`.download_progress`, `.logs/*.log`) plus le cache de statistiques de contenu
+existant — aucun changement au comportement de la chaîne de téléchargement.
 
-## Exact files to touch
+## Fichiers exacts à modifier
 
-| File | Change |
-|------|--------|
-| `web/server.py` | new `/api/downloads` endpoint + `_compute_download_status()` |
-| `web/constants.py` | `DOWNLOAD_CATEGORIES` static list (name, budget_gb, progress key, content dir) |
-| `web/templates/status.html` | Downloads card with per-category progress bars |
-| `web/templates/index.html` | one-line summary in the sidebar ("Downloads: 3/7 complete") |
-| `tests/test_smoke.sh` | `/api/downloads` JSON assertion |
-| `docs/API.md` | document the endpoint |
+| Fichier | Changement |
+|---------|------------|
+| `web/server.py` | nouveau point d'accès `/api/downloads` + `_compute_download_status()` |
+| `web/constants.py` | liste statique `DOWNLOAD_CATEGORIES` (nom, budget_gb, clé de progression, dossier de contenu) |
+| `web/templates/status.html` | carte Téléchargements avec barres de progression par catégorie |
+| `web/templates/index.html` | résumé d'une ligne dans la barre latérale (« Téléchargements : 3/7 terminés ») |
+| `tests/test_smoke.sh` | assertion JSON sur `/api/downloads` |
+| `docs/API.md` | documenter le point d'accès |
 
-## Implementation order
+## Ordre de mise en œuvre
 
-1. **`DOWNLOAD_CATEGORIES` in `web/constants.py`** — mirror the categories and
-   budgets already listed in `download_all.sh print_budget()` and the
-   `run_category` names (they MUST match the strings written to
-   `.download_progress`): `kiwix`, `videos`, `books`, `maps`, `kolibri`,
-   `gaps`, `mental_health`. Each entry:
-   `{"id": "kiwix", "name": "Wikipedia & ZIM", "budget_gb": 190, "dir": "zim"}`
-   (budget numbers from `print_budget`; `dir` is the storage subdir whose
-   size the UI reports, matching keys in `_compute_content_stats`).
+1. **`DOWNLOAD_CATEGORIES` dans `web/constants.py`** — reprendre les catégories et budgets déjà
+   listés dans `print_budget()` de `download_all.sh` et les noms de `run_category` (ils DOIVENT
+   correspondre aux chaînes écrites dans `.download_progress`) : `kiwix`, `videos`, `books`,
+   `maps`, `kolibri`, `gaps`, `mental_health`. Chaque entrée :
+   `{"id": "kiwix", "name": "Wikipédia et ZIM", "budget_gb": 190, "dir": "zim"}`
+   (budgets tirés de `print_budget` ; `dir` est le sous-dossier de stockage dont l'interface
+   affiche la taille, correspondant aux clés de `_compute_content_stats`).
 
-2. **`_compute_download_status()` in `web/server.py`**:
-   - Read `STORAGE_PATH / ".download_progress"` → set of completed ids.
-     Missing file = empty set (fresh install), NOT an error.
-   - Reuse `get_content_stats()` (already cached 60 s) for per-dir sizes —
-     do **not** run `du` or a new walk.
-   - A category is `"complete"` if its id is in the progress set;
-     `"in_progress"` if not complete AND its dir grew: compare
-     `stats[dir]["size_gb"] > 0`; else `"pending"`.
-   - Last activity: newest file in `STORAGE_PATH / ".logs"` by mtime; read its
-     **last 500 bytes** (`f.seek(max(0, size-500))`), take the final non-empty
-     line, strip ANSI codes with `re.sub(r"\x1b\[[0-9;]*m", "", line)`.
-   - Return `{"categories": [...], "active_log": {"file": name, "line": ...} | None}`.
-   - Wrap in a module-level `_TTLCache(15.0)` (the class already exists).
+2. **`_compute_download_status()` dans `web/server.py`** :
+   - Lire `STORAGE_PATH / ".download_progress"` → ensemble des identifiants terminés.
+     Fichier absent = ensemble vide (installation neuve), PAS une erreur.
+   - Réutiliser `get_content_stats()` (déjà en cache 60 s) pour les tailles par dossier — ne
+     **pas** lancer `du` ni un nouveau parcours.
+   - Une catégorie est `"complete"` si son identifiant est dans l'ensemble de progression ;
+     `"in_progress"` si elle n'est pas terminée ET que son dossier a grossi :
+     comparer `stats[dir]["size_gb"] > 0` ; sinon `"pending"`.
+   - Dernière activité : fichier le plus récent de `STORAGE_PATH / ".logs"` selon sa date de
+     modification ; lire ses **500 derniers octets** (`f.seek(max(0, size-500))`), prendre la
+     dernière ligne non vide, retirer les codes ANSI avec
+     `re.sub(r"\x1b\[[0-9;]*m", "", line)`.
+   - Renvoyer `{"categories": [...], "active_log": {"file": name, "line": ...} | None}`.
+   - Envelopper dans un `_TTLCache(15.0)` au niveau du module (la classe existe déjà).
 
-3. **Route**: `@app.route("/api/downloads")` returning
+3. **Route** : `@app.route("/api/downloads")` renvoyant
    `jsonify(_downloads_cache.get(_compute_download_status))`.
 
-4. **`status.html`**: new card between the budget gauge and the two-column
-   grid. Per category: name, status badge (`badge-green` complete /
-   `badge-yellow` in progress / `badge-red` pending — classes exist in
-   base.html), thin progress bar `width: {{ (size/budget*100)|round }}%`
-   (cap at 100 with the `|min` pattern used by the budget gauge at line ~83).
-   Below the list, the active log line in `--mono` font, and the exact
-   commands to start/resume: `bash download/download_all.sh` /
-   `... --resume`. Extend this page's existing `refreshStatus()` poller to
-   also fetch `/api/downloads` and update badges via `data-dl-cat`
-   attributes (same in-place pattern as the service badges).
+4. **`status.html`** : nouvelle carte entre la jauge de budget et la grille à deux colonnes.
+   Pour chaque catégorie : nom, pastille d'état (`badge-green` terminé / `badge-yellow` en
+   cours / `badge-red` en attente — classes présentes dans base.html), fine barre de
+   progression `width: {{ (size/budget*100)|round }}%` (plafonnée à 100 avec le motif `|min`
+   utilisé par la jauge de budget vers la ligne 83). Sous la liste, la ligne du journal actif
+   en police `--mono`, et les commandes exactes pour lancer/reprendre :
+   `bash download/download_all.sh` / `... --resume`. Étendre le `refreshStatus()` existant de
+   cette page pour qu'il interroge aussi `/api/downloads` et mette à jour les pastilles via des
+   attributs `data-dl-cat` (même motif sur place que pour les pastilles de services).
 
-5. **`index.html` sidebar**: in the Storage card, add one line:
-   `Downloads: <span id="dlSummary">…</span>` filled by a `fetch('/api/downloads')`
-   on load → `"{complete}/{total} categories complete"`.
+5. **Barre latérale d'`index.html`** : dans la carte Stockage, ajouter une ligne :
+   `Téléchargements : <span id="dlSummary">…</span>` remplie par un `fetch('/api/downloads')`
+   au chargement → `"{complete}/{total} catégories terminées"`.
 
-## Edge cases a weaker model would miss
+## Cas limites qu'un modèle moins attentif manquerait
 
-- **Category-id coupling**: the ids in `DOWNLOAD_CATEGORIES` must equal the
-  first argument of each `run_category` call in `download_all.sh` — that is
-  the literal string written to `.download_progress`. Add a comment in BOTH
-  files pointing at each other; a mismatch silently shows "pending" forever.
-- **ANSI escape codes** in log lines (the scripts colorize output) — must be
-  stripped server-side or the UI shows `\x1b[0;34m` garbage.
-- **Log tail reading**: logs can be hundreds of MB (yt-dlp). Never
-  `read()` the whole file; seek-to-end-minus-500 is mandatory.
-- **Flask auto-escaping protects the log line** in the template — but the
-  JS poller must set it with `textContent`, never `innerHTML` (log lines
-  contain arbitrary downloaded-file names).
-- **`size_gb > 0` as "in progress"** misfires for categories sharing a dir
-  (`gaps` and `mental_health` both write into `pdfs/` and `books/`): map both
-  to `dir: "pdfs"` and accept the approximation — the status flips to
-  complete via the progress file, which is authoritative. Do not invent
-  per-file attribution; it is not worth the I/O.
-- **`.download_progress` read concurrency**: the downloader appends under
-  `flock`; a partial last line is possible mid-write. Read with
-  `read_text().splitlines()` and ignore any line not in the known id set.
-- **Fresh install** (no storage, no progress file, no logs dir): endpoint
-  must return valid JSON with all categories `pending` and
-  `active_log: null` — this is the exact state of the smoke-test env, which
-  is why the smoke test can cover it.
+- **Couplage des identifiants de catégorie** : les identifiants de `DOWNLOAD_CATEGORIES`
+  doivent être égaux au premier argument de chaque appel `run_category` dans
+  `download_all.sh` — c'est la chaîne littérale écrite dans `.download_progress`. Ajouter un
+  commentaire dans LES DEUX fichiers qui renvoie à l'autre ; une divergence affiche
+  « en attente » à perpétuité sans le dire.
+- **Codes d'échappement ANSI** dans les lignes de journal (les scripts colorent leur sortie) —
+  à retirer côté serveur, sinon l'interface affiche du charabia `\x1b[0;34m`.
+- **Lecture de la fin du journal** : les journaux peuvent faire des centaines de Mo (yt-dlp).
+  Ne jamais faire `read()` sur tout le fichier ; se positionner à la fin moins 500 octets est
+  obligatoire.
+- **L'échappement automatique de Flask protège la ligne de journal** dans le modèle — mais le
+  sondage JS doit l'afficher avec `textContent`, jamais `innerHTML` (les lignes de journal
+  contiennent des noms de fichiers téléchargés arbitraires).
+- **`size_gb > 0` comme « en cours »** se trompe pour les catégories qui partagent un dossier
+  (`gaps` et `mental_health` écrivent toutes deux dans `pdfs/` et `books/`) : faire pointer
+  les deux vers `dir: "pdfs"` et accepter l'approximation — l'état passe à terminé grâce au
+  fichier de progression, qui fait foi. Ne pas inventer d'attribution fichier par fichier ;
+  cela ne vaut pas le coût en E/S.
+- **Concurrence sur la lecture de `.download_progress`** : le téléchargeur ajoute des lignes
+  sous `flock` ; une dernière ligne partielle est possible en cours d'écriture. Lire avec
+  `read_text().splitlines()` et ignorer toute ligne absente de l'ensemble d'identifiants
+  connus.
+- **Installation neuve** (pas de stockage, pas de fichier de progression, pas de dossier de
+  journaux) : le point d'accès doit renvoyer du JSON valide avec toutes les catégories en
+  `pending` et `active_log: null` — c'est exactement l'état de l'environnement de test de
+  fumée, ce qui permet de le couvrir.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-1. Smoke test: `check_json "GET /api/downloads" "/api/downloads"` passes in
-   the bare test env, and a follow-up assertion greps the response for
-   `"pending"` (all categories pending on empty storage).
-2. `echo kiwix >> /tmp/survive_test/.download_progress`, restart nothing,
-   wait 15 s (cache TTL) → `/api/downloads` shows kiwix `"complete"`.
-3. Write a fake log: `mkdir -p /tmp/survive_test/.logs && printf '\x1b[0;34m[DL]\x1b[0m downloading wikipedia_en... 42%%\n' > /tmp/survive_test/.logs/kiwix.log`
-   → `active_log.line` equals `[DL] downloading wikipedia_en... 42%` (no escape codes).
-4. `/status` in a browser shows the Downloads card with 7 rows and correct
-   badges; badges update without reload when the progress file changes.
-5. pylint ≥ 9.5; all smoke tests pass.
+1. Test de fumée : `check_json "GET /api/downloads" "/api/downloads"` passe dans
+   l'environnement de test nu, et une assertion de suivi cherche `"pending"` dans la réponse
+   (toutes les catégories en attente sur un stockage vide).
+2. `echo kiwix >> /tmp/survive_test/.download_progress`, ne rien redémarrer, attendre 15 s
+   (TTL du cache) → `/api/downloads` montre kiwix `"complete"`.
+3. Écrire un faux journal :
+   `mkdir -p /tmp/survive_test/.logs && printf '\x1b[0;34m[DL]\x1b[0m downloading wikipedia_en... 42%%\n' > /tmp/survive_test/.logs/kiwix.log`
+   → `active_log.line` vaut `[DL] downloading wikipedia_en... 42%` (sans codes d'échappement).
+4. `/status` dans un navigateur montre la carte Téléchargements avec 7 lignes et les bonnes
+   pastilles ; les pastilles se mettent à jour sans rechargement quand le fichier de
+   progression change.
+5. pylint ≥ 9,5 ; tous les tests de fumée passent.
