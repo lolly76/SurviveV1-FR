@@ -17,8 +17,8 @@ Les contenus sans équivalent français vérifié sont regroupés dans un **pack
 | Wikilivres, Wikivoyage, Wikisource, Wiktionnaire FR | ~17 Go | `CONTENT_WIKIBOOKS` |
 | iFixit FR (guides de réparation) | ~3,5 Go | `CONTENT_IFIX` |
 | French Language Stack Exchange | < 1 Go | `CONTENT_STACKEXCHANGE` |
-| Projet Gutenberg FR | ~15 Go (estimation) | `CONTENT_GUTENBERG` |
-| Khan Academy FR (ZIM) | ~94 Go | `CONTENT_KOLIBRI` |
+| Projet Gutenberg FR | ~10,5 Go | `CONTENT_GUTENBERG` |
+| Khan Academy FR (ZIM) | ~101 Go | `CONTENT_KOLIBRI` |
 | Conférences TED (technologie, santé, santé publique, santé mentale, science) | ~39 Go | — |
 
 ### Extras français (`CONTENT_EXPANSION`)
