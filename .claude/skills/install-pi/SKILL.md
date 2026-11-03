@@ -44,13 +44,13 @@ feature branch, use the `SURVIVE_BRANCH` override form.
 From main:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/schwadb/SurviveV1/main/install/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/main/install/bootstrap.sh | bash
 ```
 
 From a branch (substitute the real branch name):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/schwadb/SurviveV1/<BRANCH>/install/bootstrap.sh | SURVIVE_BRANCH=<BRANCH> bash
+curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/<BRANCH>/install/bootstrap.sh | SURVIVE_BRANCH=<BRANCH> bash
 ```
 
 Env overrides: `SURVIVE_REPO` (fork URL), `SURVIVE_DIR` (clone target,

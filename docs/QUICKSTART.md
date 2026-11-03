@@ -25,7 +25,7 @@
 
 ```bash
 # Clone repository (replace URL with your fork or local path)
-git clone https://github.com/schwadb/SurviveV1.git ~/SurviveV1
+git clone https://github.com/lolly76/SurviveV1-FR.git ~/SurviveV1
 cd ~/SurviveV1
 
 # Run installer (takes 15-30 minutes)

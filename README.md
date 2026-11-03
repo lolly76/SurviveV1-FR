@@ -1,93 +1,97 @@
-# SurviveV1 — Offline Survival Knowledge Repository
+# SurviveV1-FR — Base de connaissances de survie hors ligne
 
-A self-hosted, offline-first knowledge base for post-apocalyptic or grid-down survival scenarios. Runs on a **Raspberry Pi 5 with AI Hat**, accessible via portable monitor and power bank. Up to **800 GB** of curated survival knowledge.
+> Fork francophone de [schwadb/SurviveV1](https://github.com/schwadb/SurviveV1). Le code d'origine est de son auteur ; ce fork traduit l'interface, la documentation et l'assistant IA en français.
 
----
-
-## What's Included
-
-| Category | Sources |
-|----------|---------|
-| **Reference** | Full Wikipedia (EN), Wikibooks, Wikivoyage |
-| **Medical** | Where There Is No Doctor, Merck Manual, first aid guides |
-| **Skills** | iFixit repair guides, Stack Exchange (DIY, Cooking, Ham Radio) |
-| **Education** | Khan Academy, Project Gutenberg (60k+ books), CK-12 |
-| **Survival Videos** | YouTube playlists downloaded via yt-dlp |
-| **Maps** | OpenStreetMap offline tiles (region-selectable) |
-| **Books/PDFs** | Military manuals, homesteading, permaculture, engineering |
-| **AI Assistant** | Local LLM (Ollama) with retrieval over the offline library (CPU; the Hailo-8L hat does not accelerate LLMs) |
-| **Maps & Pins** | In-browser street maps (no tile server), saved pins with notes, GPX/GeoJSON import/export, satellite overlay, official national park map PDFs |
-| **Library Manager** | Browse the Kiwix catalog in any language, download ZIMs from the dashboard, register sideloaded files |
-| **Notes & Shared Files** | Shared Markdown notebook and a drop box for your own documents, both stored on the drive |
-| **Comms** | Morse encoder/decoder, Meshtastic and MeshCore web clients, searchable imported repeater lists, emergency frequency reference |
+Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour les scénarios de survie en cas d'effondrement ou de coupure du réseau électrique. Elle tourne sur un **Raspberry Pi 5 avec AI Hat**, s'utilise avec un écran portable et une batterie externe, et peut contenir jusqu'à **800 Go** de connaissances de survie sélectionnées.
 
 ---
 
-## Quick Start
+## Contenu
 
-### One-click install (recommended)
+| Catégorie | Sources |
+|-----------|---------|
+| **Référence** | Wikipédia complète (EN), Wikibooks, Wikivoyage |
+| **Médical** | Where There Is No Doctor, Manuel Merck, guides de premiers secours |
+| **Savoir-faire** | Guides de réparation iFixit, Stack Exchange (DIY, Cuisine, Radioamateur) |
+| **Éducation** | Khan Academy, Projet Gutenberg (60 000+ livres), CK-12 |
+| **Vidéos de survie** | Playlists YouTube téléchargées avec yt-dlp |
+| **Cartes** | Tuiles OpenStreetMap hors ligne (région au choix) |
+| **Livres / PDF** | Manuels militaires, autosuffisance, permaculture, ingénierie |
+| **Assistant IA** | LLM local (Ollama) avec recherche dans la bibliothèque hors ligne (CPU ; le Hailo-8L n'accélère pas les LLM) |
+| **Cartes et repères** | Cartes routières dans le navigateur (sans serveur de tuiles), repères enregistrés avec notes, import/export GPX/GeoJSON, calque satellite, cartes PDF officielles des parcs nationaux |
+| **Gestionnaire de bibliothèque** | Parcourir le catalogue Kiwix dans toutes les langues, télécharger des ZIM depuis le tableau de bord, enregistrer des fichiers copiés à la main |
+| **Notes et fichiers partagés** | Carnet Markdown partagé et dépôt pour vos propres documents, tous deux stockés sur le disque |
+| **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence |
 
-Paste this single command into your Raspberry Pi terminal:
+> Les sources de contenu sont pour l'instant celles du projet d'origine (en anglais). Leur remplacement par des équivalents francophones est en cours.
+
+---
+
+## Démarrage rapide
+
+### Installation en une commande (recommandée)
+
+Collez cette commande dans le terminal de votre Raspberry Pi :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/schwadb/SurviveV1/main/install/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/main/install/bootstrap.sh | bash
 ```
 
-This will:
-1. Check your system (architecture, OS, internet)
-2. Clone the repository
-3. Launch an interactive wizard to guide you through storage, hostname, and AI model setup
-4. Install all services and start them automatically
+Cette commande :
+1. Vérifie votre système (architecture, OS, accès Internet)
+2. Clone le dépôt
+3. Lance un assistant interactif qui vous guide pour le stockage, le nom d'hôte et le modèle d'IA
+4. Installe tous les services et les démarre automatiquement
 
-### Manual install
+### Installation manuelle
 
 ```bash
-# 1. Clone on your Raspberry Pi
-git clone https://github.com/schwadb/SurviveV1.git ~/SurviveV1
+# 1. Cloner le dépôt sur votre Raspberry Pi
+git clone https://github.com/lolly76/SurviveV1-FR.git ~/SurviveV1
 cd ~/SurviveV1
 
-# 2. Run the interactive wizard (recommended)
+# 2. Lancer l'assistant interactif (recommandé)
 sudo bash install/wizard.sh
 
-# — or run the installer directly (non-interactive) —
+# — ou lancer directement l'installateur (non interactif) —
 sudo bash setup/install.sh
 
-# 3. Download content (runs in background, can take days)
+# 3. Télécharger le contenu (tourne en arrière-plan, peut durer des jours)
 bash download/download_all.sh --storage /mnt/survive
 
-# 4. Start all services
+# 4. Démarrer tous les services
 bash scripts/start_services.sh
 
-# 5. Open browser
+# 5. Ouvrir le navigateur
 http://localhost:8080
 ```
 
 ---
 
-## System Requirements
+## Configuration requise
 
-- **Hardware:** Raspberry Pi 5 (4GB+ RAM recommended), AI Hat (Hailo-8L)
-- **Storage:** USB 3.0 SSD or NVMe (256GB minimum, 800GB recommended)
-- **Power:** Power bank (20,000+ mAh) or solar + battery
-- **OS:** Raspberry Pi OS (64-bit Bookworm)
-- **Optional:** Wi-Fi dongle for local network sharing
+- **Matériel :** Raspberry Pi 5 (4 Go de RAM ou plus recommandés), AI Hat (Hailo-8L)
+- **Stockage :** SSD USB 3.0 ou NVMe (256 Go minimum, 800 Go recommandés)
+- **Alimentation :** Batterie externe (20 000 mAh ou plus) ou solaire + batterie
+- **Système :** Raspberry Pi OS (64 bits, Bookworm)
+- **Facultatif :** Clé Wi-Fi pour le partage sur le réseau local
 
 ---
 
-## Directory Layout
+## Arborescence
 
 ```
 SurviveV1/
-├── setup/          # Install scripts for all dependencies
-├── download/       # Content scrapers (Kiwix, yt-dlp, wget)
-├── web/            # Flask dashboard served at :8080
-├── ai/             # Ollama + local LLM setup (CPU inference)
-├── sync/           # rclone cloud sync (Google Drive, Dropbox, S3)
-├── scripts/        # start/stop/status/update helpers
-├── systemd/        # Systemd service unit files
-├── config/         # nginx, kiwix, app config
-├── docs/           # Extended documentation
-└── data/           # Symlink → your storage mount
+├── setup/          # Scripts d'installation de toutes les dépendances
+├── download/       # Récupération des contenus (Kiwix, yt-dlp, wget)
+├── web/            # Tableau de bord Flask servi sur :8080
+├── ai/             # Ollama + LLM local (inférence CPU)
+├── sync/           # Synchronisation cloud avec rclone (Google Drive, Dropbox, S3)
+├── scripts/        # Utilitaires démarrage/arrêt/état/mise à jour
+├── systemd/        # Unités de service systemd
+├── config/         # Configuration nginx, kiwix, application
+├── docs/           # Documentation détaillée
+└── data/           # Lien symbolique → votre point de montage de stockage
 ```
 
 ---
@@ -96,109 +100,107 @@ SurviveV1/
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Dashboard | 8080 | Main web UI |
-| Kiwix | 8081 | Wikipedia, books, Stack Exchange |
-| Kolibri | 8082 | Khan Academy, CK-12 education |
-| Jellyfin | 8096 | Video player for downloaded videos |
-| Calibre-Web | 8083 | Ebook reader (PDFs, EPUBs) |
-| Ollama AI | 11434 | Local LLM API |
-| Meshtastic Web | 8084 | LoRa mesh radio client (after `download/comms.sh`) |
-| MeshCore Web | 8085 | MeshCore LoRa mesh client (after `download/comms.sh`); its Android/Windows apps land in the app depot |
-| Nginx | 80 | Reverse proxy (optional) |
+| Tableau de bord | 8080 | Interface web principale |
+| Kiwix | 8081 | Wikipédia, livres, Stack Exchange |
+| Kolibri | 8082 | Contenus éducatifs Khan Academy, CK-12 |
+| Jellyfin | 8096 | Lecteur des vidéos téléchargées |
+| Calibre-Web | 8083 | Lecteur de livres numériques (PDF, EPUB) |
+| Ollama AI | 11434 | API du LLM local |
+| Meshtastic Web | 8084 | Client radio maillée LoRa (après `download/comms.sh`) |
+| MeshCore Web | 8085 | Client maillé LoRa MeshCore (après `download/comms.sh`) ; ses applications Android/Windows vont dans le dépôt d'applications |
+| Nginx | 80 | Proxy inverse (facultatif) |
 
-### Dashboard pages
+### Pages du tableau de bord
 
-| Page | What it does |
-|------|--------------|
-| `/maps` | Offline street map with saved pins (icon, colour, notes, hide), search, GPX/GeoJSON import and export, GPS locate over HTTPS, satellite overlay |
-| `/content` | Library manager: Kiwix catalog by language and category, one-click ZIM downloads (admin), downloads list, "Rescan library" for sideloaded files |
-| `/notes` | Shared Markdown notes (anyone can write, admin deletes); searchable from the main search box |
-| `/shared` | Upload and download personal files (2 GB per upload, 10 GB always kept free) |
-| `/comms` | Morse tool, Meshtastic web client link, repeater directory from your own CSV exports, calling/emergency frequencies |
-| `/status` | Services, downloads, one-click update, and the nightly auto-update switch |
+| Page | Fonction |
+|------|----------|
+| `/maps` | Carte routière hors ligne avec repères enregistrés (icône, couleur, notes, masquage), recherche, import/export GPX/GeoJSON, localisation GPS en HTTPS, calque satellite |
+| `/content` | Gestionnaire de bibliothèque : catalogue Kiwix par langue et catégorie, téléchargement de ZIM en un clic (admin), liste des téléchargements, « Réanalyser la bibliothèque » pour les fichiers copiés à la main |
+| `/notes` | Notes Markdown partagées (tout le monde peut écrire, l'admin supprime) ; consultables depuis la recherche principale |
+| `/shared` | Dépôt et téléchargement de fichiers personnels (2 Go par envoi, 10 Go toujours laissés libres) |
+| `/comms` | Outil Morse, lien vers le client web Meshtastic, annuaire de relais à partir de vos exports CSV, fréquences d'appel et d'urgence |
+| `/status` | Services, téléchargements, mise à jour en un clic et interrupteur de la mise à jour automatique nocturne |
 
-### Nightly auto-update
+### Mise à jour automatique nocturne
 
-Set `SURVIVE_AUTO_UPDATE="true"` (time and bandwidth cap next to it) in `config/survive.conf`,
-re-run `sudo bash scripts/generate_services.sh`, or flip the switch on the Status page. The
-timer runs the gap-fill updater at low priority and does nothing when the Pi is offline.
+Définissez `SURVIVE_AUTO_UPDATE="true"` (l'heure et la limite de débit se trouvent à côté) dans `config/survive.conf`, puis relancez `sudo bash scripts/generate_services.sh`, ou actionnez l'interrupteur sur la page État. Le minuteur lance la mise à jour des contenus manquants à basse priorité et ne fait rien lorsque le Pi est hors ligne.
 
-### Grid-down access (no router needed)
+### Accès sans réseau (sans routeur)
 
 ```bash
 sudo bash scripts/hotspot.sh enable
 ```
 
-The Pi broadcasts its own Wi-Fi network (default SSID `SurviveV1`); connect
-any phone or laptop and open **http://10.42.0.1:8080**. Disable with
-`... disable`; a reboot also returns the Pi to normal Wi-Fi.
+Le Pi diffuse son propre réseau Wi-Fi (SSID par défaut : `SurviveV1`) ; connectez un téléphone ou un ordinateur portable et ouvrez **http://10.42.0.1:8080**. Désactivez-le avec `... disable` ; un redémarrage remet aussi le Pi sur le Wi-Fi normal.
 
 ---
 
-## Cloud Sync
+## Synchronisation cloud
 
 ```bash
-# Initial rclone setup
+# Configuration initiale de rclone
 bash sync/setup_rclone.sh
 
-# Sync to Google Drive
+# Synchroniser vers Google Drive
 bash sync/sync_to_cloud.sh gdrive
 
-# Sync to Dropbox
+# Synchroniser vers Dropbox
 bash sync/sync_to_cloud.sh dropbox
 
-# Schedule nightly sync (when internet available)
+# Programmer une synchronisation nocturne (quand Internet est disponible)
 bash sync/schedule_sync.sh
 ```
 
 ---
 
-## Updating Content
+## Mise à jour des contenus
 
 ```bash
-# Update specific category
+# Mettre à jour une catégorie précise
 bash download/kiwix_content.sh --update wikipedia
 
-# Update all content (downloads new versions)
+# Tout mettre à jour (télécharge les nouvelles versions)
 bash scripts/update_content.sh
 
-# Check what's installed vs available
+# Voir ce qui est installé et ce qui est disponible
 bash scripts/status.sh
 ```
 
 ---
 
-## AI Assistant
+## Assistant IA
 
-With the Raspberry Pi AI Hat (Hailo-8L), you can run local LLMs to query your knowledge base:
+Avec le Raspberry Pi AI Hat (Hailo-8L), vous pouvez exécuter des LLM locaux pour interroger votre base de connaissances :
 
 ```bash
-# Chat with local AI (searches your content)
-bash ai/query.sh "How do I purify water without chemicals?"
+# Discuter avec l'IA locale (elle cherche dans vos contenus)
+bash ai/query.sh "Comment purifier de l'eau sans produits chimiques ?"
 
-# Or via web UI at http://localhost:8080/ai
+# Ou via l'interface web : http://localhost:8080/ai
 ```
 
 ---
 
-## Storage Budget (~800 GB)
+## Budget de stockage (~800 Go)
 
-| Content | Size |
-|---------|------|
-| Wikipedia EN (with images) | ~100 GB |
-| Wikibooks + Wikivoyage | ~5 GB |
-| Stack Exchange (all) | ~80 GB |
-| Project Gutenberg | ~60 GB |
-| Khan Academy (Kolibri) | ~200 GB |
-| Survival/medical videos | ~150 GB |
-| OpenStreetMap (world) | ~70 GB |
-| PDFs + manuals | ~20 GB |
-| LLM models (AI) | ~50 GB |
-| Buffer | ~65 GB |
-| **Total** | **~800 GB** |
+| Contenu | Taille |
+|---------|--------|
+| Wikipédia EN (avec images) | ~100 Go |
+| Wikibooks + Wikivoyage | ~5 Go |
+| Stack Exchange (tout) | ~80 Go |
+| Projet Gutenberg | ~60 Go |
+| Khan Academy (Kolibri) | ~200 Go |
+| Vidéos de survie / médicales | ~150 Go |
+| OpenStreetMap (monde) | ~70 Go |
+| PDF + manuels | ~20 Go |
+| Modèles LLM (IA) | ~50 Go |
+| Réserve | ~65 Go |
+| **Total** | **~800 Go** |
 
 ---
 
-## License
+## Licence
 
-Content is subject to individual source licenses (Creative Commons, Public Domain, etc.). See `docs/licenses.md`.
+Les contenus sont soumis aux licences propres à chaque source (Creative Commons, domaine public, etc.). Voir `docs/licenses.md`.
+
+Le dépôt d'origine ne fournit pas de fichier de licence pour son code : avant de redistribuer ce fork, vérifiez les conditions auprès de son auteur.

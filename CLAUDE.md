@@ -45,13 +45,13 @@ cd web && gunicorn --bind 0.0.0.0:8080 --workers 2 --threads 4 --timeout 120 ser
 
 ```bash
 # Bootstrap (curl | bash) — the user entry point
-curl -fsSL https://raw.githubusercontent.com/schwadb/SurviveV1/main/install/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/main/install/bootstrap.sh | bash
 
 # Run wizard directly (after repo is cloned)
 sudo bash install/wizard.sh
 
 # bootstrap.sh env-var overrides:
-#   SURVIVE_REPO    — git clone URL     (default: github.com/schwadb/SurviveV1.git)
+#   SURVIVE_REPO    — git clone URL     (default: github.com/lolly76/SurviveV1-FR.git)
 #   SURVIVE_BRANCH  — branch/tag        (default: main)
 #   SURVIVE_DIR     — local clone path  (default: ~/SurviveV1)
 ```

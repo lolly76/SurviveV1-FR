@@ -370,4 +370,4 @@ rather than aborting the run, so partial video libraries are expected.
 
 - Check service status: `bash scripts/status.sh`
 - View all logs: `tail -f /var/log/survive_*.log`
-- GitHub Issues: https://github.com/schwadb/SurviveV1/issues
+- GitHub Issues: https://github.com/lolly76/SurviveV1-FR/issues

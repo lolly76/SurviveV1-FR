@@ -3,7 +3,7 @@
 # SurviveV1 — One-click bootstrap
 #
 # Usage (on a fresh Raspberry Pi 5):
-#   curl -fsSL https://raw.githubusercontent.com/schwadb/SurviveV1/main/install/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/lolly76/SurviveV1-FR/main/install/bootstrap.sh | bash
 #
 # The script:
 #   1. Checks minimum requirements (aarch64, Bookworm, internet)
@@ -12,13 +12,13 @@
 #   4. Launches the interactive installation wizard
 #
 # Override defaults with environment variables:
-#   SURVIVE_REPO   - Git repo URL  (default: https://github.com/schwadb/SurviveV1.git)
+#   SURVIVE_REPO   - Git repo URL  (default: https://github.com/lolly76/SurviveV1-FR.git)
 #   SURVIVE_BRANCH - Branch/tag    (default: main)
 #   SURVIVE_DIR    - Clone target  (default: /home/$SUDO_USER/SurviveV1 or ~/SurviveV1)
 # =============================================================================
 set -euo pipefail
 
-SURVIVE_REPO="${SURVIVE_REPO:-https://github.com/schwadb/SurviveV1.git}"
+SURVIVE_REPO="${SURVIVE_REPO:-https://github.com/lolly76/SurviveV1-FR.git}"
 SURVIVE_BRANCH="${SURVIVE_BRANCH:-main}"
 
 # Resolve clone target: prefer the invoking user's home directory so root-cloned
