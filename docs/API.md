@@ -1,20 +1,20 @@
-# SurviveV1 Dashboard API
+# API du tableau de bord SurviveV1
 
-Base URL: `http://survive.local:8080`
+URL de base : `http://survive.local:8080`
 
-All endpoints return JSON unless otherwise noted. No authentication required (local network only).
+Tous les points d'accès renvoient du JSON sauf mention contraire. Aucune authentification n'est requise (réseau local uniquement), sauf les actions réservées à l'administrateur.
 
 ---
 
 ## GET /api/status
 
-Returns system-wide status: storage usage, running services, content inventory.
+État global : utilisation du stockage, services en marche, inventaire des contenus.
 
 ```bash
 curl http://localhost:8080/api/status
 ```
 
-**Response:**
+**Réponse :**
 ```json
 {
   "storage": {
@@ -46,20 +46,20 @@ curl http://localhost:8080/api/status
 
 ## GET /api/recent
 
-Returns the 20 most recently modified content files.
+Les 20 fichiers de contenu modifiés le plus récemment.
 
 ```bash
 curl http://localhost:8080/api/recent
 ```
 
-**Response:**
+**Réponse :**
 ```json
 [
   {
-    "name": "wikipedia_en_all_maxi_2024-01.zim",
-    "path": "zim/wikipedia/wikipedia_en_all_maxi_2024-01.zim",
-    "size_mb": 98304.0,
-    "modified": "2025-03-28T09:12:44"
+    "name": "wikipedia_fr_all_maxi_2026-05.zim",
+    "path": "zim/wikipedia/wikipedia_fr_all_maxi_2026-05.zim",
+    "size_mb": 53248.0,
+    "modified": "2026-05-28T09:12:44"
   }
 ]
 ```
@@ -68,91 +68,80 @@ curl http://localhost:8080/api/recent
 
 ## POST /api/ai/chat
 
-Sends a message to the local Ollama AI assistant. The question first full-text
-searches the local Kiwix library; the top article excerpts are injected into
-the model's system prompt (retrieval-augmented generation) and returned as a
-`sources` list. The completion is **streamed** as newline-delimited JSON
-(`Content-Type: application/x-ndjson`).
+Envoie un message à l'assistant IA Ollama local. La question est d'abord cherchée en plein texte dans la
+bibliothèque Kiwix locale ; les meilleurs extraits d'articles sont injectés dans le prompt système du modèle
+(génération augmentée par la recherche) et renvoyés dans la liste `sources`. La réponse est **diffusée au fil
+de l'eau** en JSON délimité par des sauts de ligne (`Content-Type: application/x-ndjson`).
 
 ```bash
 curl -N -X POST http://localhost:8080/api/ai/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "How do I purify water?", "model": "survive"}'
+  -d '{"message": "Comment purifier de l'\''eau ?", "model": "survive"}'
 ```
 
-**Request body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | yes | User's question (truncated to 4096 chars) |
-| `model` | string | no | Ollama model name (default: `survive`) |
-| `history` | array | no | Prior turns `[{"role": "user"\|"assistant", "content": "..."}]` for multi-turn context. Only `user`/`assistant` roles are accepted (400 otherwise); the server keeps at most the last 8 turns / ~3000 chars. |
+**Corps de la requête :**
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `message` | chaîne | oui | Question de l'utilisateur (tronquée à 4096 caractères) |
+| `model` | chaîne | non | Nom du modèle Ollama (par défaut : `survive`) |
+| `history` | tableau | non | Tours précédents `[{"role": "user"\|"assistant", "content": "..."}]` pour le contexte multi-tours. Seuls les rôles `user`/`assistant` sont acceptés (sinon 400) ; le serveur garde au plus les 8 derniers tours / ~3000 caractères. |
 
-**Response (success) — one JSON object per line, in order:**
+**Réponse (succès) — un objet JSON par ligne, dans l'ordre :**
 ```
-{"sources": [{"title": "Water purification", "url": "http://survive.local:8081/viewer#..."}]}
-{"delta": "To purify "}
-{"delta": "water, boil it..."}
+{"sources": [{"title": "Purification de l'eau", "url": "http://survive.local:8081/viewer#..."}]}
+{"delta": "Pour purifier "}
+{"delta": "l'eau, faites-la bouillir..."}
 {"done": true, "model": "survive"}
 ```
-- `sources` is always the first line (may be an empty array if nothing matched).
-- `delta` lines carry incremental token text; concatenate them for the answer.
-- A mid-stream failure is emitted as a `{"error": "..."}` line.
+- `sources` est toujours la première ligne (tableau vide si rien ne correspond).
+- Les lignes `delta` portent le texte produit au fur et à mesure ; concaténez-les pour obtenir la réponse.
+- Une panne en cours de flux est signalée par une ligne `{"error": "..."}`.
 
-**Pre-stream errors** keep real HTTP status codes with a JSON body (the stream
-has not started yet):
-| Status | Cause |
+**Erreurs avant le flux** : elles gardent de vrais codes HTTP avec un corps JSON (le flux n'a pas commencé) :
+| Statut | Cause |
 |--------|-------|
-| 400 | Missing `message` |
-| 415 | `Content-Type` is not `application/json` |
-| 429 | Rate limit (5/min) exceeded |
-| 502 | Ollama unreachable |
+| 400 | `message` manquant |
+| 415 | `Content-Type` différent de `application/json` |
+| 429 | Limite de débit dépassée (5/min) |
+| 502 | Ollama injoignable |
 
-```json
-{"error": "AI service unavailable"}
-```
-
-> Note: with streaming, `SURVIVE_AI_CHAT_TIMEOUT` is an *idle* timeout between
-> chunks, not a cap on total answer length — long answers are no longer truncated.
+> Remarque : avec la diffusion, `SURVIVE_AI_CHAT_TIMEOUT` est un délai d'*inactivité* entre deux morceaux, et non un plafond de longueur de réponse.
 
 ---
 
 ## GET /api/downloads
 
-Per-category content-download progress, assembled from `.download_progress`,
-content sizes, and the newest `.logs/*.log` tail.
+Progression des téléchargements par catégorie, reconstituée à partir de `.download_progress`, de la taille des contenus et de la fin du plus récent `.logs/*.log`.
 
 ```bash
 curl http://localhost:8080/api/downloads
 ```
 
-**Response:**
+**Réponse :**
 ```json
 {
   "categories": [
-    {"id": "kiwix", "name": "Wikipedia & ZIM", "budget_gb": 190,
+    {"id": "kiwix", "name": "Wikipédia et ZIM", "budget_gb": 190,
      "size_gb": 182.4, "status": "complete"}
   ],
-  "active_log": {"file": "kiwix.log", "line": "[DL] downloading wikipedia_en... 42%"},
+  "active_log": {"file": "kiwix.log", "line": "[DL] downloading wikipedia_fr... 42%"},
   "complete": 1,
   "total": 7
 }
 ```
-`status` is one of `complete` (recorded in `.download_progress`),
-`in_progress` (its content dir has grown), or `pending`.
+`status` vaut `complete` (consigné dans `.download_progress`), `in_progress` (le dossier de contenu a grossi) ou `pending`.
 
 ---
 
 ## GET /api/system
 
-Machine health (cached 5 s): CPU temperature, Pi firmware throttle state
-(current + since-boot sticky bits), RAM/swap via MemAvailable, load average,
-uptime. All fields degrade to zeros/False on non-Pi hardware.
+Santé de la machine (mise en cache 5 s) : température du processeur, état de bridage du firmware du Pi (courant + bits mémorisés depuis le démarrage), RAM/swap via MemAvailable, charge moyenne, durée de fonctionnement. Hors Pi, tous les champs retombent à zéro/False.
 
 ```bash
 curl http://localhost:8080/api/system
 ```
 
-**Response:**
+**Réponse :**
 ```json
 {
   "temperature_c": 52.1,
@@ -169,193 +158,193 @@ curl http://localhost:8080/api/system
 
 ## GET /api/connectivity
 
-Server-side internet reachability check (the Pi's own connectivity, cached 30 s).
+Test d'accès à Internet côté serveur (la connectivité du Pi lui-même, mise en cache 30 s).
 
 ```bash
 curl http://localhost:8080/api/connectivity
 ```
 
-**Response:** `{"online": true}`
+**Réponse :** `{"online": true}`
 
 ---
 
 ## POST /api/update/start
 
-Launch a background "safe refresh" of all local content
-(`scripts/update_content.sh`): new videos, books, PDFs, newly-added or
-missing Kiwix ZIMs, and AI model updates. Existing large ZIM builds are
-never replaced. Requires `Content-Type: application/json` (415 otherwise);
-409 if an update is already running; 503 if the Pi is offline.
-Rate-limited to 3/min.
+Lance en arrière-plan une « actualisation sûre » de tous les contenus locaux (`scripts/update_content.sh`) : nouvelles vidéos, livres, PDF, ZIM Kiwix nouveaux ou manquants, mises à jour des modèles d'IA. Les gros ZIM existants ne sont jamais remplacés. Exige `Content-Type: application/json` (sinon 415) ; 409 si une mise à jour est déjà en cours ; 503 si le Pi est hors ligne. Limité à 3/min.
 
 ```bash
 curl -X POST http://localhost:8080/api/update/start \
   -H "Content-Type: application/json" -d '{}'
 ```
 
-**Response:** `202 {"started": true, "pid": 12345}`
+**Réponse :** `202 {"started": true, "pid": 12345}`
 
 ---
 
 ## GET /api/update/status
 
-State of the current/last update run, reconstructed from on-disk artifacts
-(log + pid file), so it survives dashboard restarts.
+État de la mise à jour en cours ou de la dernière, reconstitué à partir des fichiers sur disque (journal + fichier pid), donc conservé après un redémarrage du tableau de bord.
 
 ```bash
 curl http://localhost:8080/api/update/status
 ```
 
-**Response:**
+**Réponse :**
 
 ```json
 {
   "running": false,
   "started": "2026-08-17T10:00:00",
   "exit_code": 0,
-  "log_tail": ["[UPDATE] Content update complete"]
+  "log_tail": ["[UPDATE] Mise à jour des contenus terminée"]
 }
 ```
 
-`exit_code` is `null` while running or before any run; the log lives at
-`$STORAGE/.logs/update_content.log`.
+`exit_code` vaut `null` pendant l'exécution ou avant tout passage ; le journal se trouve dans `$STORAGE/.logs/update_content.log`.
 
 ---
 
 ## GET /search
 
-Search for files by name. Returns HTML page.
+Recherche de fichiers par nom (index SQLite FTS5), plus des sections pour les articles Kiwix, les documents et les notes. Renvoie une page HTML. Limité à 30/min.
 
 ```
-GET /search?q=water+purification
+GET /search?q=purification+eau
 ```
 
-| Parameter | Description |
+| Paramètre | Description |
 |-----------|-------------|
-| `q` | Search query (2–200 characters) |
-
-Returns HTML with matching files from `/mnt/survive`.
+| `q` | Requête de recherche (2 à 200 caractères) |
 
 ---
 
-## GET /serve/&lt;path&gt;
+## GET /serve/&lt;chemin&gt;
 
-Serve a file from storage directly.
+Sert directement un fichier du stockage.
 
 ```bash
-curl http://localhost:8080/serve/pdfs/military_manuals/FM21-76_Army_Survival_Manual.pdf \
-  -o FM21-76.pdf
+curl http://localhost:8080/serve/pdfs/medical/Hesperian_LOIPD_15_ventre_diarrhees.pdf -o chapitre15.pdf
 ```
 
-- Path is relative to `SURVIVE_STORAGE_PATH`
-- Path traversal is blocked (403 if path escapes storage root)
-- Returns 404 if file not found
+- Le chemin est relatif à `SURVIVE_STORAGE_PATH`
+- La traversée de répertoires est bloquée (403 si le chemin sort de la racine du stockage)
+- 404 si le fichier est introuvable
 
 ---
 
 ## GET /category/&lt;id&gt;
 
-Returns an HTML page listing all files in a content category.
+Page HTML listant les fichiers d'une catégorie de contenu.
 
-Available category IDs: `medical`, `food`, `shelter`, `energy`, `skills`, `communication`, `security`, `maps`, `reference`, `videos`, and more — see `web/server.py` `CATEGORIES` list.
+Identifiants disponibles : `medical`, `food`, `shelter`, `energy`, `skills`, `communication`, `security`, `maps`, `reference`, `videos`, etc. — voir la liste `CATEGORIES` de `web/constants.py`.
 
 ---
 
 ## GET /files
 
-Browse the file system interactively.
+Parcours interactif du système de fichiers.
 
 ```
-GET /files?path=pdfs/military_manuals
+GET /files?path=pdfs/medical
 ```
 
-| Parameter | Description |
+| Paramètre | Description |
 |-----------|-------------|
-| `path` | Relative path within storage (optional, default: root) |
+| `path` | Chemin relatif dans le stockage (facultatif, racine par défaut) |
 
-Returns HTML directory listing.
+Renvoie un listing HTML du dossier.
+
+---
+
+## Référence des médicaments
+
+Données issues de la Base de données publique des médicaments (BDPM). L'accès exige d'avoir accepté l'avertissement (session) ; sinon la page d'avertissement s'affiche et l'API renvoie 403.
+
+| Endpoint | Méthode | Notes |
+|----------|---------|-------|
+| `/drugs?q=&mode=drug\|symptom` | GET | Recherche par nom/substance (`drug`) ou par symptôme/indication (`symptom`). La source et la date de mise à jour des données sont affichées. |
+| `/drugs/<id>` | GET | Fiche : forme, voie, titulaire, conditions de prescription, indications, posologie, contre-indications, mises en garde, interactions, lien vers la fiche officielle. |
+| `/drugs/disclaimer` | POST | Formulaire CSRF : accepte l'avertissement pour la session. |
+| `/api/drugs/interactions?a=<id>&b=<nom>` | GET | Recherche **textuelle** (insensible aux accents) du nom de `b` dans les interactions, mises en garde et contre-indications de `a`, et inversement. Ce n'est pas un vérificateur clinique d'interactions. |
 
 ---
 
 ## GET /api/update/schedule
 
-Nightly auto-update timer state. `available` is false until `generate_services.sh` has
-installed the timer. `next_run`/`last_run` are systemd's human-readable timestamps.
+État du minuteur de mise à jour nocturne. `available` vaut false tant que `generate_services.sh` n'a pas installé le minuteur. `next_run` / `last_run` sont les horodatages lisibles de systemd.
 
 ```json
-{"available": true, "enabled": true, "active": true, "next_run": "Sat 2026-10-11 02:30:00 PDT",
+{"available": true, "enabled": true, "active": true, "next_run": "Sat 2026-10-11 02:30:00 CEST",
  "last_run": null, "time": "02:30", "rate_limit_kbps": 2048}
 ```
 
 ## POST /api/update/schedule
 
-Admin only, JSON body `{"enabled": true|false}`. Runs the allowlisted
-`systemctl enable|disable --now survive-content-update.timer` and returns the same
-shape as the GET. 500 with a `manual` command when the sudoers rule is missing.
+Administrateur seulement, corps JSON `{"enabled": true|false}`. Exécute la commande autorisée `systemctl enable|disable --now survive-content-update.timer` et renvoie la même forme que le GET. 500 avec une commande `manual` si la règle sudoers est absente.
 
-## Maps and pins
+## Cartes et repères
 
-| Endpoint | Method | Notes |
-|----------|--------|-------|
-| `/maps` | GET | Map page. Sets a per-route CSP (`blob:` workers) and `Permissions-Policy: geolocation=(self)`. |
+| Endpoint | Méthode | Notes |
+|----------|---------|-------|
+| `/maps` | GET | Page de la carte. Définit une CSP par route (workers `blob:`) et `Permissions-Policy: geolocation=(self)`. |
 | `/api/map/assets` | GET | `{basemaps:[{name,file,url,size_mb}], overlays:[...], fonts_ok, sprites_ok, park_maps}` |
 | `/api/map/pins` | GET | `{pins:[{id,name,lat,lon,icon,color,notes,hidden,created,updated}]}` |
-| `/api/map/pins` | POST | JSON pin → 201 with the stored row. Open to the LAN; 60/min. `icon` must be one of `pin water fuel medical camp cache home food danger radio tools people`. |
-| `/api/map/pins/<id>` | PUT / DELETE | JSON body (partial update allowed). 404 when missing. |
-| `/api/map/pins/export?format=gpx\|geojson` | GET | File download of every pin. |
-| `/api/map/pins/import` | POST | `{"text": "<gpx or geojson>"}` (4 MB max) → `{imported, pins}`. |
+| `/api/map/pins` | POST | Repère JSON → 201 avec la ligne enregistrée. Ouvert au réseau local ; 60/min. `icon` parmi `pin water fuel medical camp cache home food danger radio tools people`. |
+| `/api/map/pins/<id>` | PUT / DELETE | Corps JSON (mise à jour partielle possible). 404 si absent. |
+| `/api/map/pins/export?format=gpx\|geojson` | GET | Téléchargement de tous les repères. |
+| `/api/map/pins/import` | POST | `{"text": "<gpx ou geojson>"}` (4 Mo max) → `{imported, pins}`. |
 
-## Library manager
+## Gestionnaire de bibliothèque
 
-| Endpoint | Method | Notes |
-|----------|--------|-------|
+| Endpoint | Méthode | Notes |
+|----------|---------|-------|
 | `/content` | GET | Page. |
-| `/api/content/catalog?lang=eng&q=&category=&start=0&count=50` | GET | Proxies `library.kiwix.org/catalog/v2/entries` (15-min cache). Each entry carries `status`: `installed`, `partial`, `downloading` or `available`. 503 when offline. |
+| `/api/content/catalog?lang=fra&q=&category=&start=0&count=50` | GET | Relaie `library.kiwix.org/catalog/v2/entries` (cache 15 min). Chaque entrée porte un `status` : `installed`, `partial`, `downloading` ou `available`. 503 hors ligne. |
 | `/api/content/languages` | GET | `{languages:[{code,name,count}]}` |
-| `/api/content/local` | GET | ZIM files on the drive with `registered` (known to Kiwix) and `partial` flags, plus `free_gb`. |
-| `/api/content/jobs` | GET | Dashboard-started downloads (`zimdl_*` logs) and the rescan job, each with `running`, `exit_code`, `progress`, `log_tail`. |
-| `/api/content/download` | POST | Admin, JSON `{url, name, size}`. Only `https://download.kiwix.org/...zim` (and the `lb.`/`mirror.` hosts). 507 when the file plus a 10 GB margin would not fit; 409 when two downloads already run. Starts `scripts/download_zim.sh` detached → 202. |
-| `/api/content/rescan` | POST | Admin. Starts `scripts/rescan_library.sh` detached → 202. |
+| `/api/content/local` | GET | Fichiers ZIM du disque avec les indicateurs `registered` (connu de Kiwix) et `partial`, plus `free_gb`. |
+| `/api/content/jobs` | GET | Téléchargements lancés depuis le tableau de bord (journaux `zimdl_*`) et tâche de réanalyse, avec `running`, `exit_code`, `progress`, `log_tail`. |
+| `/api/content/download` | POST | Admin, JSON `{url, name, size}`. Uniquement `https://download.kiwix.org/...zim` (et les hôtes `lb.`/`mirror.`). 507 si le fichier plus 10 Go de marge ne tient pas ; 409 si deux téléchargements tournent déjà. Lance `scripts/download_zim.sh` en arrière-plan → 202. |
+| `/api/content/rescan` | POST | Admin. Lance `scripts/rescan_library.sh` en arrière-plan → 202. |
 
-## Notes, shared files, comms
+## Notes, fichiers partagés, transmissions
 
-These are HTML pages with CSRF-protected forms rather than JSON APIs.
+Ce sont des pages HTML avec formulaires protégés par CSRF, et non des API JSON.
 
-| Route | Method | Notes |
-|-------|--------|-------|
-| `/notes`, `/notes?q=` | GET | List / search. |
-| `/notes/new`, `/notes/<slug>`, `/notes/<slug>?edit=1` | GET | Editor, rendered view, editor. |
-| `/notes/save` | POST | Form `body` (+ `slug` to update). New notes get a slug from the first heading. 512 KB max. |
+| Route | Méthode | Notes |
+|-------|---------|-------|
+| `/notes`, `/notes?q=` | GET | Liste / recherche. |
+| `/notes/new`, `/notes/<slug>`, `/notes/<slug>?edit=1` | GET | Éditeur, vue rendue, éditeur. |
+| `/notes/save` | POST | Formulaire `body` (+ `slug` pour mettre à jour). Une nouvelle note prend son slug du premier titre. 512 Ko max. |
 | `/notes/<slug>/delete` | POST | Admin. |
-| `/shared` | GET | Listing of `$STORAGE/shared`. |
-| `/shared/upload` | POST | Multipart `files` (multiple). 2 GB per request, keeps 10 GB free, filenames pass through `secure_filename`. |
-| `/shared/delete` | POST | Admin, form `name`. |
-| `/comms`, `/comms/morse`, `/comms/repeaters?q=&band=` | GET | Pages. Bands: `6m 2m 1.25m 70cm gmrs other`. |
-| `/comms/repeaters/upload`, `/comms/repeaters/delete` | POST | Admin. CSV only (20 MB). |
+| `/shared` | GET | Liste de `$STORAGE/shared`. |
+| `/shared/upload` | POST | `files` multipart (plusieurs). 2 Go par requête, 10 Go toujours libres, noms de fichiers passés dans `secure_filename`. |
+| `/shared/delete` | POST | Admin, formulaire `name`. |
+| `/comms`, `/comms/morse`, `/comms/repeaters?q=&band=` | GET | Pages. Bandes : `6m 2m 1.25m 70cm gmrs other`. |
+| `/comms/repeaters/upload`, `/comms/repeaters/delete` | POST | Admin. CSV uniquement (20 Mo). |
 
-## Service Ports
+## Ports des services
 
 | Service | Port | URL |
 |---------|------|-----|
-| Dashboard | 8080 | http://survive.local:8080 |
-| Kiwix (Wikipedia) | 8081 | http://survive.local:8081 |
+| Tableau de bord | 8080 | http://survive.local:8080 |
+| Kiwix (Wikipédia) | 8081 | http://survive.local:8081 |
 | Kolibri (Khan Academy) | 8082 | http://survive.local:8082 |
-| Calibre-Web (E-books) | 8083 | http://survive.local:8083 |
-| Jellyfin (Videos) | 8096 | http://survive.local:8096 |
-| Martin (Maps, optional) | 3000 | http://survive.local:3000 |
+| Calibre-Web (livres numériques) | 8083 | http://survive.local:8083 |
+| Jellyfin (vidéos) | 8096 | http://survive.local:8096 |
+| Martin (cartes, facultatif) | 3000 | http://survive.local:3000 |
 | Meshtastic Web | 8084 | http://survive.local:8084 |
 | MeshCore Web | 8085 | http://survive.local:8085 |
-| Ollama (AI) | 11434 | http://survive.local:11434 |
+| Ollama (IA) | 11434 | http://survive.local:11434 |
 
 ---
 
 ## Configuration
 
-Timeouts and other API behaviour can be tuned via environment variables (or `config/survive.conf`):
+Les délais et autres comportements de l'API se règlent par variables d'environnement (ou `config/survive.conf`) :
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SURVIVE_SERVICE_CHECK_TIMEOUT` | `1` | Seconds to wait when testing service ports |
-| `SURVIVE_OLLAMA_LIST_TIMEOUT` | `2` | Seconds to wait for Ollama model list |
-| `SURVIVE_AI_CHAT_TIMEOUT` | `60` | Seconds to wait for AI chat completion |
-| `SURVIVE_STORAGE_PATH` | `/mnt/survive` | Root of content storage |
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `SURVIVE_SERVICE_CHECK_TIMEOUT` | `1` | Secondes d'attente lors du test des ports de services |
+| `SURVIVE_OLLAMA_LIST_TIMEOUT` | `2` | Secondes d'attente pour la liste des modèles Ollama |
+| `SURVIVE_AI_CHAT_TIMEOUT` | `60` | Secondes d'attente pour la réponse du chat IA |
+| `SURVIVE_STORAGE_PATH` | `/mnt/survive` | Racine du stockage des contenus |
