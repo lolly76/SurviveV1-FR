@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Interactive Installation Wizard
-# Called by install/bootstrap.sh after the repo has been cloned.
-# Can also be run directly: sudo bash install/wizard.sh
+# SurviveV1 — Assistant d'installation interactif
+# Appelé par install/bootstrap.sh une fois le dépôt cloné.
+# Peut aussi être lancé directement : sudo bash install/wizard.sh
 # =============================================================================
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONF="$REPO_DIR/config/survive.conf"
 
-# ── Colours ───────────────────────────────────────────────────────────────────
+# ── Couleurs ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
 
@@ -19,15 +19,16 @@ ok()      { echo -e "  ${GREEN}✓${NC}  $*"; }
 info()    { echo -e "  ${BLUE}→${NC}  $*"; }
 warn()    { echo -e "  ${YELLOW}!${NC}  $*"; }
 ask()     { echo -en "  ${BOLD}$*${NC} "; }
-die()     { echo -e "\n${RED}[ERROR]${NC} $*" >&2; exit 1; }
+die()     { echo -e "\n${RED}[ERREUR]${NC} $*" >&2; exit 1; }
+error()   { echo -e "  ${RED}✗${NC}  $*" >&2; }
 
-# `set -e` aborts are otherwise silent — always report what failed and where.
+# Les arrêts dus à `set -e` sont silencieux : on indique toujours quoi et où.
 _on_error() {
-    echo -e "\n${RED}[ERROR]${NC} Wizard failed (exit $1) at line $2: $3" >&2
+    echo -e "\n${RED}[ERREUR]${NC} L'assistant a échoué (code $1) à la ligne $2 : $3" >&2
 }
 trap '_on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
-# ── Screen: Welcome ───────────────────────────────────────────────────────────
+# ── Écran : accueil ───────────────────────────────────────────────────────────
 show_welcome() {
     clear
     echo ""
@@ -40,37 +41,37 @@ show_welcome() {
  |____/ \__,_|_|    \_/ |_| \_/ \___|  \_/  /_/
 BANNER
     echo -e "${NC}"
-    banner "  Offline Survival Repository — Installation Wizard"
+    banner "  Base de connaissances de survie hors ligne — Assistant d'installation"
     echo ""
-    echo -e "  ${DIM}Installs: dashboard · Wikipedia · AI assistant · maps · medical guides${NC}"
+    echo -e "  ${DIM}Installe : tableau de bord · Wikipédia · assistant IA · cartes · guides médicaux${NC}"
     echo ""
 
-    # Show detected hardware
+    # Afficher le matériel détecté
     local ram_mb
     ram_mb=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
     local ram_tier
-    if (( ram_mb >= 14336 )); then ram_tier="16 GB — gemma4:12b (best quality)"
-    elif (( ram_mb >= 6144 )); then  ram_tier="8 GB  — gemma4:e4b (good quality)"
-    else                             ram_tier="4 GB  — gemma4:e2b (fast baseline)"
+    if (( ram_mb >= 14336 )); then ram_tier="16 Go — gemma4:12b (meilleure qualité)"
+    elif (( ram_mb >= 6144 )); then  ram_tier="8 Go  — gemma4:e4b (bonne qualité)"
+    else                             ram_tier="4 Go  — gemma4:e2b (base rapide)"
     fi
 
-    info "System RAM:   ${ram_mb} MB  →  AI model tier: ${ram_tier}"
-    info "Architecture: $(uname -m)"
-    info "OS:           $(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" || echo "unknown")"
+    info "RAM système :  ${ram_mb} Mo  →  palier du modèle d'IA : ${ram_tier}"
+    info "Architecture :  $(uname -m)"
+    info "Système :      $(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME" || echo "inconnu")"
     echo ""
-    ask "Press ENTER to start, or Ctrl+C to cancel."
+    ask "Appuyez sur ENTRÉE pour commencer, ou Ctrl+C pour annuler."
     read -r _
 }
 
-# ── Screen: Storage device selection ─────────────────────────────────────────
+# ── Écran : choix du disque de stockage ─────────────────────────────────────────
 CHOSEN_DEV=""
 CHOSEN_MOUNT="/mnt/survive"
 
 choose_storage() {
-    header "Storage"
+    header "Stockage"
     echo ""
 
-    # Build list: non-SD, non-loop block devices
+    # Liste des périphériques bloc hors carte SD et hors loop
     local -a devs=()
     local -a sizes=()
     local -a models=()
@@ -85,17 +86,17 @@ choose_storage() {
     done < <(lsblk -d -n -o NAME,SIZE,MODEL 2>/dev/null \
              | grep -Ev '^(loop|mmcblk|zram)' || true)
 
-    # Check if /mnt/survive is already mounted
+    # Vérifier si /mnt/survive est déjà monté
     local already_mounted=false
     if mountpoint -q /mnt/survive 2>/dev/null; then
         already_mounted=true
         local mounted_gb
         mounted_gb=$(df -BG /mnt/survive | tail -1 | awk '{print $2}' | tr -d 'G')
-        ok "/mnt/survive is already mounted (${mounted_gb} GB)"
+        ok "/mnt/survive est déjà monté (${mounted_gb} Go)"
         echo ""
-        ask "Use existing mount? [Y/n]: "
+        ask "Utiliser le montage existant ? [O/n] : "
         read -r ans
-        if [[ "${ans:-y}" =~ ^[Yy]$ ]]; then
+        if [[ "${ans:-y}" =~ ^[YyOo]$ ]]; then
             CHOSEN_DEV="SKIP"
             CHOSEN_MOUNT="/mnt/survive"
             return
@@ -108,20 +109,20 @@ choose_storage() {
             CHOSEN_MOUNT="/mnt/survive"
             return
         fi
-        warn "No external drives detected."
-        warn "Connect your USB SSD and press ENTER to rescan, or Ctrl+C to abort."
+        warn "Aucun disque externe détecté."
+        warn "Branchez votre SSD USB et appuyez sur ENTRÉE pour réanalyser, ou Ctrl+C pour quitter."
         read -r _
-        choose_storage   # recurse once
+        choose_storage   # un seul appel récursif
         return
     fi
 
-    echo "  Detected drives:"
+    echo "  Disques détectés :"
     echo ""
     local i=1
     for idx in "${!devs[@]}"; do
         local in_use=""
         if mountpoint -q "/dev/${devs[$idx]}" 2>/dev/null; then
-            in_use="${DIM} (mounted)${NC}"
+            in_use="${DIM} (monté)${NC}"
         fi
         printf "    ${BOLD}[%d]${NC}  /dev/%-8s  %6s  %s%b\n" \
                "$i" "${devs[$idx]}" "${sizes[$idx]}" "${models[$idx]}" "$in_use"
@@ -129,10 +130,10 @@ choose_storage() {
     done
     if [[ "$already_mounted" == "true" ]]; then
         echo ""
-        printf "    ${BOLD}[%d]${NC}  Keep /mnt/survive (already mounted)\n" "$i"
+        printf "    ${BOLD}[%d]${NC}  Conserver /mnt/survive (déjà monté)\n" "$i"
     fi
     echo ""
-    ask "Select drive [1]: "
+    ask "Choisissez le disque [1] : "
     read -r choice
     choice="${choice:-1}"
 
@@ -144,189 +145,192 @@ choose_storage() {
 
     local sel=$(( choice - 1 ))
     if [[ "$sel" -lt 0 ]] || [[ "$sel" -ge "${#devs[@]}" ]]; then
-        warn "Invalid choice — defaulting to ${devs[0]}"
+        warn "Choix invalide — ${devs[0]} utilisé par défaut"
         sel=0
     fi
 
     CHOSEN_DEV="${devs[$sel]}"
 
-    # Mount-point: default /mnt/survive, let user override
+    # Point de montage : /mnt/survive par défaut, modifiable
     echo ""
-    ask "Mount point [/mnt/survive]: "
+    ask "Point de montage [/mnt/survive] : "
     read -r mp
     CHOSEN_MOUNT="${mp:-/mnt/survive}"
 }
 
-# ── Screen: Format confirmation ───────────────────────────────────────────────
+# ── Écran : confirmation du formatage ───────────────────────────────────────────────
 FORMAT_DRIVE=false
 
 confirm_format() {
     [[ "$CHOSEN_DEV" == "SKIP" ]] && return
 
-    header "Format Drive"
+    header "Formater le disque"
     echo ""
     local size
     size=$(lsblk -d -n -o SIZE "/dev/$CHOSEN_DEV" 2>/dev/null || echo "?")
     warn "/dev/${CHOSEN_DEV}  (${size})"
     echo ""
-    echo -e "  ${DIM}If this drive is new or has no data you want to keep, formatting it"
-    echo -e "  as ext4 will give the best performance on Linux.${NC}"
+    echo -e "  ${DIM}Si ce disque est neuf ou ne contient rien à conserver, le formater"
+    echo -e "  en ext4 donne les meilleures performances sous Linux.${NC}"
     echo ""
-    ask "Format /dev/${CHOSEN_DEV} as ext4? This ERASES ALL DATA. [y/N]: "
+    ask "Formater /dev/${CHOSEN_DEV} en ext4 ? Cela EFFACE TOUTES LES DONNÉES. [o/N] : "
     read -r ans
-    if [[ "${ans:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${ans:-n}" =~ ^[YyOo]$ ]]; then
         echo ""
-        warn "Last chance: type  format  to confirm, or press ENTER to skip."
+        warn "Dernière chance : tapez  formater  pour confirmer, ou appuyez sur ENTRÉE pour ignorer."
         ask "> "
         read -r confirm
-        if [[ "$confirm" == "format" ]]; then
+        if [[ "$confirm" == "formater" ]]; then
             FORMAT_DRIVE=true
-            ok "Drive will be formatted during install."
+            ok "Le disque sera formaté pendant l'installation."
         else
-            info "Skipping format — existing data will be preserved."
+            info "Formatage ignoré — les données existantes sont conservées."
         fi
     else
-        info "Skipping format — existing data will be preserved."
+        info "Formatage ignoré — les données existantes sont conservées."
     fi
 }
 
-# ── Screen: Hostname ──────────────────────────────────────────────────────────
+# ── Écran : nom d'hôte ──────────────────────────────────────────────────────────
 CHOSEN_HOSTNAME=""
 
 choose_hostname() {
-    header "Hostname"
+    header "Nom d'hôte"
     echo ""
     local current
     current=$(hostname 2>/dev/null || echo "raspberrypi")
-    info "Current hostname: ${current}"
-    info "Your Pi will be reachable as  http://\${hostname}.local:8080"
+    info "Nom d'hôte actuel : ${current}"
+    info "Votre Pi sera accessible à l'adresse  http://\${hostname}.local:8080"
     echo ""
-    ask "Hostname [survive]: "
+    ask "Nom d'hôte [survive] : "
     read -r hn
     CHOSEN_HOSTNAME="${hn:-survive}"
-    ok "Hostname set to: ${CHOSEN_HOSTNAME}"
+    ok "Nom d'hôte défini : ${CHOSEN_HOSTNAME}"
 }
 
-# ── Screen: Map region ────────────────────────────────────────────────────────
-CHOSEN_MAP_REGION="north-america"
+# ── Écran : région des cartes ────────────────────────────────────────────────────────
+CHOSEN_MAP_REGION="france"
 
 choose_map_region() {
-    header "Offline Maps Region"
+    header "Région des cartes hors ligne"
     echo ""
-    echo "  Available regions:"
-    echo "    [1] North America  (recommended for US/Canada users)"
+    echo "  Régions disponibles :"
+    echo "    [1] France métropolitaine  (recommandé, ~5 Go)"
     echo "    [2] Europe"
-    echo "    [3] South America"
-    echo "    [4] Africa"
-    echo "    [5] Asia"
-    echo "    [6] World (all regions, requires >50 GB)"
-    echo "    [7] Skip maps"
+    echo "    [3] Amérique du Nord"
+    echo "    [4] Amérique du Sud"
+    echo "    [5] Afrique"
+    echo "    [6] Asie"
+    echo "    [7] Monde entier (toutes les régions, plus de 50 Go)"
+    echo "    [8] Ne pas installer les cartes"
     echo ""
-    ask "Select region [1]: "
+    ask "Choisissez la région [1] : "
     read -r r
     case "${r:-1}" in
-        1) CHOSEN_MAP_REGION="north-america" ;;
+        1) CHOSEN_MAP_REGION="france" ;;
         2) CHOSEN_MAP_REGION="europe" ;;
-        3) CHOSEN_MAP_REGION="south-america" ;;
-        4) CHOSEN_MAP_REGION="africa" ;;
-        5) CHOSEN_MAP_REGION="asia" ;;
-        6) CHOSEN_MAP_REGION="world" ;;
-        7) CHOSEN_MAP_REGION="none" ;;
-        *) CHOSEN_MAP_REGION="north-america" ;;
+        3) CHOSEN_MAP_REGION="north-america" ;;
+        4) CHOSEN_MAP_REGION="south-america" ;;
+        5) CHOSEN_MAP_REGION="africa" ;;
+        6) CHOSEN_MAP_REGION="asia" ;;
+        7) CHOSEN_MAP_REGION="world" ;;
+        8) CHOSEN_MAP_REGION="none" ;;
+        *) CHOSEN_MAP_REGION="france" ;;
     esac
-    ok "Map region: ${CHOSEN_MAP_REGION}"
+    ok "Région des cartes : ${CHOSEN_MAP_REGION}"
 }
 
-# ── Screen: Grid-down hotspot (optional) ──────────────────────────────────────
+# ── Écran : point d'accès Wi-Fi hors réseau (facultatif) ──────────────────────────────────────
 CHOSEN_HOTSPOT="n"
 CHOSEN_HOTSPOT_SSID="SurviveV1"
 CHOSEN_HOTSPOT_PASS="survive2026"
 
 choose_hotspot() {
-    header "Grid-Down Wi-Fi Hotspot (optional)"
+    header "Point d'accès Wi-Fi hors réseau (facultatif)"
     echo ""
-    echo "  In a grid-down scenario there is no router: the Pi can broadcast its"
-    echo "  own Wi-Fi network so phones and laptops connect to it directly."
+    echo "  En cas de coupure générale, il n'y a plus de box : le Pi peut diffuser son"
+    echo "  propre réseau Wi-Fi pour que téléphones et ordinateurs s'y connectent."
     echo ""
-    echo "  NOTE: enabling the hotspot LATER disconnects the Pi from home Wi-Fi"
-    echo "  (they only coexist with Ethernet). It is NOT enabled during install —"
-    echo "  content downloads need internet. This step just saves your settings."
+    echo "  ATTENTION : activer le point d'accès PLUS TARD déconnecte le Pi du Wi-Fi de"
+    echo "  la maison (les deux ne coexistent qu'avec Ethernet). Il n'est PAS activé"
+    echo "  pendant l'installation, car les téléchargements ont besoin d'Internet."
+    echo "  Cette étape enregistre seulement vos réglages."
     echo ""
-    ask "Configure hotspot settings now? [y/N]: "
+    ask "Configurer le point d'accès maintenant ? [o/N] : "
     read -r ans
-    if [[ "${ans:-n}" =~ ^[Yy]$ ]]; then
+    if [[ "${ans:-n}" =~ ^[YyOo]$ ]]; then
         CHOSEN_HOTSPOT="y"
-        ask "Hotspot network name (SSID) [SurviveV1]: "
+        ask "Nom du réseau du point d'accès (SSID) [SurviveV1] : "
         read -r ssid
         CHOSEN_HOTSPOT_SSID="${ssid:-SurviveV1}"
         while true; do
-            ask "Hotspot password (8-63 chars) [survive2026]: "
+            ask "Mot de passe du point d'accès (8 à 63 caractères) [survive2026] : "
             read -r pass
             pass="${pass:-survive2026}"
             if (( ${#pass} >= 8 && ${#pass} <= 63 )); then
                 CHOSEN_HOTSPOT_PASS="$pass"
                 break
             fi
-            warn "Password must be 8-63 characters."
+            warn "Le mot de passe doit comporter de 8 à 63 caractères."
         done
-        ok "Hotspot: ${CHOSEN_HOTSPOT_SSID} (enable later with: sudo bash scripts/hotspot.sh enable)"
+        ok "Point d'accès : ${CHOSEN_HOTSPOT_SSID} (à activer plus tard avec : sudo bash scripts/hotspot.sh enable)"
     else
-        info "Skipped — defaults are saved in survive.conf; enable any time."
+        info "Ignoré — les valeurs par défaut sont enregistrées dans survive.conf ; activable à tout moment."
     fi
 }
 
-# ── Screen: Summary + confirm ─────────────────────────────────────────────────
+# ── Écran : récapitulatif et confirmation ─────────────────────────────────────────────────
 confirm_install() {
-    header "Installation Summary"
+    header "Récapitulatif de l'installation"
     echo ""
 
     local ram_mb
     ram_mb=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
     local ai_model
-    if (( ram_mb >= 14336 )); then ai_model="gemma4:12b  (1-3 tok/s, highest quality)"
+    if (( ram_mb >= 14336 )); then ai_model="gemma4:12b  (1-3 tok/s, meilleure qualité)"
     elif (( ram_mb >= 6144 )); then ai_model="gemma4:e4b  (3-5 tok/s)"
     else                            ai_model="gemma4:e2b  (8-12 tok/s)"
     fi
 
     if [[ "$CHOSEN_DEV" == "SKIP" ]]; then
-        info "Storage:     ${CHOSEN_MOUNT}  (already mounted)"
+        info "Stockage :    ${CHOSEN_MOUNT}  (déjà monté)"
     elif [[ "$FORMAT_DRIVE" == "true" ]]; then
-        info "Storage:     /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (will format as ext4)"
+        info "Stockage :    /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (sera formaté en ext4)"
     else
-        info "Storage:     /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (existing data kept)"
+        info "Stockage :    /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (données existantes conservées)"
     fi
-    info "Hostname:    ${CHOSEN_HOSTNAME}  (http://${CHOSEN_HOSTNAME}.local:8080)"
-    info "AI model:    ${ai_model}"
-    info "Maps:        ${CHOSEN_MAP_REGION}"
+    info "Nom d'hôte :  ${CHOSEN_HOSTNAME}  (http://${CHOSEN_HOSTNAME}.local:8080)"
+    info "Modèle d'IA : ${ai_model}"
+    info "Cartes :      ${CHOSEN_MAP_REGION}"
     if [[ "$CHOSEN_HOTSPOT" == "y" ]]; then
-        info "Hotspot:     ${CHOSEN_HOTSPOT_SSID}  (enable after install)"
+        info "Point d'accès : ${CHOSEN_HOTSPOT_SSID}  (à activer après l'installation)"
     fi
-    info "Repo:        ${REPO_DIR}"
+    info "Dépôt :       ${REPO_DIR}"
     echo ""
-    info "Content download (Wikipedia, videos, books) runs separately after install."
-    info "Estimated install time: 15-30 minutes."
+    info "Le téléchargement des contenus (Wikipédia, vidéos, livres) se fait séparément, après l'installation."
+    info "Durée d'installation estimée : 15 à 30 minutes."
     echo ""
-    ask "Proceed with installation? [y/N]: "
+    ask "Lancer l'installation ? [o/N] : "
     read -r ans
-    [[ "${ans:-n}" =~ ^[Yy]$ ]] || { echo ""; info "Aborted."; exit 0; }
+    [[ "${ans:-n}" =~ ^[YyOo]$ ]] || { echo ""; info "Annulé."; exit 0; }
 }
 
-# Return the last partition name (e.g. "sda1") of a disk, or "" if it has none.
-# NOTE: plain `lsblk -n -o NAME` draws tree characters (└─sda1), which yield a
-# bogus /dev/└─sda1 path; -r (raw) output is required here.
+# Renvoie le nom de la dernière partition (ex. « sda1 ») d'un disque, ou « »
+# s'il n'en a pas. NB : `lsblk -n -o NAME` seul dessine des caractères d'arbre
+# (└─sda1) qui donnent un faux chemin /dev/└─sda1 ; le mode brut -r est requis.
 _first_partition() {
     lsblk -rno NAME,TYPE "/dev/$1" 2>/dev/null | awk '$2 == "part" { print $1 }' | tail -1
 }
 
-# ── Storage setup: format + mount ─────────────────────────────────────────────
+# ── Préparation du stockage : formatage et montage ─────────────────────────────────────────────
 setup_drive() {
     [[ "$CHOSEN_DEV" == "SKIP" ]] && return
 
-    info "Setting up /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}..."
+    info "Préparation de /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}..."
 
     if [[ "$FORMAT_DRIVE" == "true" ]]; then
-        info "Formatting /dev/${CHOSEN_DEV} as ext4..."
-        # Wipe partition table, create new GPT + single ext4 partition
+        info "Formatage de /dev/${CHOSEN_DEV} en ext4..."
+        # Effacer la table de partitions, créer une GPT et une seule partition ext4
         sgdisk --zap-all "/dev/${CHOSEN_DEV}" 2>/dev/null \
             || wipefs -a "/dev/${CHOSEN_DEV}"
         parted -s "/dev/${CHOSEN_DEV}" mklabel gpt
@@ -335,11 +339,11 @@ setup_drive() {
         udevadm settle 2>/dev/null || sleep 2
         local part
         part=$(_first_partition "${CHOSEN_DEV}")
-        [[ -n "$part" ]] || die "Partition did not appear on /dev/${CHOSEN_DEV} after formatting."
+        [[ -n "$part" ]] || die "La partition n'est pas apparue sur /dev/${CHOSEN_DEV} après le formatage."
         mkfs.ext4 -F -L survive "/dev/${part}"
         CHOSEN_PART="/dev/${part}"
     else
-        # Existing partition if the disk has one, else the raw device.
+        # Partition existante si le disque en a une, sinon le périphérique brut.
         local part
         part=$(_first_partition "${CHOSEN_DEV}")
         if [[ -n "$part" ]]; then
@@ -348,7 +352,7 @@ setup_drive() {
             CHOSEN_PART="/dev/${CHOSEN_DEV}"
         fi
     fi
-    info "Using partition: ${CHOSEN_PART}"
+    info "Partition utilisée : ${CHOSEN_PART}"
 
     mkdir -p "${CHOSEN_MOUNT}"
 
@@ -358,7 +362,7 @@ setup_drive() {
     # did NOT come back after a reboot.
     local already_mounted=false
     if mountpoint -q "${CHOSEN_MOUNT}"; then
-        ok "Already mounted at ${CHOSEN_MOUNT}"
+        ok "Déjà monté sur ${CHOSEN_MOUNT}"
         already_mounted=true
     fi
 
@@ -369,18 +373,18 @@ setup_drive() {
     local existing
     existing=$(findmnt -nro TARGET --source "${CHOSEN_PART}" 2>/dev/null | head -1 || true)
     if [[ -n "$existing" ]] && [[ "$existing" != "${CHOSEN_MOUNT}" ]]; then
-        info "${CHOSEN_PART} is currently mounted at ${existing} — relocating to ${CHOSEN_MOUNT}"
+        info "${CHOSEN_PART} est actuellement monté sur ${existing} — déplacement vers ${CHOSEN_MOUNT}"
         if ! umount "$existing" 2>/dev/null; then
-            error "Could not unmount ${existing} — something is using it."
-            error "Close any programs/terminals in that directory (or reboot), then re-run."
-            error "Culprits:"; lsof "$existing" 2>/dev/null | head -5 || fuser -vm "$existing" 2>&1 | head -5 || true
+            error "Impossible de démonter ${existing} — il est utilisé."
+            error "Fermez les programmes et terminaux dans ce dossier (ou redémarrez), puis relancez."
+            error "Processus concernés :"; lsof "$existing" 2>/dev/null | head -5 || fuser -vm "$existing" 2>&1 | head -5 || true
             exit 1
         fi
         # A leftover fstab line would send the drive back to the old path on
         # the next boot, silently breaking every service after a reboot.
         if grep -qsE "^[^#].*[[:space:]]${existing}[[:space:]]" /etc/fstab; then
-            sed -i -E "s|^([^#].*[[:space:]]${existing}[[:space:]].*)$|# disabled by SurviveV1 wizard: \1|" /etc/fstab
-            warn "Commented out the old ${existing} entry in /etc/fstab"
+            sed -i -E "s|^([^#].*[[:space:]]${existing}[[:space:]].*)$|# désactivé par l'assistant SurviveV1 : \1|" /etc/fstab
+            warn "Ancienne entrée ${existing} commentée dans /etc/fstab"
         fi
     fi
 
@@ -392,13 +396,13 @@ setup_drive() {
     if [[ -n "$uuid" ]]; then
         if ! grep -q "$uuid" /etc/fstab 2>/dev/null; then
             echo "UUID=${uuid}  ${CHOSEN_MOUNT}  ${fstype}  defaults,nofail,noatime  0  2" >> /etc/fstab
-            ok "Added to /etc/fstab (auto-mount on boot)"
+            ok "Ajouté à /etc/fstab (montage automatique au démarrage)"
         else
-            ok "/etc/fstab already auto-mounts this drive"
+            ok "/etc/fstab monte déjà ce disque automatiquement"
         fi
     else
-        warn "${CHOSEN_PART} has no UUID — cannot add a reliable /etc/fstab entry."
-        warn "The drive will NOT auto-mount after a reboot."
+        warn "${CHOSEN_PART} n'a pas d'UUID — impossible d'ajouter une entrée fiable dans /etc/fstab."
+        warn "Le disque ne sera PAS monté automatiquement après un redémarrage."
     fi
 
     if [[ "$already_mounted" == "true" ]]; then
@@ -414,33 +418,33 @@ setup_drive() {
     # Verify — never report success on an unmounted drive; every later step
     # (and the whole content download) depends on this actually working.
     if ! mountpoint -q "${CHOSEN_MOUNT}"; then
-        error "Failed to mount ${CHOSEN_PART} at ${CHOSEN_MOUNT}"
+        error "Échec du montage de ${CHOSEN_PART} sur ${CHOSEN_MOUNT}"
         echo ""
         lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT "/dev/${CHOSEN_DEV}" 2>/dev/null || true
         echo ""
-        error "If the drive has no filesystem yet, re-run the wizard and choose to format it."
+        error "Si le disque n'a pas encore de système de fichiers, relancez l'assistant et choisissez de le formater."
         exit 1
     fi
-    ok "Drive mounted at ${CHOSEN_MOUNT} ($(df -h --output=size "${CHOSEN_MOUNT}" | tail -1 | xargs) available)"
+    ok "Disque monté sur ${CHOSEN_MOUNT} ($(df -h --output=size "${CHOSEN_MOUNT}" | tail -1 | xargs) disponibles)"
 }
 
-# ── Update hostname ────────────────────────────────────────────────────────────
+# ── Mise à jour du nom d'hôte ────────────────────────────────────────────────────────────
 setup_hostname() {
     local current
     current=$(hostname 2>/dev/null || echo "")
     [[ "$current" == "$CHOSEN_HOSTNAME" ]] && return
 
-    info "Setting hostname to ${CHOSEN_HOSTNAME}..."
+    info "Définition du nom d'hôte : ${CHOSEN_HOSTNAME}..."
     echo "${CHOSEN_HOSTNAME}" > /etc/hostname
     # Update /etc/hosts
     sed -i "s/127\.0\.1\.1.*/127.0.1.1\t${CHOSEN_HOSTNAME}/" /etc/hosts
     hostname "${CHOSEN_HOSTNAME}"
-    ok "Hostname set (takes effect on reboot)"
+    ok "Nom d'hôte défini (effectif après redémarrage)"
 }
 
-# ── Write config/survive.conf ─────────────────────────────────────────────────
+# ── Écriture de config/survive.conf ─────────────────────────────────────────────────
 write_config() {
-    info "Writing ${CONF}..."
+    info "Écriture de ${CONF}..."
     local ram_mb
     ram_mb=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
     local ai_model="survive"   # always the custom survive model
@@ -449,7 +453,7 @@ write_config() {
     # Here we regenerate from scratch with wizard values + preserved extras.
     cat > "$CONF" << CONF
 # SurviveV1 Configuration
-# Generated by: bash install/wizard.sh
+# Généré par : bash install/wizard.sh
 
 # ── Storage ────────────────────────────────────────────────────────────────────
 SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}"
@@ -457,11 +461,12 @@ SURVIVE_STORAGE_DEV="${CHOSEN_DEV:-SKIP}"
 SURVIVE_BUDGET_GB="800"
 SURVIVE_HOSTNAME="${CHOSEN_HOSTNAME}"
 
-# ── Content flags (Y=download, N=skip) ────────────────────────────────────────
+# ── Contenus (Y = télécharger, N = ignorer) ────────────────────────────────────────
 CONTENT_WIKIPEDIA="Y"
 CONTENT_WIKIPEDIA_NOPIC="N"
 CONTENT_WIKIBOOKS="Y"
 CONTENT_STACKEXCHANGE="Y"
+CONTENT_STACKEXCHANGE_EN="N"
 CONTENT_GUTENBERG="Y"
 CONTENT_KOLIBRI="Y"
 CONTENT_VIDEOS="Y"
@@ -469,157 +474,160 @@ CONTENT_MAPS="${CHOSEN_MAP_REGION_FLAG:-Y}"
 CONTENT_PDFS="Y"
 CONTENT_AI_MODELS="Y"
 CONTENT_IFIX="Y"
+CONTENT_EXPANSION="Y"
+CONTENT_EXPANSION_EN="N"
 CONTENT_MESHTASTIC="Y"
 CONTENT_MESHCORE="Y"
-CONTENT_NPS_MAPS="Y"
+CONTENT_NPS_MAPS="N"
 CONTENT_SATELLITE="Y"
 
-# ── Nightly automatic content update (see config/survive.conf.example) ────────
+# ── Mise à jour automatique nocturne (voir config/survive.conf.example) ────────
 SURVIVE_AUTO_UPDATE="false"
 SURVIVE_AUTO_UPDATE_TIME="02:30"
 SURVIVE_AUTO_UPDATE_RATE_LIMIT="2097152"
 
-# ── Video quality (480, 720, 1080) ─────────────────────────────────────────────
+# ── Qualité vidéo (480, 720, 1080) ─────────────────────────────────────────────
 VIDEO_QUALITY="720"
 
 # ── AI ─────────────────────────────────────────────────────────────────────────
 SURVIVE_AI_MODEL="${ai_model}"
 
-# ── Map region ─────────────────────────────────────────────────────────────────
+# ── Région des cartes ─────────────────────────────────────────────────────────────────
 MAP_REGION="${CHOSEN_MAP_REGION}"
 
-# ── Grid-down Wi-Fi hotspot (scripts/hotspot.sh) ───────────────────────────────
+# ── Point d'accès Wi-Fi hors réseau (scripts/hotspot.sh) ───────────────────────────────
 SURVIVE_HOTSPOT_SSID="${CHOSEN_HOTSPOT_SSID}"
 SURVIVE_HOTSPOT_PASS="${CHOSEN_HOTSPOT_PASS}"
 
-# ── Cloud sync ─────────────────────────────────────────────────────────────────
+# ── Synchronisation cloud ─────────────────────────────────────────────────────────────────
 SURVIVE_CLOUD_REMOTE="gdrive"
 SURVIVE_CLOUD_PATH="SurviveV1"
 
 # ── Hailo AI Hat ───────────────────────────────────────────────────────────────
-# Hailo-8L is vision-only; it cannot accelerate Ollama LLMs.
+# Le Hailo-8L ne fait que de la vision : il n'accélère pas les LLM d'Ollama.
 SKIP_AI_HAT="true"
 
-# ── Bandwidth limiting (bytes/s; 0 = unlimited) ────────────────────────────────
+# ── Limitation de débit (octets/s ; 0 = illimité) ────────────────────────────────
 SURVIVE_BANDWIDTH_LIMIT="0"
 
-# ── Web server timeouts (seconds) ──────────────────────────────────────────────
+# ── Délais d'attente du serveur web (secondes) ──────────────────────────────────────────────
 SURVIVE_SERVICE_CHECK_TIMEOUT="1"
 SURVIVE_OLLAMA_LIST_TIMEOUT="2"
 SURVIVE_AI_CHAT_TIMEOUT="60"
 CONF
 
-    # Disable maps content flag if user skipped maps
+    # Désactiver le téléchargement des cartes si l'utilisateur les a ignorées
     if [[ "${CHOSEN_MAP_REGION}" == "none" ]]; then
         sed -i 's/^CONTENT_MAPS="Y"/CONTENT_MAPS="N"/' "$CONF"
     fi
 
-    ok "Config written to ${CONF}"
+    ok "Configuration écrite dans ${CONF}"
 }
 
-# ── Run pre-flight check ──────────────────────────────────────────────────────
+# ── Vérifications préalables ──────────────────────────────────────────────────────
 run_preflight() {
-    header "Pre-flight Check"
+    header "Vérifications préalables"
     echo ""
     SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}" bash "${REPO_DIR}/setup/pre_flight_check.sh" || {
         echo ""
-        warn "Some pre-flight checks failed (see above)."
-        ask "Continue anyway? [y/N]: "
+        warn "Certaines vérifications ont échoué (voir ci-dessus)."
+        ask "Continuer malgré tout ? [o/N] : "
         read -r ans
-        [[ "${ans:-n}" =~ ^[Yy]$ ]] || { info "Aborted."; exit 1; }
+        [[ "${ans:-n}" =~ ^[YyOo]$ ]] || { info "Annulé."; exit 1; }
     }
 }
 
-# ── Run main installer ─────────────────────────────────────────────────────────
+# ── Lancement de l'installateur ─────────────────────────────────────────────────────────
 run_installer() {
-    header "Installing"
+    header "Installation"
     echo ""
-    info "Running setup/install.sh — this takes 15-30 minutes..."
-    info "Full log: /var/log/survive_install.log"
+    info "Exécution de setup/install.sh — cela prend 15 à 30 minutes..."
+    info "Journal complet : /var/log/survive_install.log"
     echo ""
     SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}" \
         bash "${REPO_DIR}/setup/install.sh"
 }
 
-# ── Admin password ─────────────────────────────────────────────────────────────
+# ── Mot de passe administrateur ─────────────────────────────────────────────────────────────
 setup_admin_password() {
-    header "Admin Password"
+    header "Mot de passe administrateur"
     echo ""
-    info "Guests on your Wi-Fi browse everything WITHOUT logging in."
-    info "An admin password is only needed to update content and manage"
-    info "services from the dashboard. You can set it now or later with:"
+    info "Les invités de votre Wi-Fi consultent tout SANS se connecter."
+    info "Un mot de passe administrateur ne sert qu'à mettre à jour les contenus"
+    info "et gérer les services depuis le tableau de bord. Vous pouvez le définir"
+    info "maintenant ou plus tard avec :"
     info "  python3 ${REPO_DIR}/scripts/set_admin_password.py"
     echo ""
-    ask "Set an admin password now? [Y/n]: "
+    ask "Définir un mot de passe administrateur maintenant ? [O/n] : "
     read -r ans
-    if [[ "${ans:-y}" =~ ^[Yy]$ ]]; then
+    if [[ "${ans:-y}" =~ ^[YyOo]$ ]]; then
         local py="/opt/survive/venv/bin/python3"
         [[ -x "$py" ]] || py="python3"
         "$py" "${REPO_DIR}/scripts/set_admin_password.py" \
-            || warn "Password not set — run set_admin_password.py later"
+            || warn "Mot de passe non défini — lancez set_admin_password.py plus tard"
     else
-        info "Skipped. The Update button stays locked until a password is set."
+        info "Ignoré. Le bouton de mise à jour reste verrouillé tant qu'aucun mot de passe n'est défini."
     fi
 }
 
-# ── AI model setup ─────────────────────────────────────────────────────────────
+# ── Installation du modèle d'IA ─────────────────────────────────────────────────────────────
 run_ai_setup() {
-    header "AI Model Setup"
+    header "Installation du modèle d'IA"
     echo ""
-    info "Pulling AI models for your ${ram_mb:-0} MB Pi..."
-    info "This downloads 1.5-8 GB depending on your RAM tier."
-    info "(You can skip this and run it later with: bash ai/setup_ollama.sh)"
+    info "Téléchargement des modèles d'IA pour votre Pi de ${ram_mb:-0} Mo..."
+    info "Cela télécharge de 1,5 à 8 Go selon votre quantité de RAM."
+    info "(Vous pouvez l'ignorer et le faire plus tard avec : bash ai/setup_ollama.sh)"
     echo ""
-    ask "Set up AI models now? [Y/n]: "
+    ask "Installer les modèles d'IA maintenant ? [O/n] : "
     read -r ans
-    if [[ "${ans:-y}" =~ ^[Yy]$ ]]; then
-        bash "${REPO_DIR}/ai/setup_ollama.sh" setup || warn "AI setup failed — run manually later"
+    if [[ "${ans:-y}" =~ ^[YyOo]$ ]]; then
+        bash "${REPO_DIR}/ai/setup_ollama.sh" setup || warn "L'installation de l'IA a échoué — relancez-la manuellement plus tard"
     else
-        info "Skipped. Run later with: bash ${REPO_DIR}/ai/setup_ollama.sh setup"
+        info "Ignoré. À lancer plus tard avec : bash ${REPO_DIR}/ai/setup_ollama.sh setup"
     fi
 }
 
-# ── Success screen ────────────────────────────────────────────────────────────
+# ── Écran de réussite ────────────────────────────────────────────────────────────
 show_success() {
     echo ""
     echo -e "${BOLD}${GREEN}"
     echo "  ╔══════════════════════════════════════════╗"
-    echo "  ║     SurviveV1 Installation Complete!    ║"
+    echo "  ║   Installation de SurviveV1 terminée !  ║"
     echo "  ╚══════════════════════════════════════════╝"
     echo -e "${NC}"
     local ip
-    ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "<your-pi-ip>")
-    ok "Dashboard:    http://${CHOSEN_HOSTNAME}.local:8080"
-    ok "By IP:        http://${ip}:8080"
-    ok "AI Assistant: http://${CHOSEN_HOSTNAME}.local:8080/ai"
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "<ip-de-votre-pi>")
+    ok "Tableau de bord : http://${CHOSEN_HOSTNAME}.local:8080"
+    ok "Par adresse IP :  http://${ip}:8080"
+    ok "Assistant IA :     http://${CHOSEN_HOSTNAME}.local:8080/ai"
     echo ""
-    info "Next steps:"
+    info "Prochaines étapes :"
     echo ""
-    echo "    1. Download content (Wikipedia, books, videos):"
+    echo "    1. Télécharger les contenus (Wikipédia, livres, vidéos) :"
     echo "       bash ${REPO_DIR}/download/download_all.sh"
     echo ""
-    echo "    2. Start/stop services:"
+    echo "    2. Démarrer/arrêter les services :"
     echo "       bash ${REPO_DIR}/scripts/start_services.sh"
     echo "       bash ${REPO_DIR}/scripts/stop_services.sh"
     echo ""
-    echo "    3. Check service status:"
+    echo "    3. Vérifier l'état des services :"
     echo "       bash ${REPO_DIR}/scripts/status.sh"
     echo ""
-    echo "    4. Grid-down mode (Pi broadcasts its own Wi-Fi, no router needed):"
+    echo "    4. Mode hors réseau (le Pi diffuse son propre Wi-Fi, sans box) :"
     echo "       sudo bash ${REPO_DIR}/scripts/hotspot.sh enable"
     echo ""
-    echo -e "  ${DIM}If survive.local doesn't resolve on Windows, use the IP address above.${NC}"
+    echo -e "  ${DIM}Si survive.local ne fonctionne pas sous Windows, utilisez l'adresse IP ci-dessus.${NC}"
     echo ""
 }
 
-# ── Require root ──────────────────────────────────────────────────────────────
+# ── Droits root requis ──────────────────────────────────────────────────────────────
 require_root() {
     if [[ $EUID -ne 0 ]]; then
-        die "This wizard must be run as root.\n\n  Re-run with: sudo bash $0"
+        die "Cet assistant doit être lancé en root.\n\n  Relancez avec : sudo bash $0"
     fi
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Programme principal ──────────────────────────────────────────────────────────────────────
 main() {
     require_root
 
@@ -631,7 +639,7 @@ main() {
     choose_hotspot
     confirm_install
 
-    header "Setup"
+    header "Préparation"
     setup_drive
     setup_hostname
     write_config
