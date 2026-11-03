@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Mental Health & Psychological First Aid downloader
-# Covers: disaster psychology, grief, resilience, PFA, community mental health
+# SurviveV1 — Téléchargeur « santé mentale et premiers secours psychologiques »
+# Couvre : psychologie des catastrophes, deuil, résilience, PSP, santé mentale communautaire
 # =============================================================================
 set -euo pipefail
 
@@ -104,10 +104,10 @@ dl_who() {  # dl_who <name> <handle> <old-url> <dest-dir> <filename>
 dl_file() {
     local name="$1" url="$2" dest="$3"
     local filename="${4:-$(basename "$url" | tr '?&=' '_')}"
-    [[ -f "$dest/$filename" ]] && { info "[$name] Already exists"; return 0; }
-    info "Downloading: $name"
+    [[ -f "$dest/$filename" ]] && { info "[$name] Déjà présent"; return 0; }
+    info "Téléchargement : $name"
     if _fetch_with_fallback "$url" "$dest/$filename" "$name"; then
-        success "$name saved"
+        success "$name enregistré"
     else
         warn "$name failed"
         echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [$name] $url" >> "$FAILED_LOG"
@@ -152,104 +152,54 @@ dl_channel() {
         --playlist-end "$max" \
         --ignore-errors --no-warnings \
         "${BW_ARGS[@]}" "$url" \
-        && success "$name done" || warn "$name had errors"
+        && success "$name terminé" || warn "$name : erreurs"
 }
 
-# ── WHO / UN Psychological First Aid ─────────────────────────────────────────
+# ── Premiers secours psychologiques (PSP) en français ────────────────────────
 dl_pfa() {
-    info "=== Psychological First Aid (PFA) ==="
-
-    dl_who "WHO Psychological First Aid Field Guide" "10665/44615" \
-        "https://apps.who.int/iris/bitstream/handle/10665/44615/9789241548205_eng.pdf" \
-        "$PDF_DIR" "WHO_PFA_Field_Guide.pdf"
-
-    dl_who "WHO PFA Facilitator Manual" "10665/44427" \
-        "https://apps.who.int/iris/bitstream/handle/10665/44427/9789241548809_eng.pdf" \
-        "$PDF_DIR" "WHO_PFA_Facilitator_Manual.pdf"
-
-    dl_file "UNHCR Community Mental Health Guide" \
-        "https://www.unhcr.org/media/community-mental-health-guide-humanitarian-settings" \
-        "$PDF_DIR" "UNHCR_Community_Mental_Health.pdf" || true
-
-    dl_file "IASC Guidelines on Mental Health in Emergencies" \
-        "https://interagencystandingcommittee.org/system/files/2020-11/IASC%20Guidelines%20on%20Mental%20Health%20and%20Psychosocial%20Support%20in%20Emergency%20Settings.pdf" \
-        "$PDF_DIR" "IASC_MHPSS_Guidelines.pdf"
+    info "=== Premiers secours psychologiques (PSP) ==="
+    # Guide de l'OMS / War Trauma Foundation / World Vision (édition française)
+    dl_file "OMS — Les premiers secours psychologiques : guide pour les acteurs de terrain" \
+        "https://terrorvictimresponse.ca/wp-content/uploads/9789242548204_fre.pdf" \
+        "$PDF_DIR" "OMS_Premiers_secours_psychologiques_guide_terrain.pdf"
+    # Modules de formation PSP du Centre de référence PS de la Fédération
+    # internationale des sociétés de la Croix-Rouge (mhpsshub.org)
+    dl_file "PSP — module 2" \
+        "https://mhpsshub.org/wp-content/uploads/2020/11/12007_psc_pfa_modul2_T2_fr_FR_high-res.pdf" \
+        "$PDF_DIR" "PSP_module_2.pdf"
+    dl_file "PSP — module 3" \
+        "https://mhpsshub.org/wp-content/uploads/2020/11/12007_psc_pfa_modul3_T2_fr_FR_high-res.pdf" \
+        "$PDF_DIR" "PSP_module_3.pdf"
+    dl_file "PSP — module 4 : soutien en groupes" \
+        "https://mhpsshub.org/wp-content/uploads/2020/02/Premiers-Secour-Psychologique-Soutien-en-groupes-Module-4-1.pdf" \
+        "$PDF_DIR" "PSP_module_4_groupes.pdf"
 }
 
-# ── CDC / NIOSH Disaster Psychology ──────────────────────────────────────────
-dl_disaster_psych() {
-    info "=== Disaster Psychology ==="
-
-    dl_file "CDC NIOSH Trauma and Recovery" \
-        "https://www.cdc.gov/niosh/docs/2004-101/pdfs/2004-101.pdf" \
-        "$PDF_DIR" "CDC_NIOSH_Trauma_Recovery.pdf"
-
-    dl_file "SAMHSA Disaster Behavioral Health Guide" \
-        "https://store.samhsa.gov/sites/default/files/pep21-01-01-001.pdf" \
-        "$PDF_DIR" "SAMHSA_Disaster_Behavioral_Health.pdf"
-
-    dl_file "FEMA Crisis Counseling Guide" \
-        "https://www.fema.gov/sites/default/files/2020-07/fema_ccp_guidance-manual.pdf" \
-        "$PDF_DIR" "FEMA_Crisis_Counseling.pdf"
+# ── Sources supplémentaires de l'utilisateur ──────────────────────────────────
+# config/mental_health_extra.list :  nom|url|fichier.pdf   (# = commentaire)
+dl_extra() {
+    local list="$REPO_DIR/config/mental_health_extra.list"
+    [[ -f "$list" ]] || return 0
+    local name url fname
+    while IFS='|' read -r name url fname; do
+        [[ -z "${name// }" || "$name" == \#* ]] && continue
+        [[ -n "${url:-}" ]] || { warn "Ligne ignorée : $name"; continue; }
+        dl_file "$name" "$url" "$PDF_DIR" "${fname:-$(basename "$url")}"
+    done < "$list"
 }
 
-# ── Community Resilience ──────────────────────────────────────────────────────
-dl_resilience() {
-    info "=== Resilience & Community Care ==="
-
-    dl_file "Sphere Standards — Protection & MHPSS" \
-        "https://sphere-standards-media.s3.eu-central-1.amazonaws.com/app/uploads/2026/07/02150526/Sphere-Handbook-2018-EN.pdf" \
-        "$PDF_DIR" "Sphere_Handbook_MHPSS.pdf"
-
-    dl_file "Building Community Resilience Toolkit (CDC)" \
-        "https://www.cdc.gov/cpr/resiliencetoolkit/pdf/Community_Resilience_Toolkit.pdf" \
-        "$PDF_DIR" "CDC_Community_Resilience_Toolkit.pdf"
-
-    # Hesperian: Where There Is No Psychiatrist (open access)
-    dl_file "Where There Is No Psychiatrist (Patel)" \
-        "https://www.rcpsych.ac.uk/docs/default-source/members/faculties/international/where-there-is-no-psychiatrist.pdf" \
-        "$PDF_DIR" "Where_There_Is_No_Psychiatrist.pdf" || \
-    warn "Download Hesperian psychiatry guide manually from rcpsych.ac.uk"
-}
-
-# ── Grief & Loss ──────────────────────────────────────────────────────────────
-dl_grief() {
-    info "=== Grief, Loss & Bereavement ==="
-
-    dl_file "Red Cross Grief Support Guide" \
-        "https://www.redcross.org/content/dam/redcross/atg/PDF_s/Preparedness___Disaster_Recovery/Disaster_Preparedness/Coping_with_Grief_and_Loss.pdf" \
-        "$PDF_DIR" "RedCross_Grief_Guide.pdf"
-}
-
-# ── Video channels ────────────────────────────────────────────────────────────
-dl_psych_videos() {
-    info "=== Psychology & Mental Health Videos ==="
-
-    dl_channel "Psych2Go Resilience" \
-        "https://www.youtube.com/@Psych2Go/videos" 100
-
-    dl_channel "The School of Life" \
-        "https://www.youtube.com/@theschooloflifetv/videos" 100
-
-    dl_channel "Medscape Psychology" \
-        "https://www.youtube.com/@MedscapeCME/search?query=disaster+psychology" 30
-}
-
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Programme principal ───────────────────────────────────────────────────────
 main() {
-    info "Downloading mental health & psychological first aid content..."
+    info "Téléchargement des contenus de santé mentale et de PSP..."
 
     dl_pfa
-    dl_disaster_psych
-    dl_resilience
-    dl_grief
-    dl_psych_videos
+    dl_extra
 
-    success "Mental health content download complete"
-    info "PDFs: $PDF_DIR"
+    success "Téléchargement des contenus de santé mentale terminé"
+    info "PDF : $PDF_DIR"
     du -sh "$PDF_DIR" 2>/dev/null || true
 
-    # Index the new documents' text for dashboard search + AI retrieval.
+    # Indexer le texte des nouveaux documents (recherche et assistant IA).
     python3 "$REPO_DIR/scripts/index_documents.py" --storage "$STORAGE_PATH" || true
 }
 

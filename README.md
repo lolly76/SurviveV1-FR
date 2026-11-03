@@ -23,7 +23,7 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 | **Notes et fichiers partagés** | Carnet Markdown partagé et dépôt pour vos propres documents, tous deux stockés sur le disque |
 | **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence en France |
 
-> **Avancement de la francisation des sources.** Fait : ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF. À venir : référence des médicaments (encore basée sur les notices américaines de la FDA, en anglais), contenus « experts » et santé mentale, dépôt d'applications. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN` dans `config/survive.conf`).
+> **Avancement de la francisation des sources.** Fait : ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF, premiers secours psychologiques (OMS et Croix-Rouge, en français). Les contenus « experts » (obstétrique, dentaire, élevage, forge, semences…) s'alimentent désormais via `config/gaps_extra.list`, faute de sources françaises vérifiées une à une. À venir : référence des médicaments (encore basée sur les notices américaines de la FDA, en anglais), dépôt d'applications. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN` dans `config/survive.conf`).
 
 ---
 

@@ -1,0 +1,8 @@
+# Documents « experts » supplémentaires pour download/gaps_content.sh
+# Format : dossier|nom|url|fichier.pdf
+# dossiers : medicine_advanced obstetrics dental sanitation animal_husbandry
+#   blacksmithing fermentation beeswax seeds security psychology community
+#   water_systems primitive_skills permaculture economics radio
+#
+# Exemples de documents français en accès libre (vérifiez l'adresse avant) :
+# community|Guide Tous responsables (SGDSN)|https://www.ecologie.gouv.fr/sites/default/files/documents/SGDSN_Guide_Tous%20responsables.pdf|SGDSN_Tous_responsables.pdf

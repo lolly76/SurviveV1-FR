@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Download gap-filling content identified by expert research
-# Covers: advanced medicine, obstetrics, dental, sanitation, animal husbandry,
-#         seed saving, blacksmithing, fermentation, cheese, beeswax, security,
-#         psychology, community survival, and more
+# SurviveV1 — Contenus « experts » complémentaires (version française)
+# Couvre : médecine avancée, obstétrique, dentaire, assainissement, élevage,
+#         semences, forge, fermentation, apiculture, sécurité, communauté, etc.
+# Les listes de documents sont dans config/gaps_extra.list (voir ci-dessous).
 # =============================================================================
 set -euo pipefail
 
@@ -113,12 +113,12 @@ dl_file() {
     local dest="$3"
     local filename="${4:-$(basename "$url" | tr '?&=' '_')}"
 
-    [[ -f "$dest/$filename" ]] && { info "[$name] Already exists"; return 0; }
-    info "Downloading: $name"
+    [[ -f "$dest/$filename" ]] && { info "[$name] Déjà présent"; return 0; }
+    info "Téléchargement : $name"
     if _fetch_with_fallback "$url" "$dest/$filename" "$name"; then
-        success "$name saved"
+        success "$name enregistré"
     else
-        warn "$name failed — see docs/gaps_analysis.md for manual download"
+        warn "$name échec — voir docs/gaps_analysis.md pour un téléchargement manuel"
         echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [$name] $url" >> "$FAILED_LOG"
     fi
 }
@@ -164,548 +164,52 @@ dl_channel() {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CRITICAL TIER 1 GAPS
+# Contenus experts : aiguillage vers les sources francophones
 # ══════════════════════════════════════════════════════════════════════════════
-
-dl_advanced_medicine() {
-    info "=== TIER 1: Advanced Survival Medicine ==="
-    local DIR="$PDF_DIR/medicine_advanced"
-
-    # Emergency War Surgery — Borden Institute (public domain, 5th ed. 2018)
-    dl_file "Emergency War Surgery 5th Ed" \
-        "https://archive.org/download/ews5man-mil/ews5man.pdf" \
-        "$DIR" "Emergency_War_Surgery_5th_Ed.pdf"
-
-    # Special Operations Forces Medical Handbook
-    dl_file "SOF Medical Handbook" \
-        "https://archive.org/download/SOFMH2001/SOFMH2001.pdf" \
-        "$DIR" "SOF_Medical_Handbook.pdf"
-
-    # Wilderness Medicine pocket guide (free)
-    dl_file "NOLS Wilderness Medicine Guide" \
-        "https://www.nols.edu/media/filer_public/wilderness_medicine/wilderness-medicine-field-guide.pdf" \
-        "$DIR" "NOLS_Wilderness_Medicine.pdf"
-
-    # Combat Medic Field Reference
-    dl_file "Combat Medic Field Reference" \
-        "https://archive.org/download/FM_8_10_1_T_M_C_T_T_P_1994/FM%208-10-1%20The%20Medical%20Company.%20Tactics%2C%20Techniques%20and%20Procedures-1994.pdf" \
-        "$DIR" "FM8-10-1_Combat_Medic.pdf"
-
-    # Survival and Austere Medicine 3rd Ed (2017) — free from griddownmed.blog
-    dl_file "Survival and Austere Medicine 3rd Ed (free)" \
-        "https://griddownmed.blog/wp-content/uploads/2018/11/austmed.pdf" \
-        "$DIR" "Survival_Austere_Medicine_3rd_Ed.pdf"
-
-    # Wilderness Medicine Beyond First Aid — ACEP reference list (free excerpt)
-    dl_file "ACEP Austere Medicine Book List" \
-        "https://www.acep.org/siteassets/uploads/uploaded-files/acep/membership/sections-of-membership/disaster/austere-medicine-books.pdf" \
-        "$DIR" "ACEP_Austere_Medicine_Reading_List.pdf"
-
-    # Doom and Bloom videos
-    dl_channel "medical" "Doom and Bloom (Dr. Bones & Nurse Amy)" \
-        "https://www.youtube.com/@DoomAndBloom/videos" 200
-
-    dl_channel "medical" "The Patriot Nurse" \
-        "https://www.youtube.com/@ThePatriotNurse/videos" 150
-
-    dl_channel "medical" "Skinny Medic (TCCC)" \
-        "https://www.youtube.com/@SkinnyMedic/videos" 100
-}
-
-dl_obstetrics() {
-    info "=== TIER 1: Emergency Childbirth & Obstetrics ==="
-    local DIR="$PDF_DIR/obstetrics"
-
-    # Hesperian "A Book for Midwives" (free legal download)
-    dl_file "A Book for Midwives (Hesperian)" \
-        "https://archive.org/download/ABookForMidwives/26.SusanKlien-ABookForMidwives.pdf" \
-        "$DIR" "Hesperian_Book_for_Midwives.pdf"
-
-    # Emergency Childbirth — Gregory White (public domain)
-    dl_file "Emergency Childbirth (Gregory White)" \
-        "https://archive.org/download/EmergencyChildbirth/EmergencyChildbirth.pdf" \
-        "$DIR" "Emergency_Childbirth_Gregory_White.pdf"
-
-    # WHO Pregnancy and Childbirth Guide
-    dl_who "WHO Safe Motherhood Practical Guide" "10665/43972" \
-        "https://apps.who.int/iris/bitstream/handle/10665/43972/9789241545426_eng.pdf" \
-        "$DIR" "WHO_Safe_Motherhood_Guide.pdf"
-
-    # Basic Obstetric Care — Peace Corps
-    dl_file "Peace Corps Maternal Child Health Guide" \
-        "https://files.peacecorps.gov/multimedia/pdf/library/M0063.pdf" \
-        "$DIR" "Peace_Corps_Maternal_Child_Health.pdf"
-}
-
-dl_dental() {
-    info "=== TIER 1: Dental Emergency ==="
-    local DIR="$PDF_DIR/dental"
-
-    # Where There Is No Dentist (Hesperian — free)
-    dl_file "Where There Is No Dentist (Hesperian)" \
-        "https://archive.org/download/Where_There_is_no_Dentist/Where_There_is_no_Dentist.pdf" \
-        "$DIR" "Where_There_Is_No_Dentist.pdf"
-
-    # WHO Oral Health Guide for Primary Care
-    dl_who "WHO Oral Health Primary Care" "10665/42654" \
-        "https://apps.who.int/iris/bitstream/handle/10665/42654/9241545690.pdf" \
-        "$DIR" "WHO_Oral_Health_Primary_Care.pdf"
-}
-
-dl_mental_health() {
-    info "=== TIER 1: Psychiatric & Mental Health ==="
-    local DIR="$PDF_DIR/psychology"
-
-    # Where There Is No Psychiatrist (Hesperian — free)
-    dl_file "Where There Is No Psychiatrist (Hesperian)" \
-        "https://store.hesperian.org/prod/pdf/A490E.pdf" \
-        "$DIR" "Where_There_Is_No_Psychiatrist.pdf"
-
-    # WHO Psychological First Aid (free)
-    dl_who "WHO Psychological First Aid Guide" "10665/44615" \
-        "https://apps.who.int/iris/bitstream/handle/10665/44615/9789241548205_eng.pdf" \
-        "$DIR" "WHO_Psychological_First_Aid.pdf"
-
-    # NCTSN Psychological First Aid Field Guide
-    dl_file "NCTSN Psychological First Aid Field Operations Guide" \
-        "https://www.nctsn.org/sites/default/files/resources/pfa_field_operations_guide.pdf" \
-        "$DIR" "NCTSN_Psychological_First_Aid.pdf"
-
-    # Sphere Handbook (humanitarian standards — disaster psychology chapters)
-    dl_file "The Sphere Handbook (Mental Health chapter)" \
-        "https://sphere-standards-media.s3.eu-central-1.amazonaws.com/app/uploads/2026/07/02150526/Sphere-Handbook-2018-EN.pdf" \
-        "$DIR" "Sphere_Handbook_Humanitarian_Standards.pdf"
-
-    # CDC/NIOSH — Psychological Issues in Escape, Rescue, and Survival (free)
-    dl_file "CDC NIOSH Disaster Survival Psychology (Everly)" \
-        "https://www.cdc.gov/niosh/docket/archive/pdfs/NIOSH-154/0154-010108-everly.pdf" \
-        "$DIR" "CDC_NIOSH_Disaster_Survival_Psychology.pdf"
-}
-
-dl_sanitation() {
-    info "=== TIER 1: Sanitation Without Infrastructure ==="
-    local DIR="$PDF_DIR/sanitation"
-
-    # Humanure Handbook (free legal download from author's site)
-    dl_file "The Humanure Handbook (Jenkins)" \
-        "https://humanurehandbook.com/downloads/H2.pdf" \
-        "$DIR" "Humanure_Handbook.pdf"
-
-    # WHO Sanitation & Hygiene Guide
-    dl_who "WHO Sanitation and Health Guide" "10665/337673" \
-        "https://apps.who.int/iris/bitstream/handle/10665/337673/9789240012226-eng.pdf" \
-        "$DIR" "WHO_Sanitation_Health.pdf"
-
-    # Peace Corps Sanitation Manual
-    dl_file "Peace Corps Latrine Construction" \
-        "https://files.peacecorps.gov/multimedia/pdf/library/M0055_latrineconst.pdf" \
-        "$DIR" "Peace_Corps_Latrine_Construction.pdf"
-
-    # Greywater: Create an Oasis excerpt
-    dl_file "Greywater Oasis Design Guide (excerpt)" \
-        "https://oasisdesign.net/greywater/laundrytolandscape/intro.pdf" \
-        "$DIR" "Greywater_Oasis_Design.pdf"
-}
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TIER 2 GAPS
-# ══════════════════════════════════════════════════════════════════════════════
-
-dl_animal_husbandry() {
-    info "=== TIER 2: Animal Husbandry ==="
-    local DIR="$PDF_DIR/animal_husbandry"
-
-    # FAO Animal Production guides (free)
-    dl_file "FAO Small-Scale Poultry Production" \
-        "https://www.fao.org/3/y5114e/y5114e.pdf" \
-        "$DIR" "FAO_Small_Scale_Poultry.pdf"
-
-    dl_file "FAO Better Farming Series - Small Animals" \
-        "https://www.fao.org/3/T0690E/T0690E.pdf" \
-        "$DIR" "FAO_Small_Animals.pdf"
-
-    dl_file "FAO Goat Production Guide" \
-        "https://www.fao.org/3/t0750e/t0750e.pdf" \
-        "$DIR" "FAO_Goat_Production.pdf"
-
-    dl_file "FAO Pig Production Guide" \
-        "https://www.fao.org/3/t0690e/t0690e.pdf" \
-        "$DIR" "FAO_Pig_Production.pdf"
-
-    dl_file "USDA Rabbit Production" \
-        "https://www.ams.usda.gov/sites/default/files/media/Rabbit%20Handbook.pdf" \
-        "$DIR" "USDA_Rabbit_Production.pdf"
-
-    dl_file "Merck Veterinary Manual (online reference note)" \
-        "https://www.msdvetmanual.com/Content/Whitepaper/MVM_Whitepaper.pdf" \
-        "$DIR" "Merck_Vet_Manual_Reference.pdf"
-
-    # Videos
-    dl_channel "animal_husbandry" "Weed em and Reap" \
-        "https://www.youtube.com/@weedemnreap/videos" 150
-    dl_channel "animal_husbandry" "Jill Winger Prairie Homestead" \
-        "https://www.youtube.com/@JillWinger/videos" 150
-}
-
-dl_seed_saving() {
-    info "=== TIER 2: Seed Saving ==="
-    local DIR="$PDF_DIR/seeds"
-
-    # Seed Saving Guide (NRCS/USDA)
-    dl_file "NRCS Seed Saving Basics" \
-        "https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs144p2_016285.pdf" \
-        "$DIR" "NRCS_Seed_Saving_Basics.pdf"
-
-    # Peace Corps Seed Production Guide
-    dl_file "Peace Corps Seed Production and Improvement" \
-        "https://files.peacecorps.gov/multimedia/pdf/library/M0046_seedproduction.pdf" \
-        "$DIR" "Peace_Corps_Seed_Production.pdf"
-
-    # Southern Exposure Seed Exchange saving guide (free PDF)
-    dl_file "Southern Exposure Seed Saving Guide" \
-        "https://www.southernexposure.com/growing-guides/saving-seeds-home-use.pdf" \
-        "$DIR" "Southern_Exposure_Seed_Saving_Guide.pdf"
-
-    # Oregon State Extension — Step-by-Step Seed Saving
-    dl_file "OSU Extension Seed Saving Guide" \
-        "https://extension.oregonstate.edu/sites/default/files/documents/ec871.pdf" \
-        "$DIR" "OSU_Seed_Saving_Guide.pdf" || true
-
-    # Videos
-    dl_channel "food" "MIGardener (seed saving)" \
-        "https://www.youtube.com/@MIGardener/videos" 150
-    dl_channel "food" "Hoss Tools (seed saving)" \
-        "https://www.youtube.com/@HossTools/videos" 100
-}
-
-dl_beekeeping() {
-    info "=== TIER 2: Beekeeping ==="
-    local DIR="$PDF_DIR/beeswax"
-
-    # USDA Beekeeping for Beginners
-    dl_file "USDA Beekeeping for Beginners" \
-        "https://www.ams.usda.gov/sites/default/files/media/Beekeeping%20for%20Beginners.pdf" \
-        "$DIR" "USDA_Beekeeping_Beginners.pdf"
-
-    # Penn State Beekeeping Guide
-    dl_file "Penn State Beekeeping Guide" \
-        "https://extension.psu.edu/bees/pdf/pennsylvania-beekeeping-guide.pdf" \
-        "$DIR" "Penn_State_Beekeeping_Guide.pdf"
-
-    # FAO Beekeeping
-    dl_file "FAO Beekeeping in Africa (general principles)" \
-        "https://www.fao.org/3/T0104E/T0104E.pdf" \
-        "$DIR" "FAO_Beekeeping_Guide.pdf"
-}
-
-dl_blacksmithing() {
-    info "=== TIER 2: Blacksmithing ==="
-    local DIR="$PDF_DIR/blacksmithing"
-
-    # Practical Blacksmithing — M.T. Richardson (public domain, archive.org)
-    for vol in 1 2 3 4; do
-        dl_file "Practical Blacksmithing Vol $vol (Richardson)" \
-            "https://archive.org/download/practicalblacksmithing0${vol}rich/practicalblacksmithing0${vol}rich.pdf" \
-            "$DIR" "Practical_Blacksmithing_Vol${vol}.pdf"
-    done
-
-    # Videos
-    dl_channel "blacksmithing" "Blackbear Forge" \
-        "https://www.youtube.com/@BlackbearForge/videos" 150
-    dl_channel "blacksmithing" "Alec Steele Blacksmithing" \
-        "https://www.youtube.com/@AlecSteele/videos" 100
-}
-
-dl_primitive_skills() {
-    info "=== TIER 2: Primitive Skills (Townsends, Primitive Technology) ==="
-
-    # Townsends — 18th century skills: soap, candles, food, tanning
-    dl_channel "primitive_skills" "Townsends (18th century skills)" \
-        "https://www.youtube.com/@Townsends/videos" 300
-
-    # Primitive Technology (John Plant) — no talking, pure demonstration
-    # Already partially in skills but add more explicitly
-    dl_channel "primitive_skills" "Primitive Technology" \
-        "https://www.youtube.com/@primitivetechnology9550/videos" 50
-
-    # Survival Russia
-    dl_channel "primitive_skills" "Far North Bushcraft and Survival" \
-        "https://www.youtube.com/@FarNorthBushcraft/videos" 100
-}
-
-dl_fermentation_brewing() {
-    info "=== TIER 2: Fermentation & Brewing ==="
-    local DIR="$PDF_DIR/fermentation"
-
-    # FAO Fermentation Guide
-    dl_file "FAO Fermented Fruits and Vegetables" \
-        "https://www.fao.org/3/x0560e/x0560e.pdf" \
-        "$DIR" "FAO_Fermented_Foods.pdf"
-
-    # Peace Corps Food Preservation via Fermentation
-    dl_file "FAO Traditional Food Plants (includes fermentation)" \
-        "https://www.fao.org/3/x0453e/x0453e.pdf" \
-        "$DIR" "FAO_Traditional_Food_Plants.pdf"
-
-    # Videos
-    dl_channel "fermentation" "Homesteady (fermentation)" \
-        "https://www.youtube.com/@Homesteady/videos" 100
-    dl_channel "fermentation" "City Steading Brews (mead/wine)" \
-        "https://www.youtube.com/@CitySteadingBrews/videos" 150
-    dl_channel "fermentation" "Townsends Brewing/Fermentation" \
-        "https://www.youtube.com/playlist?list=PLQfT5iqzeqneoJ_RVB3CDvzORSDkKOaDs" 50
-}
-
-dl_permaculture() {
-    info "=== TIER 2: Permaculture ==="
-    local DIR="$PDF_DIR/permaculture"
-
-    # USDA Agroforestry Guide
-    dl_file "USDA Agroforestry Overview" \
-        "https://www.fs.usda.gov/nac/assets/documents/agroforestry/brochures/agroforestryoverview.pdf" \
-        "$DIR" "USDA_Agroforestry_Overview.pdf"
-
-    # FAO Agroforestry
-    dl_file "FAO Agroforestry Systems" \
-        "https://www.fao.org/3/a-i6383e.pdf" \
-        "$DIR" "FAO_Agroforestry_Systems.pdf"
-
-    # Videos
-    dl_channel "farming" "Geoff Lawton Permaculture" \
-        "https://www.youtube.com/@GeoffLawtonOnline/videos" 100
-    dl_channel "farming" "Andrew Millison Permaculture" \
-        "https://www.youtube.com/@andrewmillison/videos" 100
-}
-
-dl_water_systems() {
-    info "=== TIER 2: Water Systems & Wells ==="
-    local DIR="$PDF_DIR/water_systems"
-
-    # Peace Corps Well Construction (free, public domain)
-    dl_file "Peace Corps Manual Well Drilling" \
-        "https://files.peacecorps.gov/multimedia/pdf/library/M0017_manual_well_drilling.pdf" \
-        "$DIR" "Peace_Corps_Manual_Well_Drilling.pdf"
-
-    dl_file "Peace Corps Water Supply" \
-        "https://files.peacecorps.gov/multimedia/pdf/library/M0017_water_supply.pdf" \
-        "$DIR" "Peace_Corps_Water_Supply.pdf"
-
-    # WHO Water Treatment
-    dl_who "WHO Guidelines for Drinking Water Quality" "10665/352532" \
-        "https://apps.who.int/iris/bitstream/handle/10665/352532/9789240045064-eng.pdf" \
-        "$DIR" "WHO_Drinking_Water_Quality.pdf"
-
-    # USAID Water and Sanitation
-    dl_file "USAID Water Sanitation and Hygiene" \
-        "https://pdf.usaid.gov/pdf_docs/PNADW118.pdf" \
-        "$DIR" "USAID_Water_Sanitation.pdf"
-}
-
-dl_security() {
-    info "=== TIER 2: Security & Defense ==="
-    local DIR="$PDF_DIR/security"
-
-    # US Army FM 7-8 Infantry Rifle Platoon (public domain tactics)
-    dl_file "FM 7-8 Infantry Rifle Platoon and Squad" \
-        "https://archive.org/download/milmanual-fm-7-8-infantry-rifle-platoon-and-squad/fm_7-8_infantry_rifle_platoon_and_squad.pdf" \
-        "$DIR" "FM7-8_Infantry_Rifle_Platoon.pdf"
-
-    # FM 21-60 Visual Signals (hand signals, public domain)
-    dl_file "FM 21-60 Visual Signals (Hand Signals)" \
-        "https://archive.org/download/milmanual-fm-21-60-visual-signals/fm_21-60_visual_signals.pdf" \
-        "$DIR" "FM21-60_Visual_Signals.pdf"
-
-    # Ranger Handbook SH 21-76 (widely available PDF)
-    dl_file "Ranger Handbook SH 21-76" \
-        "https://archive.org/download/sh-21-76-ranger-handbook-2006/SH%2021-76%20Ranger%20Handbook%20%202006.pdf" \
-        "$DIR" "SH21-76_Ranger_Handbook.pdf"
-
-    # MCWP 3-11.2 Marine Rifle Squad (USMC, public domain)
-    dl_file "MCWP 3-11.2 Marine Rifle Squad" \
-        "https://archive.org/download/milmanual-mcwp-3-11.2-marine-rifle-squad/mcwp_3-11.2_marine_rifle_squad.pdf" \
-        "$DIR" "MCWP3-11-2_Marine_Rifle_Squad.pdf"
-}
-
-dl_community_economics() {
-    info "=== TIER 2: Community & Economics ==="
-    local DIR="$PDF_DIR/community"
-
-    # FEMA Community Resilience Guide
-    dl_file "FEMA Community Resilience Planning Guide" \
-        "https://www.fema.gov/sites/default/files/2020-06/fema_community-resilience-planning-guide.pdf" \
-        "$DIR" "FEMA_Community_Resilience_Guide.pdf"
-
-    # WHO Community Health Worker Guide
-    dl_who "WHO Community Health Worker Guidelines" "10665/275765" \
-        "https://apps.who.int/iris/bitstream/handle/10665/275765/9789241550369-eng.pdf" \
-        "$DIR" "WHO_Community_Health_Workers.pdf"
-
-    # SPHERE Handbook (humanitarian standards for shelter, food, water, health)
-    dl_file "Sphere Handbook 2018 (Humanitarian Standards)" \
-        "https://sphere-standards-media.s3.eu-central-1.amazonaws.com/app/uploads/2026/07/02150526/Sphere-Handbook-2018-EN.pdf" \
-        "$DIR" "Sphere_Handbook_Humanitarian_Standards.pdf"
-}
-
-dl_morse_radio() {
-    info "=== TIER 2: Morse Code & Radio ==="
-    local DIR="$PDF_DIR/radio"
-
-    # The Art and Skill of Radio-Telegraphy (free from N0HFF)
-    dl_file "Art and Skill of Radio Telegraphy (N0HFF)" \
-        "https://www.qsl.net/n9bor/n0hff.pdf" \
-        "$DIR" "Art_Skill_Radio_Telegraphy_N0HFF.pdf"
-
-    # ARRL Operating Manual excerpt
-    dl_file "Emergency Communication Reference Frequencies" \
-        "https://www.arrl.org/files/file/Public%20Service/Emergency%20Communication/EC-001.pdf" \
-        "$DIR" "ARRL_Emergency_Frequencies.pdf"
-
-    # Videos
-    dl_channel "communication" "K0PIR Ham Radio Crash Course" \
-        "https://www.youtube.com/@K0PIR/videos" 200
-    dl_channel "communication" "David Casler KE0OG Ham Radio" \
-        "https://www.youtube.com/@DavidCasler/videos" 150
-}
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Free Hesperian Resource Bundle
-# ══════════════════════════════════════════════════════════════════════════════
-dl_hesperian_bundle() {
-    info "=== FREE: Complete Hesperian Health Guides ==="
-    local DIR="$PDF_DIR/medicine_advanced"
-
-    # Hesperian publishes every book free of charge as one PDF per chapter at
-    # hesperian.org/wp-content/uploads/pdf/<edition>/<edition>_<part>.pdf (see
-    # languages.hesperian.org/pages/en/pdf.html). The store's whole-book PDFs
-    # went away in 2025, so each title is fetched chapter by chapter into its
-    # own folder; a missing chapter never blocks the rest of the book.
-    dl_hesperian_book "Where There Is No Doctor (2025)" "en_wtnd_2025" "$DIR/Where_There_Is_No_Doctor" \
-        fm toc int $(seq -f "%02g" 1 23) gp info gloss resc indx bm
-    dl_hesperian_book "Where There Is No Dentist (2024)" "en_dent_2024" "$DIR/Where_There_Is_No_Dentist" \
-        fm $(seq -f "%02g" 1 12) bm
-    dl_hesperian_book "A Book for Midwives (2026)" "en_midw_2026" "$DIR/Book_for_Midwives" \
-        fm $(seq -f "%02g" 1 25) gp resc gloss indx ddc bm
-    dl_hesperian_book "Where Women Have No Doctor (2024)" "en_wwhnd_2024" "$DIR/Where_Women_Have_No_Doctor" \
-        fm $(seq -f "%02g" 1 31) gp skills gloss resc indx ob
-    dl_hesperian_book "Helping Children Who Are Blind" "en_hcwb_2000" "$DIR/Helping_Children_Who_Are_Blind" \
-        fm $(seq -f "%02g" 1 20)
-    dl_hesperian_book "Helping Children Who Are Deaf (2026)" "en_hcwd_2026" "$DIR/Helping_Children_Who_Are_Deaf" \
-        fm $(seq -f "%02g" 1 15) appa appb appc bm
-    dl_hesperian_book "Workers Guide to Health and Safety" "en_wgthas_2015" "$DIR/Workers_Guide_to_Health_and_Safety" \
-        fm toc $(seq -f "%02g" 1 33) appa appb resc indx ob
-    dl_hesperian_book "Helping Health Workers Learn (2026)" "en_hhwl_2026" "$DIR/Helping_Health_Workers_Learn" \
-        fm $(seq -f "%02g" 1 27) bm1 bm2 resc indx ob
-    dl_hesperian_book "A Community Guide to Environmental Health" "en_cgeh_2012" "$DIR/Community_Guide_to_Environmental_Health" \
-        fm $(seq -f "%02g" 1 23) appa appb gloss indx resc
-    dl_hesperian_book "Promoting Community Mental Health (2025)" "en_pcmh_2025" "$DIR/Promoting_Community_Mental_Health" \
-        fm int $(seq -f "%02g" 1 9) bm indx info ob
-    dl_hesperian_book "Disabled Village Children (2025)" "en_dvc_2025" "$DIR/Disabled_Village_Children" \
-        fm $(seq -f "%02g" 1 67) resc gloss indx ob
-
-    # Not a Hesperian title despite the old label: RCPsych hosts it openly.
-    dl_file "Where There Is No Psychiatrist (Patel)" \
-        "https://www.rcpsych.ac.uk/docs/default-source/members/faculties/international/where-there-is-no-psychiatrist.pdf" \
-        "$DIR" "Where_There_Is_No_Psychiatrist.pdf"
-}
-
-# dl_hesperian_book <name> <edition-slug> <dest-dir> <part> [<part>...]
-dl_hesperian_book() {
-    local name="$1" slug="$2" dest="$3" part got=0 missing=0
-    shift 3
-    mkdir -p "$dest"
-    for part in "$@"; do
-        local file="${slug}_${part}.pdf"
-        if [[ -s "$dest/$file" ]] && _is_valid_download "$dest/$file"; then
-            got=$((got + 1)); continue
-        fi
-        if _fetch "https://hesperian.org/wp-content/uploads/pdf/${slug}/${file}" "$dest/$file" \
-           && _is_valid_download "$dest/$file"; then
-            got=$((got + 1))
-        else
-            rm -f "$dest/$file"; missing=$((missing + 1))
-        fi
-    done
-    if (( missing == 0 )); then
-        success "$name: $got chapter PDFs"
-    else
-        warn "$name: $got chapters saved, $missing missing (re-run to retry)"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') PARTIAL [Hesperian: $name] $missing chapter(s) missing" >> "$FAILED_LOG"
+# La version d'origine téléchargeait ici des dizaines de documents anglophones
+# (obstétrique, dentaire, élevage, forge, semences, etc.). Faute de sources
+# françaises vérifiées une à une, la liste est désormais fournie par
+# l'utilisateur dans config/gaps_extra.list, une ligne par document :
+#
+#     dossier|nom|url|fichier.pdf
+#
+# « dossier » est un sous-dossier de pdfs/ et correspond à une catégorie du
+# tableau de bord : medicine_advanced obstetrics dental sanitation
+# animal_husbandry blacksmithing fermentation beeswax seeds security
+# psychology community water_systems primitive_skills permaculture economics
+# radio. Les lignes vides et celles commençant par # sont ignorées.
+
+dl_extra() {
+    local list="$REPO_DIR/config/gaps_extra.list"
+    if [[ ! -f "$list" ]]; then
+        warn "Aucune liste $list — rien à télécharger"
+        return 0
     fi
+    local folder name url fname
+    while IFS='|' read -r folder name url fname; do
+        [[ -z "${folder// }" || "$folder" == \#* ]] && continue
+        if [[ -z "${name:-}" || -z "${url:-}" ]]; then
+            warn "Ligne ignorée (format : dossier|nom|url|fichier) : $folder"; continue
+        fi
+        if [[ ! "$folder" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            warn "Nom de dossier invalide « $folder » — ligne ignorée"; continue
+        fi
+        mkdir -p "$PDF_DIR/$folder"
+        dl_file "$name" "$url" "$PDF_DIR/$folder" "${fname:-$(basename "$url" | tr '?&=' '_')}"
+    done < "$list"
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Peace Corps Knowledge Library (free, public domain)
-# ══════════════════════════════════════════════════════════════════════════════
-dl_peace_corps_library() {
-    info "=== FREE: Peace Corps Technical Library ==="
-    local DIR="$PDF_DIR/reference"
-    mkdir -p "$DIR/peace_corps"
-
-    # Peace Corps technical manuals — comprehensive rural skills.
-    # NOTE (2026-10): Peace Corps removed most of the old ICE library from
-    # files.peacecorps.gov (only a handful of codes still resolve, e.g. M0042,
-    # M0063) and the Wayback Machine never captured these PDFs. They are kept
-    # so a future re-upload is picked up automatically; expect them to fail.
-    declare -A PC_MANUALS=(
-        ["PC_Agroforestry.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0006_agroforestry.pdf"
-        ["PC_Small_Farm_Grain_Storage.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0035_smallfarmgrain.pdf"
-        ["PC_Soil_and_Water_Conservation.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0036_soilconservation.pdf"
-        ["PC_Fishpond_Construction.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0008_fishpond.pdf"
-        ["PC_Forestry.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0026_forestry.pdf"
-        ["PC_Solar_Drying.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0038_solardrying.pdf"
-        ["PC_Windmill_Construction.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0030_windmill.pdf"
-        ["PC_Biogas.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0011_biogas.pdf"
-        ["PC_Appropriate_Technology.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0036_apptechnology.pdf"
-        ["PC_Water_Purification.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0012_waterpurification.pdf"
-        ["PC_Vegetable_Production.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0029_vegproduction.pdf"
-        ["PC_Food_Preservation.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0010_foodpreservation.pdf"
-        ["PC_Beekeeping.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0007_beekeeping.pdf"
-        ["PC_Small_Animal_Husbandry.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0013_smallanimal.pdf"
-        ["PC_Grain_Legumes.pdf"]="https://files.peacecorps.gov/multimedia/pdf/library/M0023_grainlegumes.pdf"
-    )
-
-    for filename in "${!PC_MANUALS[@]}"; do
-        dl_file "Peace Corps: ${filename%.pdf}" "${PC_MANUALS[$filename]}" \
-            "$DIR/peace_corps" "$filename"
-    done
-}
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Main
-# ══════════════════════════════════════════════════════════════════════════════
+# ── Programme principal ───────────────────────────────────────────────────────
 main() {
-    info "SurviveV1 Gap-filling Content Downloader"
-    info "Based on expert research from top survivalists"
+    info "Téléchargeur des contenus experts complémentaires (FR)"
     echo ""
 
-    # TIER 1 — Critical
-    dl_hesperian_bundle
-    dl_obstetrics
-    dl_dental
-    dl_mental_health
-    dl_sanitation
-    dl_advanced_medicine
+    dl_extra
 
-    # TIER 2 — Significant
-    dl_animal_husbandry
-    dl_seed_saving
-    dl_beekeeping
-    dl_blacksmithing
-    dl_primitive_skills
-    dl_fermentation_brewing
-    dl_permaculture
-    dl_water_systems
-    dl_security
-    dl_community_economics
-    dl_morse_radio
-
-    # Free libraries
-    dl_peace_corps_library
-
-    success "Gap-filling content download complete"
+    success "Téléchargement des contenus experts terminé"
     du -sh "$PDF_DIR" "$VIDEO_DIR" 2>/dev/null || true
 
-    # Index the new documents' text for dashboard search + AI retrieval.
+    # Indexer le texte des nouveaux documents (recherche et assistant IA).
     python3 "$REPO_DIR/scripts/index_documents.py" --storage "$STORAGE_PATH" || true
 }
 
