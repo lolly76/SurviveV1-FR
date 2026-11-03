@@ -122,6 +122,7 @@ Le **profil de contenu** se choisit selon l'espace (valeurs approximatives) :
 | `leger` | ~60 Go | Wikipédia sans images, Wikilivres & co, cartes, PDF de survie, médicaments |
 | `moyen` | ~250 Go | + Wikipédia complète, livres, iFixit, Khan Academy (ZIM), sans vidéos ni Kolibri |
 | `complet` | ~800 Go | tout, y compris vidéos de survie et Kolibri |
+| `test` | ~6 Go | validation d'une installation sur VM (voir `docs/VM_TEST.md`) |
 
 Changer de profil plus tard : `bash scripts/apply_profile.sh leger` puis
 `bash download/download_all.sh`. Les profils sont des fichiers lisibles dans `config/profiles/`.

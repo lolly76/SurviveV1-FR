@@ -287,6 +287,7 @@ choose_profile() {
     echo -e "    ${BOLD}[1]${NC}  léger    ${DIM}~60 Go   Wikipédia sans images, cartes, PDF de survie, médicaments${NC}"
     echo -e "    ${BOLD}[2]${NC}  moyen    ${DIM}~250 Go  + Wikipédia complète, livres, Khan Academy (sans vidéos)${NC}"
     echo -e "    ${BOLD}[3]${NC}  complet  ${DIM}~800 Go  + vidéos de survie et Kolibri${NC}"
+    echo -e "    ${BOLD}[4]${NC}  test     ${DIM}~6 Go    pour valider l'installation sur une VM (presque rien à télécharger)${NC}"
     echo ""
     local def=3
     [[ "$rec" == "leger" ]] && def=1
@@ -297,6 +298,7 @@ choose_profile() {
         1) CHOSEN_PROFILE="leger" ;;
         2) CHOSEN_PROFILE="moyen" ;;
         3) CHOSEN_PROFILE="complet" ;;
+        4) CHOSEN_PROFILE="test" ;;
         *) warn "Choix invalide — profil conseillé utilisé"; CHOSEN_PROFILE="$rec" ;;
     esac
     ok "Profil retenu : ${CHOSEN_PROFILE}"

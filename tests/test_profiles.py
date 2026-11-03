@@ -8,7 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 APPLY = ROOT / "scripts" / "apply_profile.sh"
 RECO = ROOT / "scripts" / "recommend_profile.sh"
-PROFILES = ["leger", "moyen", "complet"]
+PROFILES = ["test", "leger", "moyen", "complet"]
 
 
 def _conf(path):
