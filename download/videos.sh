@@ -264,6 +264,151 @@ dl_extra() {
 }
 
 # ── Programme principal ───────────────────────────────────────────────────────
+# ══ PACK « ENGLISH » — chaînes YouTube en anglais ══
+# Repris du projet d'origine, sans équivalent français vérifié. Désactivé par défaut
+# (CONTENT_VIDEOS_EN="Y" pour l'activer).
+en_dl_survival() {
+    info "=== [EN] General Survival ==="
+    dl_channel "survival" "Canadian Prepper" \
+        "https://www.youtube.com/@CanadianPrepper/videos" 200
+    dl_channel "survival" "SensiblePrepper" \
+        "https://www.youtube.com/@SensiblePrepper/videos" 150
+    dl_channel "survival" "City Prepping" \
+        "https://www.youtube.com/@cityprepping/videos" 150
+    dl_channel "survival" "Survival Lilly" \
+        "https://www.youtube.com/@SurvivalLilly/videos" 100
+    dl_channel "survival" "Corporals Corner" \
+        "https://www.youtube.com/@CorporalsCorner/videos" 100
+    dl_channel "survival" "Primitive Technology" \
+        "https://www.youtube.com/@primitivetechnology9550/videos" 50
+}
+
+en_dl_medical() {
+    info "=== [EN] Medical & First Aid ==="
+    dl_channel "medical" "Medcram Medical" \
+        "https://www.youtube.com/@MedCram/videos" 200
+    dl_channel "medical" "Wilderness Medical Associates" \
+        "https://www.youtube.com/@WildernessMA/videos" 100
+    dl_channel "medical" "Rethink Survival Medical" \
+        "https://www.youtube.com/@RethinkSurvival/videos" 50
+    dl_channel "medical" "Doom and Bloom Survival Medicine" \
+        "https://www.youtube.com/@DoomandBloom/videos" 100
+    dl_channel "medical" "The Patriot Nurse" \
+        "https://www.youtube.com/@ThePatriotNurse/videos" 100
+    dl_channel "medical" "Skinny Medic TCCC" \
+        "https://www.youtube.com/@SkinnyMedic/videos" 100
+    dl_channel "medical" "Lone Star Medics" \
+        "https://www.youtube.com/@LoneStarMedics/videos" 50
+    dl_playlist "medical" "Stop the Bleed Official" \
+        "https://www.youtube.com/playlist?list=PLUHBLmZ-rPXKlFmS7gZO77Lft5WT8DXH4"
+    dl_playlist "medical" "FEMA First Aid" \
+        "https://www.youtube.com/playlist?list=PL56C96E2FBDB2CCEA"
+}
+
+en_dl_animal_husbandry() {
+    info "=== [EN] Animal Husbandry ==="
+    dl_channel "animal_husbandry" "Weed em and Reap (chickens/goats)" \
+        "https://www.youtube.com/@WeedEmandReap/videos" 200
+    dl_channel "animal_husbandry" "Prairie Homestead (goats/cattle)" \
+        "https://www.youtube.com/@theprairiehomestead/videos" 150
+    dl_channel "animal_husbandry" "Jill Winger Old Fashioned On Purpose" \
+        "https://www.youtube.com/@jillwinger/videos" 100
+    dl_channel "animal_husbandry" "Becky's Homestead (rabbits/chickens)" \
+        "https://www.youtube.com/@BeckysHomestead/videos" 100
+    dl_channel "animal_husbandry" "Homestead Corner (goats)" \
+        "https://www.youtube.com/@HomesteadCorner/videos" 100
+    dl_channel "animal_husbandry" "Kathy Voth Small-Scale Grazing" \
+        "https://www.youtube.com/@KathyVoth/videos" 50
+}
+
+en_dl_food() {
+    info "=== [EN] Food & Agriculture ==="
+    dl_channel "food" "The Elliott Homestead" \
+        "https://www.youtube.com/@TheElliottHomestead/videos" 200
+    dl_channel "food" "Justin Rhodes Homesteading" \
+        "https://www.youtube.com/@JustinRhodes/videos" 150
+    dl_channel "food" "Homesteading Family" \
+        "https://www.youtube.com/@HomesteadingFamily/videos" 200
+    dl_channel "food" "Townsends Historical Cooking" \
+        "https://www.youtube.com/@Townsends/videos" 200
+    dl_channel "farming" "Charles Dowding No-Dig" \
+        "https://www.youtube.com/@CharlesDowding1/videos" 200
+    dl_channel "farming" "Back to Reality (permaculture)" \
+        "https://www.youtube.com/@BacktoReality/videos" 100
+    dl_channel "farming" "OSU Extension" \
+        "https://www.youtube.com/@OSUExtension/videos" 100
+}
+
+en_dl_water() {
+    info "=== [EN] Water & Purification ==="
+    dl_channel "water" "The Prepared" \
+        "https://www.youtube.com/@ThePrepared/videos" 50
+    dl_playlist "water" "Water Purification Methods" \
+        "https://www.youtube.com/playlist?list=PLK2c-rTCIuqJAXKNNGOJr8xShz5HgONzj"
+}
+
+en_dl_shelter() {
+    info "=== [EN] Shelter & Construction ==="
+    dl_channel "shelter" "Essential Craftsman" \
+        "https://www.youtube.com/@EssentialCraftsman/videos" 150
+    dl_channel "shelter" "Matt Risinger Build" \
+        "https://www.youtube.com/@MattRisinger/videos" 100
+    dl_channel "shelter" "Log Cabin Builders" \
+        "https://www.youtube.com/@LogCabinBuilders/videos" 50
+    dl_channel "shelter" "Stoney Ridge Farmer" \
+        "https://www.youtube.com/@stoneyridgefarmer/videos" 100
+}
+
+en_dl_energy() {
+    info "=== [EN] Energy & Power ==="
+    dl_channel "energy" "LDSPrepper Solar" \
+        "https://www.youtube.com/@LDSPrepper/videos" 100
+    dl_channel "energy" "Will Prowse Solar" \
+        "https://www.youtube.com/@WillProwse/videos" 150
+    dl_channel "energy" "Off Grid with Doug & Stacy" \
+        "https://www.youtube.com/@OffGridwithDougStacy/videos" 150
+    dl_channel "energy" "BPS Solar" \
+        "https://www.youtube.com/@BPSsolar/videos" 50
+}
+
+en_dl_tools() {
+    info "=== [EN] Tools & Repair ==="
+    dl_channel "tools" "This Old House" \
+        "https://www.youtube.com/@thisoldhouse/videos" 200
+    dl_channel "tools" "Paul Sellers Woodworking" \
+        "https://www.youtube.com/@PaulSellersWoodworking/videos" 150
+    dl_channel "tools" "AvE Engineering" \
+        "https://www.youtube.com/@avoandace/videos" 100
+    dl_channel "tools" "Clickspring Metalwork" \
+        "https://www.youtube.com/@clickspring/videos" 50
+}
+
+en_dl_preparedness() {
+    info "=== [EN] Preparedness & Communications ==="
+    dl_channel "preparedness" "Ham Radio Crash Course" \
+        "https://www.youtube.com/@HamRadioCrashCourse/videos" 200
+    dl_channel "preparedness" "Survival Dispatch" \
+        "https://www.youtube.com/@SurvivalDispatch/videos" 100
+    dl_channel "preparedness" "ITS Tactical" \
+        "https://www.youtube.com/@ITSTactical/videos" 100
+    dl_channel "preparedness" "FEMA Ready" \
+        "https://www.youtube.com/@FEMAReady/videos" 50
+}
+
+dl_english_pack() {
+    [[ "${CONTENT_VIDEOS_EN:-N}" =~ [YyOo] ]] || { info "Pack English désactivé (CONTENT_VIDEOS_EN=N)"; return 0; }
+    info "######## PACK ENGLISH — chaînes YouTube en anglais ########"
+    en_dl_survival
+    en_dl_medical
+    en_dl_animal_husbandry
+    en_dl_food
+    en_dl_water
+    en_dl_shelter
+    en_dl_energy
+    en_dl_tools
+    en_dl_preparedness
+}
+
 main() {
     info "Début des téléchargements vidéo vers $VIDEO_DIR"
     info "Qualité : ${QUALITY}p"
@@ -278,6 +423,7 @@ main() {
         dl_tools
         dl_preparedness
         dl_extra
+        dl_english_pack
     fi
 
     check_downloads

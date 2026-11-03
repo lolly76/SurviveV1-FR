@@ -32,6 +32,13 @@ CONTENT_EXPANSION_EN="N"
 # assainissement, élevage, semences, forge, apiculture, sécurité…) : ressources
 # sans équivalent français vérifié, conservées en anglais. N pour les ignorer.
 CONTENT_GAPS_EN="Y"
+# Autres packs « English » (désactivés par défaut) : manuels militaires américains,
+# PDF d'agriculture/ingénierie/radio (CONTENT_PDFS_EN), chaînes YouTube
+# anglophones (CONTENT_VIDEOS_EN), PDF et vidéos de santé mentale en anglais
+# (CONTENT_MENTAL_EN). Mettre Y pour les télécharger.
+CONTENT_PDFS_EN="N"
+CONTENT_VIDEOS_EN="N"
+CONTENT_MENTAL_EN="N"
 # Dépôt d'applications hors ligne (~1 Go) : Kiwix Android/Desktop, F-Droid, VLC,
 # pour que les invités du point d'accès Wi-Fi installent les lecteurs sans Internet.
 CONTENT_APPS="Y"

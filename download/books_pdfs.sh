@@ -189,6 +189,219 @@ dl_extra() {
 }
 
 # ── Programme principal ───────────────────────────────────────────────────────
+# ══ PACK « ENGLISH » — PDF/livres en anglais (manuels militaires américains, agriculture, ingénierie, radio…) ══
+# Repris du projet d'origine, sans équivalent français vérifié. Désactivé par défaut
+# (CONTENT_PDFS_EN="Y" pour l'activer).
+en_dl_military_manuals() {
+    info "=== [EN] US Military Survival Manuals ==="
+    local DIR="$PDF_DIR/military_manuals"
+
+    dl_file "FM 21-76 US Army Survival Manual" \
+        "https://archive.org/download/milmanual-mcrp-3-02f-fm-21-76-survival/mcrp_3-02f_fm_21-76_survival.pdf" \
+        "$DIR" "FM21-76_Army_Survival_Manual.pdf"
+
+    dl_file "ATP 3-50.21 Survival" \
+        "https://armypubs.army.mil/epubs/DR_pubs/DR_a/ARN32107-ATP_3-50.21-000-WEB-1.pdf" \
+        "$DIR" "ATP_3-50-21_Survival.pdf"
+
+    dl_file "FM 4-25.11 First Aid" \
+        "https://archive.org/download/fm-4-25.11-first-aid/FM%204-25.11%20First%20Aid.pdf" \
+        "$DIR" "FM4-25-11_First_Aid.pdf"
+
+    dl_file "TC 3-97.61 Military Mountaineering" \
+        "https://armypubs.army.mil/epubs/DR_pubs/DR_a/pdf/web/tc3_97x61.pdf" \
+        "$DIR" "TC3-97-61_Mountaineering.pdf"
+
+    dl_file "FM 3-05.70 Special Forces Survival" \
+        "https://archive.org/download/fm-3-05.70-survival-2002/FM%203-05.70%20Survival%20%202002.pdf" \
+        "$DIR" "FM3-05-70_SF_Survival.pdf"
+
+    dl_file "FM 3-05.213 Special Forces Use of Pack Animals" \
+        "https://armypubs.army.mil/epubs/DR_pubs/DR_a/pdf/web/fm3_05x213.pdf" \
+        "$DIR" "FM3-05-213_Pack_Animals.pdf"
+
+    dl_file "FM 21-10 Field Sanitation" \
+        "https://archive.org/download/milmanual-fm-21-10-mcrp-4-11.1d-field-hygiene-and-sanitation/fm_21-10_mcrp_4-11.1d_field_hygiene_and_sanitation.pdf" \
+        "$DIR" "FM21-10_Field_Sanitation.pdf"
+
+    dl_file "FM 90-5 Jungle Operations" \
+        "https://archive.org/download/milmanual-fm-90-5-jungle-operations/fm_90-5_jungle_operations.pdf" \
+        "$DIR" "FM90-5_Jungle_Operations.pdf"
+
+    dl_file "SAS Survival Handbook (excerpt)" \
+        "https://www.ibiblio.org/hyperwar/ATO/USAAF/SurvivalManual.pdf" \
+        "$DIR" "Survival_Manual_USAAF.pdf"
+}
+
+en_dl_medical_refs() {
+    info "=== [EN] Medical References ==="
+    local DIR="$BOOKS_DIR/medicine"
+
+    # Hesperian now gates its own PDFs behind an email form — use the
+    # freely-mirrored copies on archive.org instead.
+    dl_file "Where There Is No Doctor (Hesperian)" \
+        "https://archive.org/download/where-there-is-no-doctor/Where%20There%20Is%20No%20Doctor.pdf" \
+        "$DIR" "Where_There_Is_No_Doctor.pdf"
+
+    dl_file "Where There Is No Dentist" \
+        "https://archive.org/download/Where_There_is_no_Dentist/Where_There_is_no_Dentist.pdf" \
+        "$DIR" "Where_There_Is_No_Dentist.pdf"
+
+    dl_file "A Book for Midwives" \
+        "https://archive.org/download/ABookForMidwives/26.SusanKlien-ABookForMidwives.pdf" \
+        "$DIR" "A_Book_for_Midwives.pdf"
+
+    dl_file "Helping Children Who Are Blind" \
+        "https://store.hesperian.org/prod/pdf/A250E.pdf" \
+        "$DIR" "Helping_Children_Blind.pdf"
+
+    dl_file "Merck Veterinary Manual (online guide)" \
+        "https://www.msdvetmanual.com/Content/Whitepaper/MVM_Whitepaper.pdf" \
+        "$DIR" "Merck_Veterinary_Guide.pdf"
+
+    dl_file "Emergency Preparedness and Response (CDC)" \
+        "https://www.cdc.gov/niosh/docs/2004-101/pdfs/2004-101.pdf" \
+        "$DIR" "CDC_Emergency_Preparedness.pdf"
+
+    dl_file "Combat Casualty Care Manual" \
+        "https://www.usso.med.navy.mil/sites/usso/files/2018-12/tccc-guidelines.pdf" \
+        "$DIR" "TCCC_Guidelines.pdf" || warn "TCCC Manual: try manual download"
+}
+
+en_dl_agriculture() {
+    info "=== [EN] Agriculture & Food Production ==="
+    local DIR="$BOOKS_DIR/agriculture"
+
+    # USDA resources (Public Domain)
+    dl_file "USDA Home Canning Guide" \
+        "https://nchfp.uga.edu/publications/publications_usda.html" \
+        "$DIR" "USDA_Home_Canning_Guide.pdf" || true
+
+    dl_file "Square Foot Gardening Manual" \
+        "https://extension.sdstate.edu/sites/default/files/2020-06/P-00003.pdf" \
+        "$DIR" "Square_Foot_Gardening.pdf"
+
+    dl_file "Organic Farming Guide (ATTRA)" \
+        "https://attra.ncat.org/product/beginning-farmer.pdf" \
+        "$DIR" "Beginning_Farmer_Guide.pdf"
+
+    dl_file "Permaculture Design Manual (excerpt)" \
+        "https://holmgren.com.au/downloads/Essence_of_Pc_EN.pdf" \
+        "$DIR" "Permaculture_Essence.pdf"
+
+    dl_file "Small-Scale Chicken Keeping" \
+        "https://extension.psu.edu/programs/betterkidcare/news/2018/small-scale-chicken-keeping" \
+        "$DIR" "Chicken_Keeping.pdf" || true
+
+    dl_file "Wild Edible Plants Guide (USDA)" \
+        "https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb5444952.pdf" \
+        "$DIR" "Wild_Edible_Plants_USDA.pdf"
+
+    dl_file "Food Preservation Methods" \
+        "https://nchfp.uga.edu/how/store/uga_freeze_dry.pdf" \
+        "$DIR" "Food_Preservation.pdf"
+}
+
+en_dl_engineering() {
+    info "=== [EN] Engineering & Construction ==="
+    local DIR="$PDF_DIR/construction"
+
+    dl_file "Tiny House Building Guide" \
+        "https://www.huduser.gov/portal/publications/pdf/HousingFirst_TinyHomes.pdf" \
+        "$DIR" "Tiny_Houses_Guide.pdf"
+
+    dl_file "Earthship Construction Manual" \
+        "https://www.earthship.com/earthship-construction.pdf" \
+        "$DIR" "Earthship_Construction.pdf" || warn "Earthship manual: see earthship.com"
+
+    dl_file "Solar Power System Design Guide" \
+        "https://www.nrel.gov/docs/fy03osti/31146.pdf" \
+        "$DIR" "NREL_Solar_System_Design.pdf"
+
+    dl_file "Wind Energy Basics" \
+        "https://www.nrel.gov/docs/fy01osti/29492.pdf" \
+        "$DIR" "NREL_Wind_Energy_Basics.pdf"
+
+    dl_file "Water System Design Guide" \
+        "https://www.nrcs.usda.gov/sites/default/files/2022-10/NEH_210-600.pdf" \
+        "$DIR" "NRCS_Water_System_Design.pdf"
+
+    dl_file "Composting Guide (EPA)" \
+        "https://www.epa.gov/sites/default/files/2016-01/documents/master_composter_manual.pdf" \
+        "$DIR" "EPA_Composting_Guide.pdf"
+}
+
+en_dl_radio() {
+    info "=== [EN] Ham Radio & Communications ==="
+    local DIR="$PDF_DIR/radio"
+
+    dl_file "ARRL Handbook excerpt (legal free chapters)" \
+        "http://www.arrl.org/files/file/Technology/tis/info/pdf/0111qex017.pdf" \
+        "$DIR" "ARRL_Basics.pdf"
+
+    dl_file "Amateur Radio Emergency Communications" \
+        "https://www.arrl.org/files/file/ARESHandbook2015.pdf" \
+        "$DIR" "ARES_Handbook.pdf"
+
+    dl_file "FCC Technician License Study Guide" \
+        "https://ncvec.org/downloads/2022-2026%20Tech%20Pool%20w%20Errata.pdf" \
+        "$DIR" "FCC_Technician_Study_Guide.pdf"
+}
+
+en_dl_homesteading() {
+    info "=== [EN] Homesteading & DIY ==="
+    local DIR="$PDF_DIR/homesteading"
+
+    dl_file "The Encyclopedia of Country Living (excerpt)" \
+        "https://www.nps.gov/articles/000/upload/Basic-Wilderness-Skills.pdf" \
+        "$DIR" "Wilderness_Skills_NPS.pdf"
+
+    dl_file "Foxfire Series excerpts (public domain)" \
+        "https://docslib.org/doc/12279028/the-foxfire-book.pdf" \
+        "$DIR" "Foxfire_Book.pdf" || warn "Foxfire: download manually from archive.org"
+
+    dl_file "Herbal Medicine Guide (PubMed)" \
+        "https://www.ncbi.nlm.nih.gov/books/NBK92766/pdf/Bookshelf_NBK92766.pdf" \
+        "$DIR" "Herbal_Medicine_Guide.pdf"
+}
+
+en_dl_standard_ebooks() {
+    info "=== [EN] Standard Ebooks (free, public domain) ==="
+    local DIR="$BOOKS_DIR/reference"
+
+    # Standard Ebooks provides free, high-quality public domain books
+    # Project Gutenberg direct EPUBs. Standard Ebooks now serves its book
+    # page (application/xhtml+xml) instead of the file to non-browser clients,
+    # which silently produced HTML files named *.epub.
+    EBOOKS=(
+        "https://www.gutenberg.org/ebooks/2009.epub3.images|charles-darwin_on-the-origin-of-species.epub"
+        "https://www.gutenberg.org/ebooks/205.epub3.images|henry-david-thoreau_walden.epub"
+        "https://www.gutenberg.org/ebooks/1268.epub3.images|jules-verne_the-mysterious-island.epub"
+        "https://www.gutenberg.org/ebooks/215.epub3.images|jack-london_the-call-of-the-wild.epub"
+        "https://www.gutenberg.org/ebooks/76.epub3.images|mark-twain_adventures-of-huckleberry-finn.epub"
+        "https://www.gutenberg.org/ebooks/521.epub3.images|daniel-defoe_robinson-crusoe.epub"
+    )
+
+    for entry in "${EBOOKS[@]}"; do
+        # entries are "URL|filename" — Gutenberg's URLs end in .epub3.images,
+        # so the destination name is given explicitly.
+        local url="${entry%%|*}" fname="${entry##*|}"
+        dl_file "${fname%.epub}" "$url" "$DIR" "$fname"
+    done
+}
+
+dl_english_pack() {
+    [[ "${CONTENT_PDFS_EN:-N}" =~ [YyOo] ]] || { info "Pack English désactivé (CONTENT_PDFS_EN=N)"; return 0; }
+    info "######## PACK ENGLISH — PDF/livres en anglais (manuels militaires américains, agriculture, ingénierie, radio…) ########"
+    en_dl_military_manuals
+    en_dl_medical_refs
+    en_dl_agriculture
+    en_dl_engineering
+    en_dl_radio
+    en_dl_homesteading
+    en_dl_standard_ebooks
+}
+
 main() {
     info "Début du téléchargement des livres et PDF..."
 
@@ -197,6 +410,7 @@ main() {
     dl_agriculture
     dl_gutenberg_fr
     dl_extra
+    dl_english_pack
 
     success "Téléchargement des livres et PDF terminé"
     info "PDF : $PDF_DIR"

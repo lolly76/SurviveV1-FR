@@ -80,6 +80,17 @@ Ajoutez vos sources dans `config/videos_extra.list` (format `catégorie|nom|url|
 
 ---
 
+## Autres packs « English » (options, désactivées par défaut)
+| Contenu | Option |
+|---------|--------|
+| Manuels militaires américains, références médicales, agriculture, ingénierie, radio, livres Standard Ebooks (`download/books_pdfs.sh`) | `CONTENT_PDFS_EN` |
+| Chaînes YouTube anglophones (survie, médecine, élevage, potager, eau, abri, énergie, outils, radio) (`download/videos.sh`) | `CONTENT_VIDEOS_EN` |
+| Santé mentale : guides OMS/CDC/SAMHSA/FEMA et vidéos (`download/mental_health.sh`) | `CONTENT_MENTAL_EN` |
+
+Ces listes viennent du projet d'origine ; leurs URL n'ont pas toutes été revérifiées.
+
+---
+
 ## Pack « English » — contenus experts (`CONTENT_GAPS_EN`, activé par défaut)
 Médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité… : ressources sans équivalent français vérifié, conservées dans leur version anglaise et identifiées comme telles (`download/gaps_content.sh`, section « PACK English »). Mettez `CONTENT_GAPS_EN="N"` pour les ignorer ; vos documents français s'ajoutent via `config/gaps_extra.list`.
 

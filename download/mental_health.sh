@@ -189,11 +189,100 @@ dl_extra() {
 }
 
 # ── Programme principal ───────────────────────────────────────────────────────
+# ══ PACK « ENGLISH » — PDF et vidéos de santé mentale en anglais (OMS, CDC, SAMHSA, FEMA…) ══
+# Repris du projet d'origine, sans équivalent français vérifié. Désactivé par défaut
+# (CONTENT_MENTAL_EN="Y" pour l'activer).
+en_dl_pfa() {
+    info "=== [EN] Psychological First Aid (PFA) ==="
+
+    dl_who "WHO Psychological First Aid Field Guide" "10665/44615" \
+        "https://apps.who.int/iris/bitstream/handle/10665/44615/9789241548205_eng.pdf" \
+        "$PDF_DIR" "WHO_PFA_Field_Guide.pdf"
+
+    dl_who "WHO PFA Facilitator Manual" "10665/44427" \
+        "https://apps.who.int/iris/bitstream/handle/10665/44427/9789241548809_eng.pdf" \
+        "$PDF_DIR" "WHO_PFA_Facilitator_Manual.pdf"
+
+    dl_file "UNHCR Community Mental Health Guide" \
+        "https://www.unhcr.org/media/community-mental-health-guide-humanitarian-settings" \
+        "$PDF_DIR" "UNHCR_Community_Mental_Health.pdf" || true
+
+    dl_file "IASC Guidelines on Mental Health in Emergencies" \
+        "https://interagencystandingcommittee.org/system/files/2020-11/IASC%20Guidelines%20on%20Mental%20Health%20and%20Psychosocial%20Support%20in%20Emergency%20Settings.pdf" \
+        "$PDF_DIR" "IASC_MHPSS_Guidelines.pdf"
+}
+
+en_dl_disaster_psych() {
+    info "=== [EN] Disaster Psychology ==="
+
+    dl_file "CDC NIOSH Trauma and Recovery" \
+        "https://www.cdc.gov/niosh/docs/2004-101/pdfs/2004-101.pdf" \
+        "$PDF_DIR" "CDC_NIOSH_Trauma_Recovery.pdf"
+
+    dl_file "SAMHSA Disaster Behavioral Health Guide" \
+        "https://store.samhsa.gov/sites/default/files/pep21-01-01-001.pdf" \
+        "$PDF_DIR" "SAMHSA_Disaster_Behavioral_Health.pdf"
+
+    dl_file "FEMA Crisis Counseling Guide" \
+        "https://www.fema.gov/sites/default/files/2020-07/fema_ccp_guidance-manual.pdf" \
+        "$PDF_DIR" "FEMA_Crisis_Counseling.pdf"
+}
+
+en_dl_resilience() {
+    info "=== [EN] Resilience & Community Care ==="
+
+    dl_file "Sphere Standards — Protection & MHPSS" \
+        "https://sphere-standards-media.s3.eu-central-1.amazonaws.com/app/uploads/2026/07/02150526/Sphere-Handbook-2018-EN.pdf" \
+        "$PDF_DIR" "Sphere_Handbook_MHPSS.pdf"
+
+    dl_file "Building Community Resilience Toolkit (CDC)" \
+        "https://www.cdc.gov/cpr/resiliencetoolkit/pdf/Community_Resilience_Toolkit.pdf" \
+        "$PDF_DIR" "CDC_Community_Resilience_Toolkit.pdf"
+
+    # Hesperian: Where There Is No Psychiatrist (open access)
+    dl_file "Where There Is No Psychiatrist (Patel)" \
+        "https://www.rcpsych.ac.uk/docs/default-source/members/faculties/international/where-there-is-no-psychiatrist.pdf" \
+        "$PDF_DIR" "Where_There_Is_No_Psychiatrist.pdf" || \
+    warn "Download Hesperian psychiatry guide manually from rcpsych.ac.uk"
+}
+
+en_dl_grief() {
+    info "=== [EN] Grief, Loss & Bereavement ==="
+
+    dl_file "Red Cross Grief Support Guide" \
+        "https://www.redcross.org/content/dam/redcross/atg/PDF_s/Preparedness___Disaster_Recovery/Disaster_Preparedness/Coping_with_Grief_and_Loss.pdf" \
+        "$PDF_DIR" "RedCross_Grief_Guide.pdf"
+}
+
+en_dl_psych_videos() {
+    info "=== [EN] Psychology & Mental Health Videos ==="
+
+    dl_channel "Psych2Go Resilience" \
+        "https://www.youtube.com/@Psych2Go/videos" 100
+
+    dl_channel "The School of Life" \
+        "https://www.youtube.com/@theschooloflifetv/videos" 100
+
+    dl_channel "Medscape Psychology" \
+        "https://www.youtube.com/@MedscapeCME/search?query=disaster+psychology" 30
+}
+
+dl_english_pack() {
+    [[ "${CONTENT_MENTAL_EN:-N}" =~ [YyOo] ]] || { info "Pack English désactivé (CONTENT_MENTAL_EN=N)"; return 0; }
+    info "######## PACK ENGLISH — PDF et vidéos de santé mentale en anglais (OMS, CDC, SAMHSA, FEMA…) ########"
+    en_dl_pfa
+    en_dl_disaster_psych
+    en_dl_resilience
+    en_dl_grief
+    en_dl_psych_videos
+}
+
 main() {
     info "Téléchargement des contenus de santé mentale et de PSP..."
 
     dl_pfa
     dl_extra
+    dl_english_pack
 
     success "Téléchargement des contenus de santé mentale terminé"
     info "PDF : $PDF_DIR"
