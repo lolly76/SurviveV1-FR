@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
         --resume)  RESUME=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --only)    CATEGORY="$2"; shift 2 ;;
-        *) echo "Unknown: $1"; shift ;;
+        *) echo "Option inconnue : $1"; shift ;;
     esac
 done
 
@@ -44,7 +44,7 @@ section() {
 
 run_or_dry() {
     if [[ "$DRY_RUN" == "true" ]]; then
-        echo "[DRY-RUN] $*"
+        echo "[SIMULATION] $*"
     else
         "$@"
     fi
@@ -57,17 +57,17 @@ check_disk_space() {
     # filesystem — and are then HIDDEN under the mount when the drive finally
     # appears, silently filling the card.
     if [[ "$STORAGE_PATH" == /mnt/* ]] && ! mountpoint -q "$STORAGE_PATH"; then
-        error "$STORAGE_PATH is not a mounted drive — downloads would fill the SD card."
-        error "Mount your storage first (sudo mount $STORAGE_PATH), or re-run the wizard:"
+        error "$STORAGE_PATH n'est pas un disque monté — les téléchargements rempliraient la carte SD."
+        error "Montez d'abord votre stockage (sudo mount $STORAGE_PATH), ou relancez l'assistant :"
         error "  sudo bash install/wizard.sh"
         exit 1
     fi
 
     AVAILABLE_GB=$(df -BG "$STORAGE_PATH" | tail -1 | awk '{print $4}' | tr -d 'G')
     BUDGET_GB="${SURVIVE_BUDGET_GB:-800}"
-    info "Available: ${AVAILABLE_GB}GB | Budget: ${BUDGET_GB}GB"
+    info "Disponible : ${AVAILABLE_GB} Go | Budget : ${BUDGET_GB} Go"
     if [[ "$AVAILABLE_GB" -lt 50 ]]; then
-        error "Less than 50GB free on $STORAGE_PATH. Aborting."
+        error "Moins de 50 Go libres sur $STORAGE_PATH. Abandon."
         exit 1
     fi
 }
@@ -97,17 +97,17 @@ print_budget() {
     [[ "${CONTENT_WIKIPEDIA_NOPIC:-N}" =~ [Yy] ]] && printf "%-40s %10s\n" "Wikipédia FR (sans images)" "~12 Go"
     [[ "${CONTENT_WIKIBOOKS:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Wikilivres, Wikivoyage, Wikisource, Wiktionnaire" "~17 Go"
     [[ "${CONTENT_IFIX:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "iFixit : guides de réparation (FR)" "~3,5 Go"
-    [[ "${CONTENT_STACKEXCHANGE:-Y}" =~ [Yy] ]]   && printf "%-40s %10s\n" "Stack Exchange (French Language)" "<1 Go"
+    [[ "${CONTENT_STACKEXCHANGE:-Y}" =~ [Yy] ]]   && printf "%-40s %10s\n" "Stack Exchange (langue française)" "<1 Go"
     [[ "${CONTENT_STACKEXCHANGE_EN:-N}" =~ [Yy] ]] && printf "%-40s %10s\n" "Stack Exchange (EN, option)" "~40 Go"
     [[ "${CONTENT_GUTENBERG:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Projet Gutenberg (livres FR)" "~15 Go"
     printf "%-40s %10s\n" "Khan Academy FR (ZIM Kiwix)" "~94 Go"
     [[ "${CONTENT_KOLIBRI:-Y}" =~ [Yy] ]]         && printf "%-40s %10s\n" "Khan Academy (Kolibri)" "~200 Go"
     [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]          && printf "%-40s %10s\n" "Vidéos de survie" "~150 Go"
-    [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "Cartes OpenStreetMap" "~70 Go"
+    [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "Cartes OpenStreetMap (France par défaut)" "~5 Go"
     [[ "${CONTENT_PDFS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "PDF + manuels" "~20 Go"
     [[ "${CONTENT_GAPS_EN:-Y}" =~ [Yy] ]]         && printf "%-40s %10s\n" "Contenus experts (pack English)" "~15 Go"
     [[ "${CONTENT_AI_MODELS:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Modèles d'IA (Ollama)" "~50 Go"
-    [[ "${CONTENT_NPS_MAPS:-Y}" =~ [Yy] ]]        && printf "%-40s %10s\n" "Cartes des parcs nationaux + satellite" "~3 Go"
+    [[ "${CONTENT_NPS_MAPS:-N}" =~ [Yy] ]]        && printf "%-40s %10s\n" "Cartes des parcs nationaux + satellite" "~3 Go"
     [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]]      && printf "%-40s %10s\n" "Outils de transmission (Meshtastic web)" "<1 Go"
     printf "%-40s %10s\n" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" "━━━━━━━━━"
     printf "%-40s %10s\n" "Total (approx.)" "~800 Go"
@@ -116,15 +116,15 @@ print_budget() {
 
 # ── Main download dispatcher ──────────────────────────────────────────────────
 main() {
-    info "SurviveV1 Content Downloader"
-    info "Storage: $STORAGE_PATH"
-    info "Resume: $RESUME | Dry-run: $DRY_RUN"
+    info "Téléchargement des contenus SurviveV1"
+    info "Stockage : $STORAGE_PATH"
+    info "Reprise : $RESUME | Simulation : $DRY_RUN"
 
     check_disk_space
     print_budget
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        info "Dry-run mode — no files downloaded"
+        info "Mode simulation — aucun fichier téléchargé"
         return 0
     fi
 
@@ -136,17 +136,17 @@ main() {
         shift 3
         if [[ -n "$CATEGORY" ]] && [[ "$CATEGORY" != "$name" ]]; then return 0; fi
         if [[ ! "$enabled" =~ [Yy] ]]; then
-            info "Skipping $name (disabled in survive.conf)"
+            info "$name ignoré (désactivé dans survive.conf)"
             return 0
         fi
         if [[ "$RESUME" == "true" ]] && is_done "$name"; then
-            info "Skipping $name (already completed — remove from $PROGRESS_FILE to redo)"
+            info "$name ignoré (déjà terminé — retirez-le de $PROGRESS_FILE pour recommencer)"
             return 0
         fi
         if run_or_dry bash "$REPO_DIR/download/$script" --storage "$STORAGE_PATH" "$@"; then
             [[ "$DRY_RUN" == "true" ]] || mark_done "$name"
         else
-            warn "$name download failed — rerun with --resume to retry just the rest"
+            warn "Échec du téléchargement de $name — relancez avec --resume pour reprendre le reste"
         fi
     }
 
@@ -170,8 +170,8 @@ main() {
 
     section "Download Complete"
     df -h "$STORAGE_PATH"
-    success "All selected content downloaded to $STORAGE_PATH"
-    info "Start services: bash scripts/start_services.sh"
+    success "Tous les contenus sélectionnés sont téléchargés dans $STORAGE_PATH"
+    info "Démarrer les services : bash scripts/start_services.sh"
 }
 
 main "$@"

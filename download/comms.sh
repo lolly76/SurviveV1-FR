@@ -20,7 +20,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"   # fall back to shipped defaults
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 while [[ $# -gt 0 ]]; do
@@ -46,26 +46,26 @@ mkdir -p "$COMMS_DIR/repeaters"
 
 # ── Meshtastic web client ────────────────────────────────────────────────────
 dl_meshtastic_web() {
-    [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]] || { info "Meshtastic web client disabled in config"; return 0; }
-    info "=== Meshtastic web client ==="
+    [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]] || { info "Client web Meshtastic désactivé dans la configuration"; return 0; }
+    info "=== Client web Meshtastic ==="
     # Resolve the release tag so we can skip the download when up to date.
     local final tag
     final=$(curl -sIL --max-time 30 -o /dev/null -w '%{url_effective}' "$MESH_URL" 2>/dev/null || true)
     tag=$(grep -oE 'download/v?[0-9][^/]*' <<< "$final" | head -1 | sed 's|download/||' || true)
     if [[ -n "$tag" ]] && [[ -f "$MESH_DIR/VERSION" ]] && [[ "$(cat "$MESH_DIR/VERSION")" == "$tag" ]] \
        && [[ -f "$MESH_DIR/index.html" ]]; then
-        info "Meshtastic web $tag already installed"
+        info "Meshtastic web $tag déjà installé"
         return 0
     fi
 
     local tmp
     tmp=$(mktemp -d)
     if ! curl -sL --max-time 300 -o "$tmp/build.tar" "$MESH_URL"; then
-        warn "Meshtastic web download failed (offline?)"
+        warn "Échec du téléchargement de Meshtastic web (hors ligne ?)"
         rm -rf "$tmp"; return 0
     fi
     if ! tar -tf "$tmp/build.tar" >/dev/null 2>&1; then
-        warn "Downloaded file is not a tar archive -- skipping"
+        warn "Le fichier téléchargé n'est pas une archive tar -- ignoré"
         rm -rf "$tmp"; return 0
     fi
     mkdir -p "$tmp/web"
@@ -75,15 +75,15 @@ dl_meshtastic_web() {
     # inflate everything once here.
     find "$tmp/web" -type f -name '*.gz' -exec gunzip -f {} +
     if [[ ! -f "$tmp/web/index.html" ]]; then
-        warn "Archive has no index.html -- layout changed? Skipping"
+        warn "L'archive n'a pas d'index.html -- structure modifiée ? Ignoré"
         rm -rf "$tmp"; return 0
     fi
     rm -rf "$MESH_DIR"
     mv "$tmp/web" "$MESH_DIR"
     echo "${tag:-unknown}" > "$MESH_DIR/VERSION"
     rm -rf "$tmp"
-    success "Meshtastic web ${tag:-} installed at $MESH_DIR"
-    info "Served on port 8084 by survive-meshtastic.service (start: sudo systemctl start survive-meshtastic)"
+    success "Meshtastic web ${tag:-} installé dans $MESH_DIR"
+    info "Servi sur le port 8084 par survive-meshtastic.service (démarrage : sudo systemctl start survive-meshtastic)"
     sudo -n systemctl restart survive-meshtastic 2>/dev/null || true
 }
 
@@ -96,13 +96,13 @@ dl_meshtastic_web() {
 # internet. (The engine may still try fonts.gstatic.com for fallback glyphs;
 # that only affects characters outside the bundled fonts.)
 dl_meshcore_web() {
-    [[ "${CONTENT_MESHCORE:-Y}" =~ [Yy] ]] || { info "MeshCore disabled in config"; return 0; }
-    info "=== MeshCore web client ==="
+    [[ "${CONTENT_MESHCORE:-Y}" =~ [Yy] ]] || { info "MeshCore désactivé dans la configuration"; return 0; }
+    info "=== Client web MeshCore ==="
     local listing ver files zip apk winzip
     listing=$(curl -sf --max-time 30 "$MESHCORE_BASE/" 2>/dev/null || true)
     ver=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+/' <<< "$listing" | sort -V | tail -1 | tr -d '/' || true)
     if [[ -z "$ver" ]]; then
-        warn "Could not list MeshCore releases (offline?)"
+        warn "Impossible de lister les versions de MeshCore (hors ligne ?)"
         return 0
     fi
     files=$(curl -sf --max-time 30 "$MESHCORE_BASE/$ver/" 2>/dev/null || true)
@@ -112,7 +112,7 @@ dl_meshcore_web() {
 
     if [[ -f "$MESHCORE_DIR/VERSION" ]] && [[ "$(cat "$MESHCORE_DIR/VERSION")" == "$ver" ]] \
        && [[ -f "$MESHCORE_DIR/index.html" ]]; then
-        info "MeshCore web $ver already installed"
+        info "MeshCore web $ver déjà installé"
     elif [[ -n "$zip" ]]; then
         local tmp idx
         tmp=$(mktemp -d)
@@ -126,36 +126,36 @@ dl_meshcore_web() {
                 rm -rf "$MESHCORE_DIR"
                 mv "$(dirname "$idx")" "$MESHCORE_DIR"
                 echo "$ver" > "$MESHCORE_DIR/VERSION"
-                success "MeshCore web $ver installed at $MESHCORE_DIR"
-                info "Served on port 8085 by survive-meshcore.service"
+                success "MeshCore web $ver installé dans $MESHCORE_DIR"
+                info "Servi sur le port 8085 par survive-meshcore.service"
                 sudo -n systemctl restart survive-meshcore 2>/dev/null || true
             else
-                warn "MeshCore web zip has no index.html -- layout changed?"
+                warn "Le zip MeshCore web n'a pas d'index.html -- structure modifiée ?"
             fi
         else
-            warn "MeshCore web download failed"
+            warn "Échec du téléchargement de MeshCore web"
         fi
         rm -rf "$tmp"
     else
-        warn "No -web.zip in the $ver release listing"
+        warn "Aucun -web.zip dans la liste de la version $ver"
     fi
 
     # Native apps for the depot: phones pair with the radio over Bluetooth, so
     # the installed app is what people actually use in the field.
     mkdir -p "$APP_DIR/android" "$APP_DIR/windows"
     if [[ -n "$apk" ]] && [[ ! -s "$APP_DIR/android/meshcore.apk" ]]; then
-        info "Downloading MeshCore Android app (~110 MB)..."
+        info "Téléchargement de l'application MeshCore Android (~110 Mo)..."
         curl -sfL --max-time 900 -o "$APP_DIR/android/meshcore.apk" "$MESHCORE_BASE/$ver/$apk" \
             && [[ "$(head -c 2 "$APP_DIR/android/meshcore.apk")" == "PK" ]] \
             && success "MeshCore Android -> apps/android/meshcore.apk" \
-            || { rm -f "$APP_DIR/android/meshcore.apk"; warn "MeshCore APK download failed"; }
+            || { rm -f "$APP_DIR/android/meshcore.apk"; warn "Échec du téléchargement de l'APK MeshCore"; }
     fi
     if [[ -n "$winzip" ]] && [[ ! -s "$APP_DIR/windows/meshcore-windows-x64.zip" ]]; then
-        info "Downloading MeshCore Windows app (~20 MB)..."
+        info "Téléchargement de l'application MeshCore Windows (~20 Mo)..."
         curl -sfL --max-time 600 -o "$APP_DIR/windows/meshcore-windows-x64.zip" "$MESHCORE_BASE/$ver/$winzip" \
             && [[ "$(head -c 2 "$APP_DIR/windows/meshcore-windows-x64.zip")" == "PK" ]] \
             && success "MeshCore Windows -> apps/windows/meshcore-windows-x64.zip" \
-            || { rm -f "$APP_DIR/windows/meshcore-windows-x64.zip"; warn "MeshCore Windows download failed"; }
+            || { rm -f "$APP_DIR/windows/meshcore-windows-x64.zip"; warn "Échec du téléchargement de MeshCore Windows"; }
     fi
 }
 
@@ -182,11 +182,11 @@ EOF
 }
 
 main() {
-    info "Comms content -> $COMMS_DIR"
+    info "Contenu des transmissions -> $COMMS_DIR"
     dl_meshtastic_web
     dl_meshcore_web
     write_repeater_readme
-    success "Comms setup complete"
+    success "Installation des transmissions terminée"
     du -sh "$COMMS_DIR" 2>/dev/null || true
 }
 

@@ -18,7 +18,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 
@@ -59,15 +59,15 @@ _fetch() {  # _fetch <url> <dest>
 dl_app() {  # dl_app <name> <url> <dest-file>
     local name="$1" url="$2" dest="$3"
     if [[ -f "$dest" ]] && _valid_app "$dest"; then
-        info "[$name] Already downloaded"
+        info "[$name] Déjà téléchargé"
         return 0
     fi
-    info "Downloading: $name"
+    info "Téléchargement : $name"
     if _fetch "$url" "$dest" && _valid_app "$dest"; then
         success "$name -> $dest"
     else
         rm -f "$dest"
-        warn "$name failed — will retry next run"
+        warn "$name a échoué — nouvel essai au prochain passage"
         echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [$name] $url" >> "$FAILED_LOG"
         return 1
     fi
@@ -85,37 +85,37 @@ resolve_latest() {  # resolve_latest <listing-url> <regex>
 }
 
 # ── Android ───────────────────────────────────────────────────────────────────
-info "=== Android apps ==="
+info "=== Applications Android ==="
 
 if kiwix_url=$(resolve_latest "https://download.kiwix.org/release/kiwix-android/" \
         'kiwix-[0-9]+\.[0-9]+\.[0-9]+\.apk'); then
     dl_app "Kiwix Android" "$kiwix_url" "$APP_DIR/android/kiwix.apk" || true
 else
-    warn "Could not resolve the Kiwix Android APK from the mirror listing"
+    warn "Impossible de trouver l'APK Kiwix Android dans la liste du miroir"
 fi
 
 # F-Droid publishes a stable, unversioned download URL.
 dl_app "F-Droid" "https://f-droid.org/F-Droid.apk" "$APP_DIR/android/fdroid.apk" || true
 
 # ── Windows ───────────────────────────────────────────────────────────────────
-info "=== Windows installers ==="
+info "=== Installateurs Windows ==="
 
 if kdesk_url=$(resolve_latest "https://download.kiwix.org/release/kiwix-desktop/" \
         'kiwix-desktop_windows_x64_[0-9.]+\.zip'); then
     dl_app "Kiwix Desktop (Windows)" "$kdesk_url" "$APP_DIR/windows/kiwix-desktop.zip" || true
 else
-    warn "Could not resolve Kiwix Desktop from the mirror listing"
+    warn "Impossible de trouver Kiwix Desktop dans la liste du miroir"
 fi
 
 if vlc_url=$(resolve_latest "https://get.videolan.org/vlc/last/win64/" \
         'vlc-[0-9.]+-win64\.exe'); then
     dl_app "VLC (Windows)" "$vlc_url" "$APP_DIR/windows/vlc-win64.exe" || true
 else
-    warn "Could not resolve the VLC Windows installer"
+    warn "Impossible de trouver l'installateur VLC pour Windows"
 fi
 
 # ── Checksums + sideload notes ────────────────────────────────────────────────
-info "Writing SHA256SUMS..."
+info "Écriture de SHA256SUMS..."
 ( cd "$APP_DIR" && find . -type f ! -name SHA256SUMS -print0 \
     | xargs -0 sha256sum 2>/dev/null > SHA256SUMS ) || true
 
@@ -146,5 +146,5 @@ WINDOWS
 Verify a file with SHA256SUMS (optional): sha256sum -c SHA256SUMS
 EOF
 
-success "App depot ready under $APP_DIR"
-[[ -s "$FAILED_LOG" ]] && warn "Some apps failed — see $FAILED_LOG" || true
+success "Dépôt d'applications prêt dans $APP_DIR"
+[[ -s "$FAILED_LOG" ]] && warn "Certaines applications ont échoué — voir $FAILED_LOG" || true
