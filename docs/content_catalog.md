@@ -1,179 +1,92 @@
-# SurviveV1 Content Catalog
+# SurviveV1-FR — Catalogue des contenus
 
-Complete list of all downloadable content with sources and sizes.
-
----
-
-## Kiwix ZIM Files (via kiwix_content.sh)
-
-### Wikipedia & General Reference
-| Package | Size | URL |
-|---------|------|-----|
-| Wikipedia EN (full, images) | ~100 GB | download.kiwix.org/zim/wikipedia |
-| Wikipedia EN (no images) | ~22 GB | download.kiwix.org/zim/wikipedia |
-| Wikibooks EN | ~1.5 GB | download.kiwix.org/zim/wikibooks |
-| Wikivoyage EN | ~600 MB | download.kiwix.org/zim/wikivoyage |
-| Wikisource EN | ~1 GB | download.kiwix.org/zim/wikisource |
-| Wiktionary EN | ~2 GB | download.kiwix.org/zim/wiktionary |
-
-### Technical Reference
-| Package | Size | URL |
-|---------|------|-----|
-| iFixit Repair Guides | ~5 GB | download.kiwix.org/zim/ifixit |
-| Stack Overflow | ~40 GB | download.kiwix.org/zim/stackoverflow |
-| Super User | ~2 GB | download.kiwix.org/zim/superuser |
-| Unix/Linux SE | ~2 GB | download.kiwix.org/zim/unix.stackexchange.com |
-
-### Survival-Specific Stack Exchange
-| Package | Size | URL |
-|---------|------|-----|
-| DIY Stack Exchange | ~1 GB | download.kiwix.org |
-| Cooking SE | ~500 MB | download.kiwix.org |
-| Outdoors SE | ~200 MB | download.kiwix.org |
-| Ham Radio SE | ~200 MB | download.kiwix.org |
-| Gardening SE | ~300 MB | download.kiwix.org |
-| Medical Sciences SE | ~200 MB | download.kiwix.org |
-| Sustainability SE | ~150 MB | download.kiwix.org |
-
-### Education
-| Package | Size | URL |
-|---------|------|-----|
-| Project Gutenberg (~60k books) | ~60 GB | download.kiwix.org/zim/gutenberg |
-| Khan Academy (ZIM) | ~5 GB | download.kiwix.org/zim/Khan_Academy |
-| Wikimed (medical) | ~2 GB | download.kiwix.org/zim/wikimed |
-| Medline Plus | ~1 GB | download.kiwix.org/zim/medlineplus |
-| TED Talks | ~5 GB | download.kiwix.org/zim/ted |
+Liste des contenus téléchargés par défaut dans cette version francophone, avec leur source.
+Les tailles sont des estimations ; les ZIM Kiwix datés sont remplacés par leur dernière version publiée.
+Les contenus sans équivalent français vérifié sont regroupés dans un **pack « English »** facultatif.
 
 ---
 
-## Kolibri Educational Content (via kolibri_content.sh)
+## ZIM Kiwix (`download/kiwix_content.sh`)
 
-| Channel | Size | Description |
-|---------|------|-------------|
-| Khan Academy Math | ~20 GB | Complete K-12 mathematics |
-| Khan Academy Science | ~15 GB | Biology, chemistry, physics |
-| Khan Academy Computing | ~5 GB | Programming, CS fundamentals |
-| Khan Academy Medicine | ~10 GB | Health, anatomy, medicine |
-| Khan Academy Agriculture | ~5 GB | Farming basics |
-| CK-12 Textbooks | ~10 GB | Free science/math textbooks |
-| PhET Simulations | ~2 GB | Interactive science simulations |
+### Référence générale (français)
+| Contenu | Taille | Option |
+|---------|--------|--------|
+| Wikipédia FR (avec images) | ~52 Go | `CONTENT_WIKIPEDIA` |
+| Wikipédia FR (sans images) | ~12 Go | `CONTENT_WIKIPEDIA_NOPIC` |
+| Wikipédia FR — sous-ensemble Médecine | variable | `CONTENT_WIKIPEDIA` |
+| Wikilivres, Wikivoyage, Wikisource, Wiktionnaire FR | ~17 Go | `CONTENT_WIKIBOOKS` |
+| iFixit FR (guides de réparation) | ~3,5 Go | `CONTENT_IFIX` |
+| French Language Stack Exchange | < 1 Go | `CONTENT_STACKEXCHANGE` |
+| Projet Gutenberg FR | ~15 Go (estimation) | `CONTENT_GUTENBERG` |
+| Khan Academy FR (ZIM) | ~94 Go | `CONTENT_KOLIBRI` |
+| Conférences TED (technologie, santé, santé publique, santé mentale, science) | ~39 Go | — |
 
----
+### Extras français (`CONTENT_EXPANSION`)
+Ekopédia (écologie pratique), Cuisine Libre, simulations PhET FR, Wikiversité, Vikidia.
 
-## PDF Books & Manuals (via books_pdfs.sh)
-
-### Military Survival Manuals (Public Domain)
-- FM 21-76 US Army Survival Manual
-- ATP 3-50.21 Survival
-- FM 4-25.11 First Aid
-- FM 3-05.70 Special Forces Survival
-- FM 90-5 Jungle Operations
-- FM 21-10 Field Sanitation
-- TM 31-210 Improvised Munitions Handbook
-
-### Medical References
-- Where There Is No Doctor (Hesperian Foundation)
-- Where There Is No Dentist (Hesperian Foundation)
-- A Book for Midwives (Hesperian Foundation)
-- CDC Emergency Preparedness Guide
-- TCCC (Tactical Combat Casualty Care) Guidelines
-
-### Agriculture & Food
-- USDA Home Canning Guide
-- Square Foot Gardening Manual
-- Organic Farming Guide (ATTRA/NCAT)
-- Wild Edible Plants Guide (USDA)
-- Food Preservation Methods
-
-### Engineering & Energy
-- NREL Solar Power System Design Guide
-- NREL Wind Energy Basics
-- Water System Design Guide (NRCS/USDA)
-- EPA Composting Guide
-
-### Radio & Communications
-- ARRL Amateur Radio Emergency Communications Handbook
-- FCC Technician License Study Guide
-- Ham Radio Basics (ARRL)
+### Extras en anglais (options, désactivées par défaut)
+| Contenu | Option |
+|---------|--------|
+| Sites Stack Exchange pratiques (Super User, DIY, Cooking, Ham Radio, Outdoors, Gardening, Medical Sciences, Sustainability, Electronics, Unix/Linux) | `CONTENT_STACKEXCHANGE_EN` |
+| Collections « zimgit » (catastrophes, secours, eau, alimentation, nœuds), Appropedia, Energypedia | `CONTENT_EXPANSION_EN` |
 
 ---
 
-## Survival Videos (via videos.sh)
-
-### General Survival (~200 videos)
-- Canadian Prepper (preparedness)
-- City Prepping (urban survival)
-- Primitive Technology (primitive skills)
-- Corporals Corner (bushcraft)
-- Survival Lilly (wilderness skills)
-
-### Medical & First Aid (~100 videos)
-- MedCram (medical education)
-- Wilderness Medical Associates
-- Stop the Bleed training
-- FEMA First Aid series
-
-### Food & Agriculture (~300 videos)
-- Homesteading Family (food preservation)
-- Justin Rhodes (homesteading)
-- Charles Dowding (no-dig gardening)
-- Townsends (historical cooking/food preservation)
-- Elliott Homestead
-
-### Energy (~100 videos)
-- Will Prowse (solar power)
-- Off Grid with Doug & Stacy
-- LDSPrepper (solar systems)
-
-### Construction & Shelter (~100 videos)
-- Essential Craftsman (building)
-- Stoney Ridge Farmer (rural skills)
-- Log Cabin Builders
-
-### Tools & Repair (~150 videos)
-- This Old House
-- Paul Sellers Woodworking
-- iFixit video guides
-
-### Communications (~100 videos)
-- Ham Radio Crash Course
-- ITS Tactical
+## Éducation (Kolibri)
+Khan Academy en français (canal Kolibri `878ec2e6f88c5c268b1be6f202833cd4`), servi sur le port 8082.
+Les chemins d'URL `/fr-fr/` et l'identifiant du canal viennent de la documentation openZIM/Kolibri et n'ont pas pu être testés sur un Kolibri réel : à vérifier au premier import.
 
 ---
 
-## Maps (via maps.sh)
-
-| Content | Size | Source |
-|---------|------|--------|
-| OpenStreetMap PBF (North America) | ~20 GB | Geofabrik |
-| OpenStreetMap PBF (World) | ~70 GB | planet.openstreetmap.org |
-| USGS Topo Maps (US) | varies | nationalmap.gov |
-| World overview tiles (z0-z8) | ~500 MB | protomaps.com |
+## Cartes (`download/maps.sh`)
+- OpenStreetMap, **France métropolitaine par défaut** (`MAP_REGION="france"`, ~5 Go), tuiles PMTiles lues directement par le navigateur.
+- Autres régions : Europe, Amérique du Nord/Sud, Afrique, Asie, Océanie, États-Unis, monde (~70 Go).
+- Calque satellite mondial (zoom 0-6) ; polices et sprites de la carte.
+- Mémo pour récupérer les cartes IGN (téléchargement manuel, conditions propres à l'IGN).
+- Cartes des parcs nationaux américains : option `CONTENT_NPS_MAPS`, désactivée (sans objet pour la France).
 
 ---
 
-## AI Models (via ai/setup_ollama.sh)
+## PDF et livres (`download/books_pdfs.sh`, `config/pdfs_extra.list`)
+- Guide gouvernemental « Tous responsables » (SGDSN).
+- Hesperian en français : *Là où il n'y a pas de docteur* (sommaire et chapitres 15, 26, 27, 28, 31, 32), *Manuel de santé des femmes handicapées* (chapitres 10 à 12).
+- Séchage solaire des fruits et légumes (GRET).
+- Livres Gutenberg FR sélectionnés (EPUB).
+- Vos propres documents : ajoutez des lignes `dossier|nom|url|fichier.pdf` à `config/pdfs_extra.list`.
 
-| Model | Size | Quality | RAM Needed |
-|-------|------|---------|-----------|
-| tinyllama | 637 MB | Basic | 1 GB |
-| phi3:mini | 2.3 GB | Good | 3 GB |
-| llama3.2:3b | 2.0 GB | Good | 3 GB |
-| mistral:7b-q4 | 4.1 GB | Excellent | 6 GB |
-| survive (custom) | same as base | Tuned for survival | varies |
+## Santé mentale (`download/mental_health.sh`)
+Premiers secours psychologiques (OMS, version française) et modules PSP (MHPSS Hub), plus les chaînes vidéo listées dans `config/mental_health_extra.list`.
 
 ---
 
-## Total Storage Requirements
+## Référence des médicaments (`download/drug_reference.sh`)
+Base de données publique des médicaments (ANSM, HAS, UNCAM) : spécialités, compositions, conditions de prescription, puis récupération lente et reprenable des RCP/notices officielles (indications, posologie, contre-indications, mises en garde, interactions). Voir la page `/drugs` du tableau de bord ; la source et la date de mise à jour y sont affichées.
 
-| Category | Minimum | Recommended |
-|----------|---------|-------------|
-| Wikipedia (no pics) | 22 GB | 100 GB (with pics) |
-| Stack Exchange | 10 GB | 80 GB (all topics) |
-| Books (Gutenberg) | 5 GB | 60 GB |
-| Videos | 30 GB | 150 GB |
-| Education (Kolibri) | 50 GB | 200 GB |
-| Maps | 5 GB | 70 GB |
-| PDFs/Manuals | 5 GB | 20 GB |
-| AI Models | 3 GB | 50 GB |
-| **Total** | **130 GB** | **800 GB** |
+---
+
+## Vidéos de survie (`download/videos.sh`, `config/videos_extra.list`)
+Chaînes et playlists YouTube francophones téléchargées avec yt-dlp :
+- **Survie / bushcraft** : Invictus France, Alban Cambe, Sankhoï, Skol Louarn
+- **Secourisme** : Croix-Rouge française (formations premiers secours)
+- **Alimentation et potager** : Popote et Potager
+- **Permaculture** : École de permaculture du Bec Hellouin
+- **Habitat** : Maison-Construction.com
+- **Énergie** : L'énergie partout
+- **Bricolage** : Le Coin des Bricoleurs, Fix Ta Maison, Robert Longechal
+- **Savoir-faire** : Low-tech Lab
+- **Radio** : Radioamateur par F4HTZ, cours de préparation à la licence radioamateur (F4KLH)
+
+Ajoutez vos sources dans `config/videos_extra.list` (format `catégorie|nom|url|nombre_max`).
+
+---
+
+## Pack « English » — contenus experts (`CONTENT_GAPS_EN`, activé par défaut)
+Médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité… : ressources sans équivalent français vérifié, conservées dans leur version anglaise et identifiées comme telles (`download/gaps_content.sh`, section « PACK English »). Mettez `CONTENT_GAPS_EN="N"` pour les ignorer ; vos documents français s'ajoutent via `config/gaps_extra.list`.
+
+---
+
+## Transmissions (`download/comms.sh`)
+Clients web Meshtastic (:8084) et MeshCore (:8085) hébergés localement, applications MeshCore Android/Windows pour le dépôt d'applications, listes de relais importées par vos soins (`comms/repeaters/*.csv`).
+
+## Dépôt d'applications (`download/app_depot.sh`)
+Kiwix Android et Desktop, F-Droid, VLC, pour que les appareils connectés au point d'accès Wi-Fi puissent installer les lecteurs sans Internet.
