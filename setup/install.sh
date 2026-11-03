@@ -275,16 +275,11 @@ install_martin() {
 
     # Do NOT pin a version: the previously hardcoded v0.14.3 asset is gone from
     # GitHub (404), which is why the maps tile never came up. Ask the API for
-    # the current release and pick whichever asset matches this architecture.
-    local arch_pat="aarch64"
-    [[ "$(uname -m)" == "aarch64" ]] || arch_pat="$(uname -m)"
+    # les versions et choisir l'archive qui correspond à cette architecture.
     local url
     url=$(curl -fsSL --max-time 60 \
-            https://api.github.com/repos/maplibre/martin/releases/latest 2>/dev/null \
-          | grep -oE '"browser_download_url": *"[^"]+"' \
-          | cut -d'"' -f4 \
-          | grep -iE "linux" | grep -iE "${arch_pat}|arm64" \
-          | grep -E '\.tar\.gz$' | head -1) || true
+            "https://api.github.com/repos/maplibre/martin/releases?per_page=50" 2>/dev/null \
+          | python3 "$REPO_DIR/scripts/pick_martin_asset.py" "$(uname -m)") || true
 
     if [[ -z "$url" ]]; then
         warn "Impossible de déterminer une version de Martin pour $(uname -m)."

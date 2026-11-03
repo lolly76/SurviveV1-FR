@@ -233,10 +233,10 @@ dl_obstetrics() {
         "https://archive.org/download/ABookForMidwives/26.SusanKlien-ABookForMidwives.pdf" \
         "$DIR" "Hesperian_Book_for_Midwives.pdf"
 
-    # Emergency Childbirth — Gregory White (public domain)
-    dl_file "Emergency Childbirth (Gregory White)" \
-        "https://archive.org/download/EmergencyChildbirth/EmergencyChildbirth.pdf" \
-        "$DIR" "Emergency_Childbirth_Gregory_White.pdf"
+    # Emergency Childbirth — Gregory White : DÉSACTIVÉ. L'identifiant archive.org
+    # « EmergencyChildbirth » n'existe plus (vérifié le 2026-11-03 : aucun fichier) et
+    # la copie actuelle (emergencychildbi0000greg) est en prêt numérique seulement,
+    # donc non téléchargeable. Ajoutez une source libre vérifiée avant de réactiver.
 
     # WHO Pregnancy and Childbirth Guide
     dl_who "WHO Safe Motherhood Practical Guide" "10665/43972" \

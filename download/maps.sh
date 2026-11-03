@@ -77,10 +77,8 @@ install_map_server() {
         success "Martin déjà installé"
     else
         MARTIN_URL=$(curl -fsSL --max-time 60 \
-                https://api.github.com/repos/maplibre/martin/releases/latest 2>/dev/null \
-            | grep -oE '"browser_download_url": *"[^"]+"' | cut -d'"' -f4 \
-            | grep -iE "linux" | grep -iE "$(uname -m)|arm64" \
-            | grep -E '\.tar\.gz$' | head -1) || true
+                "https://api.github.com/repos/maplibre/martin/releases?per_page=50" 2>/dev/null \
+            | python3 "$REPO_DIR/scripts/pick_martin_asset.py" "$(uname -m)") || true
         if [[ -n "${MARTIN_URL:-}" ]]; then
             TMP=$(mktemp -d)
             if wget -q "$MARTIN_URL" -O "$TMP/martin.tar.gz"; then

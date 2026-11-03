@@ -308,7 +308,7 @@ Fernando « Ferfal » Aguirre, Laurence Gonzales, Sandor Katz, et d'autres.
 |-----------|-----|----------------|
 | Humanure Handbook (livre complet, gratuit) | humanurehandbook.com/downloads/H2.pdf | <5 Mo |
 | Hesperian Health Guides | hesperian.org | <100 Mo |
-| Emergency Childbirth (Gregory White) | archive.org/download/EmergencyChildbirth | <5 Mo |
+| Emergency Childbirth (Gregory White) | *lien archive.org disparu (nov. 2026) ; copie en prêt numérique seulement* | — |
 | Emergency War Surgery | cs.amedd.army.mil | <20 Mo |
 | **Survival & Austere Medicine 3e éd.** | **griddownmed.blog/wp-content/uploads/2018/11/austmed.pdf** | <5 Mo |
 | SOF Medical Handbook | miroir bits.de | <20 Mo |
