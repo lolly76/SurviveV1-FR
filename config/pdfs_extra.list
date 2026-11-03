@@ -1,0 +1,7 @@
+# Documents PDF supplémentaires pour download/books_pdfs.sh (un par ligne)
+# Format : dossier|nom|url|fichier.pdf
+# « dossier » : sous-dossier de pdfs/ (medical, food, community, survival,
+#               energy, shelter, communication, ...). « fichier » est facultatif.
+#
+# Exemple (retirez le # pour activer) :
+# survival|Mon guide|https://exemple.fr/guide.pdf|mon_guide.pdf
