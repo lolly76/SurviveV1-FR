@@ -2,14 +2,12 @@
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "detect_hardware.sh"
-sys.path.insert(0, str(ROOT / "web"))
 
 
 def _fake_root(tmp_path, *, flags="fpu avx2", mem_kb=8_000_000, battery=False,
@@ -115,15 +113,14 @@ def test_env_output_is_sourceable(tmp_path):
     assert "AVX2" in out
 
 
-def test_read_battery(tmp_path):
-    from server import _read_battery  # pylint: disable=import-outside-toplevel
-    assert _read_battery(str(tmp_path))["present"] is False
+def test_read_battery(server, tmp_path):
+    # `server` : fixture de conftest (import tardif, après SURVIVE_STORAGE_PATH)
+    assert server._read_battery(str(tmp_path))["present"] is False
     _fake_root(tmp_path, battery=True)
-    assert _read_battery(str(tmp_path)) == {"present": True, "percent": 87, "status": "Discharging"}
+    assert server._read_battery(str(tmp_path)) == {"present": True, "percent": 87, "status": "Discharging"}
 
 
-def test_ai_chat_returns_503_when_module_disabled(monkeypatch):
-    import server  # pylint: disable=import-outside-toplevel
+def test_ai_chat_returns_503_when_module_disabled(server, monkeypatch):
     monkeypatch.setattr(server, "AI_DISABLED", True)
     monkeypatch.setattr(server, "AI_MODULE_WHY", "processeur sans AVX2")
     client = server.app.test_client()
