@@ -438,20 +438,10 @@ SAMBA
     info "Définissez un mot de passe Samba avec : sudo smbpasswd -a <utilisateur>"
 }
 
-# ── Plateforme : Raspberry Pi ou machine générique (VM, PC de test) ───────────
-# SURVIVE_PLATFORM=pi|generic force le choix ; sinon détection via le
-# device-tree. En mode « generic », on saute les étapes propres au Pi
-# (courant USB, TRIM, AI Hat Hailo) au lieu de les laisser échouer.
-detect_platform() {
-    if [[ -n "${SURVIVE_PLATFORM:-}" ]]; then
-        echo "$SURVIVE_PLATFORM"
-    elif grep -qi "raspberry pi" /proc/device-tree/model 2>/dev/null; then
-        echo "pi"
-    else
-        echo "generic"
-    fi
-}
-PLATFORM="$(detect_platform)"
+# ── Matériel : plateforme et modules (voir scripts/detect_hardware.sh) ────────
+# Chaque module (IA, Hailo, USB du Pi, point d'accès, capot, batterie) est
+# « auto », « on » ou « off » via SURVIVE_MODULE_<NOM> dans survive.conf.
+eval "$(bash "$REPO_DIR/scripts/detect_hardware.sh")"
 
 # Utilisateur qui exécutera les services : l'utilisateur sudo, sinon le premier
 # compte « humain » (uid >= 1000), sinon « pi » s'il existe, sinon root.
@@ -498,8 +488,8 @@ setup_ai_hat() {
         warn "Configuration de l'AI Hat ignorée (SKIP_AI_HAT=true)"
         return
     fi
-    if [[ "$PLATFORM" != "pi" && "${SURVIVE_FORCE_AI_HAT:-false}" != "true" ]]; then
-        info "Plateforme « $PLATFORM » : AI Hat Hailo ignoré (SURVIVE_FORCE_AI_HAT=true pour forcer)"
+    if [[ "$MOD_HAILO" != "on" ]]; then
+        info "Module Hailo désactivé : $MOD_HAILO_WHY (SURVIVE_MODULE_HAILO=on pour forcer)"
         return
     fi
     info "Configuration de l'AI Hat Hailo..."
@@ -553,12 +543,20 @@ main() {
     setup_python_env
     install_ytdlp
     install_kiwix
-    install_ollama
+    if [[ "$MOD_AI" == "on" ]]; then
+        install_ollama
+    else
+        info "IA locale non installée ($MOD_AI_WHY)"
+    fi
     setup_storage
-    if [[ "$PLATFORM" == "pi" ]]; then
+    if [[ "$MOD_PI_USB" == "on" ]]; then
         bash "$SCRIPT_DIR/pi5_storage.sh" || warn "Réglages de stockage du Pi 5 ignorés"
     else
-        info "Plateforme « $PLATFORM » : réglages de stockage propres au Pi 5 ignorés"
+        info "Module USB du Pi désactivé : $MOD_PI_USB_WHY"
+    fi
+    if [[ "$MOD_LID" == "on" || "$MOD_BATTERY" == "on" ]]; then
+        bash "$SCRIPT_DIR/laptop_setup.sh" "$MOD_LID" "$MOD_BATTERY" \
+            || warn "Réglages portable ignorés"
     fi
     configure_nginx
     configure_firewall

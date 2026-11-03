@@ -99,6 +99,21 @@ MAP_REGION="france"
 SURVIVE_HOTSPOT_SSID="SurviveV1"
 SURVIVE_HOTSPOT_PASS="survive2026"
 
+# ── Modules matériels (voir : bash scripts/detect_hardware.sh --table) ────────
+# auto = activé seulement si le matériel le permet ; on = forcé ; off = désactivé.
+#   AI       IA locale (Ollama) — désactivée sans AVX2 ou sous 4 Go de RAM
+#   HAILO    AI Hat Hailo (Raspberry Pi seulement)
+#   PI_USB   courant USB / TRIM du Pi 5
+#   HOTSPOT  point d'accès Wi-Fi hors réseau (carte Wi-Fi compatible AP requise)
+#   LID      portable : la fermeture du capot ne met pas en veille
+#   BATTERY  portable : surveillance de la batterie (onduleur de secours)
+SURVIVE_MODULE_AI="auto"
+SURVIVE_MODULE_HAILO="auto"
+SURVIVE_MODULE_PI_USB="auto"
+SURVIVE_MODULE_HOTSPOT="auto"
+SURVIVE_MODULE_LID="auto"
+SURVIVE_MODULE_BATTERY="auto"
+
 # ── Ignorer la configuration de l'AI Hat ──────────────────────────────────────────────────────────
 # Mettre à true si vous n'avez pas l'AI Hat Hailo
 SKIP_AI_HAT="false"

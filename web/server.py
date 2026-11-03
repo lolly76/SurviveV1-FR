@@ -222,6 +222,11 @@ def _resolve_ollama_base() -> str:
 
 # Whether AI runs on a remote host (affects service-check method + restart UI).
 OLLAMA_BASE = _resolve_ollama_base()
+# Module IA résolu à l'installation (scripts/detect_hardware.sh) : "off" quand le
+# matériel ne le permet pas (pas d'AVX2, RAM insuffisante) ; "on" par défaut.
+AI_MODULE_STATE = os.environ.get("SURVIVE_MODULE_AI_STATE", "on").strip().lower()
+AI_MODULE_WHY = os.environ.get("SURVIVE_MODULE_AI_WHY", "").strip()
+AI_DISABLED = AI_MODULE_STATE == "off"
 OLLAMA_IS_REMOTE = OLLAMA_BASE != f"http://localhost:{PORT_OLLAMA}"
 
 _CACHE_TTL = 60.0  # seconds — how long content-stat / recent-file caches are valid
@@ -1175,6 +1180,10 @@ def search():
 
 @app.route("/ai")
 def ai_page():
+    if AI_DISABLED:
+        return render_template("ai.html", ai_running=False, ai_disabled=True,
+                               ai_disabled_why=AI_MODULE_WHY, models=[],
+                               categories=CATEGORIES)
     ai_running = _ollama_alive()
     models = []
     if ai_running:
@@ -1186,7 +1195,8 @@ def ai_page():
                 models = [m["name"] for m in data.get("models", [])]
         except (OSError, json.JSONDecodeError) as e:
             logging.debug("Could not fetch Ollama model list: %s", e)
-    return render_template("ai.html", ai_running=ai_running, models=models, categories=CATEGORIES)
+    return render_template("ai.html", ai_running=ai_running, ai_disabled=False,
+                           ai_disabled_why="", models=models, categories=CATEGORIES)
 
 
 @app.route("/api/ai/chat", methods=["POST"])
@@ -1216,6 +1226,9 @@ def ai_chat():
     # form POSTs from a malicious page while the user is on the dashboard.
     if (request.content_type or "").split(";")[0].strip() != "application/json":
         return jsonify({"error": "Le Content-Type doit être application/json"}), 415
+    if AI_DISABLED:
+        return jsonify({"error": "L'assistant IA est désactivé sur cette machine"
+                                 + (f" : {AI_MODULE_WHY}" if AI_MODULE_WHY else "")}), 503
 
     data = request.get_json(silent=True)
     if not data or "message" not in data:
@@ -2624,6 +2637,25 @@ def _read_throttle_state() -> dict:
     return state
 
 
+def _read_battery(root: str = "") -> dict:
+    """Batterie d'un portable (sert d'onduleur de secours). `present` vaut False
+    sur un Pi ou un PC fixe ; `root` ne sert qu'aux tests."""
+    out = {"present": False, "percent": None, "status": None}
+    try:
+        bats = sorted(Path(root or "/").joinpath("sys/class/power_supply").glob("BAT*"))
+    except OSError:
+        return out
+    for bat in bats:
+        try:
+            out["percent"] = int((bat / "capacity").read_text(encoding="ascii").strip())
+            out["status"] = (bat / "status").read_text(encoding="ascii").strip()
+            out["present"] = True
+            break
+        except (OSError, ValueError):
+            continue
+    return out
+
+
 def _compute_system_health() -> dict:
     """CPU temp, throttle state, RAM/swap, load, uptime. Every source is
     individually guarded so non-Pi environments return zeros, never errors."""
@@ -2662,6 +2694,7 @@ def _compute_system_health() -> dict:
     return {
         "temperature_c": temp_c,
         "throttle": _read_throttle_state(),
+        "battery": _read_battery(),
         "memory": {
             "total_mb": round(mem_total / 1024),
             "available_mb": round(mem_avail / 1024),

@@ -92,6 +92,11 @@ ENV_FILE="/etc/default/survive"
         val="${!key:-}"
         [[ -n "$val" ]] && echo "${key}=${val}"
     done
+    # Résultat de la détection matérielle (modules) pour le tableau de bord.
+    eval "$(bash "$REPO_DIR/scripts/detect_hardware.sh" 2>/dev/null)" || true
+    echo "SURVIVE_MODULE_AI_STATE=${MOD_AI:-on}"
+    echo "SURVIVE_MODULE_AI_WHY=${MOD_AI_WHY:-}"
+    echo "SURVIVE_MODULE_BATTERY_STATE=${MOD_BATTERY:-off}"
     # The dashboard runs from a copy under /opt/survive but launches scripts
     # from the clone (update, rescan, ZIM downloads).
     echo "SURVIVE_REPO_DIR=${REPO_DIR}"

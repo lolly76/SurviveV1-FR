@@ -114,6 +114,12 @@
         <div class="stat-label">Disponibilité</div>
       </div>
     </div>
+    {% if system.battery and system.battery.present %}
+    <div id="batteryNote" style="margin-top:10px; font-size:13px; color:var(--text-dim);">
+      🔋 Batterie : <strong data-sys="battery">{{ system.battery.percent }}% ({{ system.battery.status }})</strong>
+      — sert d'onduleur de secours en cas de coupure.
+    </div>
+    {% endif %}
     <div id="throttleNote" style="margin-top:10px; font-size:12px; color:var(--warning); display:none;"></div>
   </div>
 
@@ -380,6 +386,7 @@ function applySystem(sys) {
   set('ram', sys.memory.used_percent + '%');
   set('swap', sys.memory.swap_used_percent + '%');
   set('uptime', sys.uptime_days + ' j');
+  if (sys.battery && sys.battery.present) { set('battery', sys.battery.percent + '% (' + sys.battery.status + ')'); }
   const tempEl = document.querySelector('[data-sys="temp"]');
   if (tempEl) {
     tempEl.style.color = sys.temperature_c >= 80 ? 'var(--danger)'

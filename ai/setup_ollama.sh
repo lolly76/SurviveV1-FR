@@ -214,7 +214,22 @@ print_usage() {
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+ai_module_gate() {
+    local MOD_AI="on" MOD_AI_WHY=""
+    eval "$(bash "$REPO_DIR/scripts/detect_hardware.sh" 2>/dev/null)" || true
+    case "$MOD_AI" in
+        on) return 0 ;;
+        remote) info "IA déportée ($MOD_AI_WHY) : rien à installer ici."; return 1 ;;
+        *) warn "IA locale désactivée : $MOD_AI_WHY"
+           info "Forcer malgré tout : SURVIVE_MODULE_AI=on dans config/survive.conf"
+           return 1 ;;
+    esac
+}
+
 main() {
+    case "${1:-setup}" in
+        setup|pull|pull-all|test) ai_module_gate || exit 0 ;;
+    esac
     case "${1:-setup}" in
         setup)
             detect_hailo

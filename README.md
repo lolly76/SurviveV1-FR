@@ -79,15 +79,32 @@ http://localhost:8080
 
 ---
 
-### Tester sans Raspberry Pi (VM / PC)
+### Matériel : Raspberry Pi, VM ou vieux portable
 
-L'installateur accepte une VM Debian 12/13 **aarch64 ou x86_64** : les étapes propres au Pi
-(AI Hat Hailo, courant USB, TRIM) sont ignorées automatiquement, et les binaires (Kiwix, Martin,
-pmtiles, Jellyfin) sont choisis selon l'architecture. L'utilisateur des services est l'utilisateur
-`sudo` (ou le premier compte humain). Variables : `SURVIVE_PLATFORM=pi|generic` pour forcer la
-détection, `SURVIVE_FORCE_AI_HAT=true` pour forcer l'installation Hailo. Le mode point d'accès
-Wi-Fi n'est pas testable sans carte Wi-Fi. `bash download/download_all.sh --dry-run` simule les
-téléchargements.
+SurviveV1 fonctionne sur Debian 12/13 **64 bits** (aarch64 ou x86_64) : Raspberry Pi 5, VM de test ou
+portable reconditionné. Les fonctions dépendant du matériel sont des **modules** que l'installateur
+active seulement si la machine le permet. Pour voir le résultat sur votre machine :
+
+```bash
+bash scripts/detect_hardware.sh --table
+```
+
+| Module | Actif automatiquement si… | Réglage |
+|--------|---------------------------|---------|
+| `AI` (Ollama local) | AVX2 présent (x86) et ≥ 4 Go de RAM | `SURVIVE_MODULE_AI` |
+| `HAILO` (AI Hat) | Raspberry Pi avec Hailo détecté | `SURVIVE_MODULE_HAILO` |
+| `PI_USB` (courant USB, TRIM) | Raspberry Pi | `SURVIVE_MODULE_PI_USB` |
+| `HOTSPOT` (point d'accès Wi-Fi) | carte Wi-Fi gérant le mode AP | `SURVIVE_MODULE_HOTSPOT` |
+| `LID` (capot fermé sans veille) | portable | `SURVIVE_MODULE_LID` |
+| `BATTERY` (batterie = onduleur) | batterie détectée, affichée sur la page État | `SURVIVE_MODULE_BATTERY` |
+
+Chaque réglage vaut `auto` (défaut), `on` (forcé) ou `off` dans `config/survive.conf`. Sans AVX2 ou
+avec trop peu de RAM, l'assistant IA est désactivé proprement (message explicatif, le reste du
+système fonctionne) ; `SURVIVE_OLLAMA_HOST` permet d'utiliser l'IA d'une autre machine. Les binaires
+(Kiwix, Martin, pmtiles, Jellyfin) sont choisis selon l'architecture, et les services tournent sous
+l'utilisateur `sudo`. `SURVIVE_PLATFORM=pi|generic` force la détection Pi/PC.
+`bash download/download_all.sh --dry-run` simule les téléchargements. Tails n'est pas pris en charge
+(système amnésique dont le pare-feu bloque les connexions entrantes).
 
 ## Arborescence
 

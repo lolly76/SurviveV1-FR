@@ -180,7 +180,17 @@
   <div class="page-title">🤖 Assistant IA de survie</div>
   <div class="page-sub">Propulsé par un LLM local — aucune connexion Internet requise</div>
 
-  {% if not ai_running %}
+  {% if ai_disabled %}
+  <div style="background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3);
+              border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
+    <strong style="color: var(--warning);">ℹ Assistant IA désactivé sur cette machine</strong><br>
+    <span style="color: var(--text-dim); font-size: 13px;">
+      {{ ai_disabled_why or "matériel insuffisant" }}. Tout le reste (bibliothèque, cartes,
+      recherche, livres) fonctionne normalement. Pour utiliser l'IA d'une autre machine,
+      définissez <code>SURVIVE_OLLAMA_HOST</code> dans <code>config/survive.conf</code>.
+    </span>
+  </div>
+  {% elif not ai_running %}
   <div style="background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3);
               border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
     <strong style="color: var(--danger);">⚠ Service IA arrêté</strong><br>
