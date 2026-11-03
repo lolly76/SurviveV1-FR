@@ -18,15 +18,15 @@
 <div class="container">
   <div class="page-title">&#128221; Notes</div>
   <div class="page-sub">
-    A shared notebook stored on the drive. Journal, inventories, plans, instructions for
-    the household &mdash; anyone on the network can write; deleting needs the admin login.
+    Un carnet partagé stocké sur le disque. Journal, inventaires, plans, consignes pour
+    le foyer &mdash; toute personne du réseau peut écrire ; la suppression exige la connexion administrateur.
   </div>
 
   <form class="notes-bar" method="get" action="/notes">
-    <input type="search" name="q" value="{{ query }}" placeholder="Search notes&hellip;" autocomplete="off">
-    <button type="submit" class="btn btn-secondary">Search</button>
-    <a href="/notes/new" class="btn btn-primary">&#10010; New note</a>
-    <a href="/shared" class="btn btn-secondary" title="Upload and download your own files">&#128194; Shared files</a>
+    <input type="search" name="q" value="{{ query }}" placeholder="Rechercher dans les notes&hellip;" autocomplete="off">
+    <button type="submit" class="btn btn-secondary">Rechercher</button>
+    <a href="/notes/new" class="btn btn-primary">&#10010; Nouvelle note</a>
+    <a href="/shared" class="btn btn-secondary" title="Envoyer et télécharger vos propres fichiers">&#128194; Fichiers partagés</a>
   </form>
 
   <div class="card">
@@ -41,11 +41,11 @@
       </a>
       {% endfor %}
     {% elif query %}
-      <p style="font-size:13px;color:var(--text-dim);">No notes match &ldquo;{{ query }}&rdquo;.</p>
+      <p style="font-size:13px;color:var(--text-dim);">Aucune note ne correspond à &laquo;&nbsp;{{ query }}&nbsp;&raquo;.</p>
     {% else %}
       <p style="font-size:13px;color:var(--text-dim);">
-        No notes yet. Notes are plain Markdown files in <code>notes/</code> on the storage drive,
-        so they also show up in the Samba share and survive a reinstall.
+        Aucune note pour l'instant. Les notes sont de simples fichiers Markdown dans <code>notes/</code> sur le disque de stockage :
+        elles apparaissent donc aussi dans le partage Samba et survivent à une réinstallation.
       </p>
     {% endif %}
   </div>

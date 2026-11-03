@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container">
 
-  <!-- Category header -->
+  <!-- En-tête de catégorie -->
   <div style="background: var(--surface); border: 1px solid var(--border);
               border-left: 4px solid {{ cat.color }}; border-radius: var(--radius);
               padding: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <!-- Category nav -->
+  <!-- Navigation entre catégories -->
   <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
     {% for c in categories %}
     <a href="/category/{{ c.id }}"
@@ -30,31 +30,31 @@
     {% endfor %}
   </div>
 
-  <!-- Quick links to services for this category. Host comes from the current
-       request so the page works whether accessed via localhost, LAN IP, or
-       survive.local; ports come from constants.py via context processor. -->
+  <!-- Liens rapides vers les services de cette catégorie. L'hôte vient de la requête
+       en cours : la page fonctionne donc via localhost, l'IP du réseau local ou
+       survive.local ; les ports viennent de constants.py via le context processor. -->
   {% set host = request.host.split(':')[0] %}
   {% set service_links = {
-    'reference': [('Wikipedia', 'http://' ~ host ~ ':' ~ PORT_KIWIX, '📚'), ('E-Books', 'http://' ~ host ~ ':' ~ PORT_CALIBRE, '📖')],
-    'education': [('Khan Academy', 'http://' ~ host ~ ':' ~ PORT_KOLIBRI, '🎓'), ('Wikipedia', 'http://' ~ host ~ ':' ~ PORT_KIWIX, '📚')],
-    'videos': [('Video Player', 'http://' ~ host ~ ':' ~ PORT_JELLYFIN, '🎬')],
-    'maps': [('Map Server', 'http://' ~ host ~ ':' ~ PORT_MAPS, '🗺️')],
+    'reference': [('Wikipédia', 'http://' ~ host ~ ':' ~ PORT_KIWIX, '📚'), ('Livres numériques', 'http://' ~ host ~ ':' ~ PORT_CALIBRE, '📖')],
+    'education': [('Khan Academy', 'http://' ~ host ~ ':' ~ PORT_KOLIBRI, '🎓'), ('Wikipédia', 'http://' ~ host ~ ':' ~ PORT_KIWIX, '📚')],
+    'videos': [('Lecteur vidéo', 'http://' ~ host ~ ':' ~ PORT_JELLYFIN, '🎬')],
+    'maps': [('Serveur de cartes', 'http://' ~ host ~ ':' ~ PORT_MAPS, '🗺️')],
   } %}
 
   {% if cat.id in service_links %}
   <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
     {% for name, url, icon in service_links[cat.id] %}
     <a href="{{ url }}" target="_blank" class="btn btn-secondary">
-      {{ icon }} Open {{ name }}
+      {{ icon }} Ouvrir {{ name }}
     </a>
     {% endfor %}
   </div>
   {% endif %}
 
-  <!-- Files in this category -->
+  <!-- Fichiers de cette catégorie -->
   {% if files %}
   <div style="margin-bottom: 12px; color: var(--text-dim); font-size: 13px;">
-    {{ files|length }} files in this category
+    {{ files|length }} fichiers dans cette catégorie
   </div>
   <div class="grid grid-auto">
     {% set ext_icons = {
@@ -69,7 +69,7 @@
       <div class="cat-icon">{{ ext_icons.get(f.ext, '📄') }}</div>
       <div class="cat-info">
         <div class="cat-name" style="white-space: normal; font-size: 13px;">{{ f.name }}</div>
-        <div class="cat-desc">{{ f.ext.upper() if f.ext else 'FILE' }} • {{ f.size_mb }} MB</div>
+        <div class="cat-desc">{{ f.ext.upper() if f.ext else 'FICHIER' }} • {{ f.size_mb }} Mo</div>
       </div>
     </a>
     {% endfor %}
@@ -78,10 +78,10 @@
   <div style="text-align: center; padding: 60px 20px;">
     <div style="font-size: 64px; margin-bottom: 12px;">{{ cat.icon }}</div>
     <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-      No files yet in {{ cat.name }}
+      Aucun fichier pour l'instant dans {{ cat.name }}
     </div>
     <div style="color: var(--text-dim); font-size: 14px; margin-bottom: 20px;">
-      Download content to populate this category
+      Téléchargez des contenus pour remplir cette catégorie
     </div>
     <div style="display: inline-flex; flex-direction: column; gap: 8px; text-align: left;">
       <code style="background: var(--surface2); padding: 8px 14px; border-radius: var(--radius);
@@ -94,7 +94,7 @@
       </code>
     </div>
     <div style="margin-top: 20px;">
-      <a href="/ai" class="btn btn-primary">🤖 Ask AI Assistant about {{ cat.name }}</a>
+      <a href="/ai" class="btn btn-primary">🤖 Interroger l'assistant IA sur {{ cat.name }}</a>
     </div>
   </div>
   {% endif %}

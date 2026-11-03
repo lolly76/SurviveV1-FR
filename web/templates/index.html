@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Home{% endblock %}
+{% block title %}Accueil{% endblock %}
 
 {% block head %}
 <style>
@@ -128,16 +128,16 @@
 {% block content %}
 <div class="container">
 
-  <!-- Offline banner — updated dynamically by JS -->
+  <!-- Bandeau hors ligne — mis à jour dynamiquement par JS -->
   <div class="offline-banner" id="offlineBanner">
     <div class="dot" id="offlineDot"></div>
-    <strong id="offlineTitle">Checking connectivity…</strong>
+    <strong id="offlineTitle">Vérification de la connexion…</strong>
     &nbsp;&bull;&nbsp;
-    Internet: <strong id="internetStatus" style="color:var(--text-dim)">…</strong>
+    Internet : <strong id="internetStatus" style="color:var(--text-dim)">…</strong>
     &nbsp;&bull;&nbsp;
-    All content stored locally
+    Tous les contenus sont stockés localement
     &nbsp;&bull;&nbsp;
-    {{ now.strftime('%A, %B %d, %Y %H:%M') }}
+    {{ now.strftime('%d/%m/%Y %H:%M') }}
   </div>
 
   <!-- Hero -->
@@ -146,84 +146,84 @@
       <span class="green">Survive</span>V1
     </div>
     <div class="hero-sub">
-      Your complete offline survival knowledge repository. Wikipedia, videos, medical guides,
-      military manuals, maps, and an AI assistant — all running locally.
+      Votre base de connaissances de survie complète, hors ligne. Wikipédia, vidéos, guides médicaux,
+      manuels militaires, cartes et un assistant IA — le tout fonctionne en local.
     </div>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-val">{{ storage.used_gb }}GB</div>
-        <div class="hero-stat-label">Content Stored</div>
+        <div class="hero-stat-val">{{ storage.used_gb }} Go</div>
+        <div class="hero-stat-label">Contenus stockés</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-val">{{ storage.free_gb }}GB</div>
-        <div class="hero-stat-label">Available</div>
+        <div class="hero-stat-val">{{ storage.free_gb }} Go</div>
+        <div class="hero-stat-label">Disponibles</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-val">{{ categories|length }}</div>
-        <div class="hero-stat-label">Categories</div>
+        <div class="hero-stat-label">Catégories</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-val">{{ services.values()|selectattr('running')|list|length }}/{{ services|length }}</div>
-        <div class="hero-stat-label">Services Up</div>
+        <div class="hero-stat-label">Services actifs</div>
       </div>
     </div>
   </div>
 
-  <!-- Quick access -->
+  <!-- Accès rapide -->
   <div class="section-header">
-    <div class="section-title">Quick Access</div>
+    <div class="section-title">Accès rapide</div>
   </div>
   <div class="quick-links">
     {% set host = request.host.split(':')[0] %}
     <a class="quick-link" href="http://{{ host }}:{{ PORT_KIWIX }}" target="_blank">
-      <span class="icon">📚</span> Wikipedia
+      <span class="icon">📚</span> Wikipédia
     </a>
     <a class="quick-link" href="http://{{ host }}:{{ PORT_KOLIBRI }}" target="_blank">
       <span class="icon">🎓</span> Khan Academy
     </a>
     <a class="quick-link" href="http://{{ host }}:{{ PORT_JELLYFIN }}" target="_blank">
-      <span class="icon">🎬</span> Videos
+      <span class="icon">🎬</span> Vidéos
     </a>
     <a class="quick-link" href="http://{{ host }}:{{ PORT_CALIBRE }}" target="_blank">
-      <span class="icon">📖</span> E-Books
+      <span class="icon">📖</span> Livres numériques
     </a>
     <a class="quick-link" href="/maps">
-      <span class="icon">🗺️</span> Maps &amp; Pins
+      <span class="icon">🗺️</span> Cartes &amp; repères
     </a>
     <a class="quick-link" href="/ai">
-      <span class="icon">🤖</span> AI Assistant
+      <span class="icon">🤖</span> Assistant IA
     </a>
     <a class="quick-link" href="/notes">
       <span class="icon">📝</span> Notes
     </a>
     <a class="quick-link" href="/comms">
-      <span class="icon">📡</span> Comms
+      <span class="icon">📡</span> Transmissions
     </a>
     <a class="quick-link" href="/content">
-      <span class="icon">📚</span> Library Manager
+      <span class="icon">📚</span> Gestionnaire de bibliothèque
     </a>
     <a class="quick-link" href="/shared">
-      <span class="icon">📂</span> Shared Files
+      <span class="icon">📂</span> Fichiers partagés
     </a>
     <a class="quick-link" href="/files">
-      <span class="icon">📁</span> Browse Files
+      <span class="icon">📁</span> Parcourir les fichiers
     </a>
     <a class="quick-link" href="/status">
-      <span class="icon">📊</span> System Status
+      <span class="icon">📊</span> État du système
     </a>
     <a class="quick-link" href="/status#update">
-      <span class="icon">🔄</span> Update Content
+      <span class="icon">🔄</span> Mettre à jour les contenus
     </a>
   </div>
 
-  <!-- Main grid: Categories + Sidebar -->
+  <!-- Grille principale : catégories + colonne latérale -->
   <div style="display:grid; grid-template-columns: 1fr 320px; gap: 24px;">
 
-    <!-- Categories -->
+    <!-- Catégories -->
     <div>
       <div class="section-header">
-        <div class="section-title">Knowledge Categories</div>
-        <a href="/files" class="btn btn-secondary btn-sm">Browse All Files</a>
+        <div class="section-title">Catégories de connaissances</div>
+        <a href="/files" class="btn btn-secondary btn-sm">Parcourir tous les fichiers</a>
       </div>
       <div class="grid grid-auto">
         {% for cat in categories %}
@@ -238,26 +238,26 @@
       </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Colonne latérale -->
     <div style="display: flex; flex-direction: column; gap: 16px;">
 
-      <!-- Storage -->
+      <!-- Stockage -->
       <div class="card">
-        <div class="card-title">Storage</div>
+        <div class="card-title">Stockage</div>
         <div class="storage-labels">
-          <span>{{ storage.used_gb }} GB used</span>
-          <span>{{ storage.total_gb }} GB total</span>
+          <span>{{ storage.used_gb }} Go utilisés</span>
+          <span>{{ storage.total_gb }} Go au total</span>
         </div>
         <div class="progress">
           <div class="progress-bar {{ 'danger' if storage.percent > 90 else 'warning' if storage.percent > 75 else '' }}"
                style="width: {{ storage.percent }}%"></div>
         </div>
         <div style="font-size: 12px; color: var(--text-dim); margin-top: 6px;">
-          {{ storage.free_gb }} GB free ({{ 100 - storage.percent }}%)
+          {{ storage.free_gb }} Go libres ({{ 100 - storage.percent }} %)
         </div>
         <div style="font-size: 12px; color: var(--text-dim); margin-top: 6px;
                     padding-top: 6px; border-top: 1px solid var(--border);">
-          Downloads: <a href="/status" style="color:var(--text-dim);"><span id="dlSummary">…</span></a>
+          Téléchargements : <a href="/status" style="color:var(--text-dim);"><span id="dlSummary">…</span></a>
         </div>
       </div>
 
@@ -273,29 +273,29 @@
           </div>
           {% if svc.running %}
             <a href="http://localhost:{{ svc.port }}" target="_blank"
-               class="badge badge-green">RUNNING</a>
+               class="badge badge-green">EN MARCHE</a>
           {% else %}
-            <span class="badge badge-red">STOPPED</span>
+            <span class="badge badge-red">ARRÊTÉ</span>
           {% endif %}
         </div>
         {% endfor %}
       </div>
 
-      <!-- Top survival topics -->
+      <!-- Sujets de survie essentiels -->
       <div class="card">
-        <div class="card-title">Essential Topics</div>
+        <div class="card-title">Sujets essentiels</div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           {% set topics = [
-            ('💧', 'Water Purification', 'medical'),
-            ('🔥', 'Fire Starting', 'skills'),
-            ('🏕️', 'Emergency Shelter', 'shelter'),
-            ('🌿', 'Wild Edibles', 'food'),
-            ('🩹', 'Wound Care', 'medical'),
-            ('📡', 'Ham Radio Basics', 'communication'),
-            ('🌱', 'Growing Food', 'food'),
-            ('🔋', 'Solar Power', 'energy'),
-            ('🗺️', 'Navigation', 'maps'),
-            ('🔧', 'Repair Skills', 'tools'),
+            ('💧', 'Purification de l\'eau', 'medical'),
+            ('🔥', 'Allumer un feu', 'skills'),
+            ('🏕️', 'Abri de fortune', 'shelter'),
+            ('🌿', 'Plantes sauvages comestibles', 'food'),
+            ('🩹', 'Soins des plaies', 'medical'),
+            ('📡', 'Bases de la radio amateur', 'communication'),
+            ('🌱', 'Cultiver sa nourriture', 'food'),
+            ('🔋', 'Énergie solaire', 'energy'),
+            ('🗺️', 'Orientation', 'maps'),
+            ('🔧', 'Savoir-faire de réparation', 'tools'),
           ] %}
           {% for icon, topic, cat in topics %}
           <a href="/search?q={{ topic|urlencode }}"
@@ -316,7 +316,7 @@
 
 {% block scripts %}
 <script>
-  // Auto-refresh service status every 30s
+  // Actualisation automatique de l'état des services toutes les 30 s
   setInterval(() => {
     fetch('/api/status')
       .then(r => r.json())
@@ -330,21 +330,21 @@
       .catch(() => {});
   }, 30000);
 
-  // Dynamic offline/online indicator. The check runs server-side on the Pi:
-  // the browser can't probe external hosts (CSP connect-src 'self'), and the
-  // Pi's own connectivity is what matters for content downloads.
+  // Indicateur dynamique hors ligne / en ligne. La vérification s'exécute côté serveur, sur le Pi :
+  // le navigateur ne peut pas sonder des hôtes externes (CSP connect-src 'self'), et c'est
+  // la connectivité du Pi lui-même qui compte pour les téléchargements de contenus.
   function setOnline() {
     document.getElementById('offlineDot').style.background = 'var(--warning)';
-    document.getElementById('offlineTitle').textContent = 'System Running — Internet Available';
-    document.getElementById('internetStatus').textContent = 'CONNECTED';
+    document.getElementById('offlineTitle').textContent = 'Système en marche — Internet disponible';
+    document.getElementById('internetStatus').textContent = 'CONNECTÉ';
     document.getElementById('internetStatus').style.color = 'var(--warning)';
     document.getElementById('offlineBanner').style.borderColor = 'rgba(210,153,34,0.3)';
     document.getElementById('offlineBanner').style.background = 'rgba(210,153,34,0.06)';
   }
   function setOffline() {
     document.getElementById('offlineDot').style.background = 'var(--accent)';
-    document.getElementById('offlineTitle').textContent = 'Offline Mode: ACTIVE';
-    document.getElementById('internetStatus').textContent = 'NOT AVAILABLE';
+    document.getElementById('offlineTitle').textContent = 'Mode hors ligne : ACTIF';
+    document.getElementById('internetStatus').textContent = 'INDISPONIBLE';
     document.getElementById('internetStatus').style.color = 'var(--danger)';
     document.getElementById('offlineBanner').style.borderColor = 'rgba(63,185,80,0.3)';
     document.getElementById('offlineBanner').style.background = 'rgba(63,185,80,0.08)';
@@ -358,12 +358,12 @@
   checkConnectivity();
   setInterval(checkConnectivity, 60000);
 
-  // Download progress summary
+  // Résumé de la progression des téléchargements
   fetch('/api/downloads', { cache: 'no-store' })
     .then(r => r.json())
     .then(d => {
       const el = document.getElementById('dlSummary');
-      if (el) el.textContent = `${d.complete}/${d.total} categories complete`;
+      if (el) el.textContent = `${d.complete}/${d.total} catégories terminées`;
     })
     .catch(() => {});
 </script>

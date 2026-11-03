@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Comms{% endblock %}
+{% block title %}Transmissions{% endblock %}
 
 {% block head %}
 <style>
@@ -17,82 +17,79 @@
 
 {% block content %}
 <div class="container">
-  <div class="page-title">&#128225; Comms</div>
-  <div class="page-sub">Radio and mesh tools that work with no infrastructure, plus the frequencies worth memorising.</div>
+  <div class="page-title">&#128225; Transmissions</div>
+  <div class="page-sub">Outils radio et réseaux maillés qui fonctionnent sans aucune infrastructure, et les fréquences à connaître par cœur.</div>
 
   <div class="tool-grid">
     <div class="tool">
-      <div class="t">&#8226;&#8212; Morse code tool</div>
-      <div class="d">Type to hear and see Morse, tap a key to decode, or translate dots and dashes you copied by ear. Works on any phone with a speaker or a torch.</div>
-      <a href="/comms/morse" class="btn btn-primary btn-sm">Open</a>
+      <div class="t">&#8226;&#8212; Outil Morse</div>
+      <div class="d">Tapez du texte pour entendre et voir le Morse, appuyez sur une touche pour décoder, ou traduisez les points et traits relevés à l'oreille. Fonctionne sur tout téléphone doté d'un haut-parleur ou d'une lampe.</div>
+      <a href="/comms/morse" class="btn btn-primary btn-sm">Ouvrir</a>
     </div>
     <div class="tool">
-      <div class="t">&#128246; Meshtastic web client</div>
+      <div class="t">&#128246; Client web Meshtastic</div>
       <div class="d">
-        Configure and message LoRa mesh radios from the browser. Connect over Wi-Fi/HTTP to a node on this network;
-        Bluetooth and USB serial need an HTTPS page.
-        {% if not mesh_installed %}<br><span style="color:var(--warning);">Not downloaded yet</span> &mdash; run
-        <code>bash download/comms.sh</code> on the Pi.{% elif not mesh_running %}<br><span style="color:var(--warning);">Installed but not running</span> &mdash; restart it from the Status page.{% endif %}
+        Configurez les radios maillées LoRa et envoyez des messages depuis le navigateur. Connexion en Wi-Fi/HTTP à un nœud de ce réseau ;
+        le Bluetooth et la liaison série USB exigent une page en HTTPS.
+        {% if not mesh_installed %}<br><span style="color:var(--warning);">Pas encore téléchargé</span> &mdash; exécutez
+        <code>bash download/comms.sh</code> sur le Pi.{% elif not mesh_running %}<br><span style="color:var(--warning);">Installé mais arrêté</span> &mdash; redémarrez-le depuis la page État.{% endif %}
       </div>
       {% if mesh_installed and mesh_running %}
-      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_MESHTASTIC }}/" target="_blank" class="btn btn-primary btn-sm">Open (port {{ PORT_MESHTASTIC }})</a>
+      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_MESHTASTIC }}/" target="_blank" class="btn btn-primary btn-sm">Ouvrir (port {{ PORT_MESHTASTIC }})</a>
       {% else %}
-      <a href="/status" class="btn btn-secondary btn-sm">Status page</a>
+      <a href="/status" class="btn btn-secondary btn-sm">Page État</a>
       {% endif %}
     </div>
     <div class="tool">
-      <div class="t">&#128246; MeshCore web client</div>
+      <div class="t">&#128246; Client web MeshCore</div>
       <div class="d">
-        The other LoRa mesh network. Configure and message MeshCore companion radios from the browser over
-        USB or Bluetooth (both need the HTTPS address; see Status &rarr; TLS).
-        {% if core_apk %}Phones can install the <a href="/apps" style="color:var(--accent2);">MeshCore Android app</a> from the depot.{% endif %}
-        {% if not core_installed %}<br><span style="color:var(--warning);">Not downloaded yet</span> &mdash; run
-        <code>bash download/comms.sh</code> on the Pi.{% elif not core_running %}<br><span style="color:var(--warning);">Installed but not running</span> &mdash; restart it from the Status page.{% endif %}
+        L'autre réseau maillé LoRa. Configurez les radios compagnons MeshCore et envoyez des messages depuis le navigateur par
+        USB ou Bluetooth (les deux exigent l'adresse HTTPS ; voir État &rarr; TLS).
+        {% if core_apk %}Les téléphones peuvent installer l'<a href="/apps" style="color:var(--accent2);">application Android MeshCore</a> depuis le dépôt.{% endif %}
+        {% if not core_installed %}<br><span style="color:var(--warning);">Pas encore téléchargé</span> &mdash; exécutez
+        <code>bash download/comms.sh</code> sur le Pi.{% elif not core_running %}<br><span style="color:var(--warning);">Installé mais arrêté</span> &mdash; redémarrez-le depuis la page État.{% endif %}
       </div>
       {% if core_installed and core_running %}
-      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_MESHCORE }}/" target="_blank" class="btn btn-primary btn-sm">Open (port {{ PORT_MESHCORE }})</a>
+      <a href="http://{{ request.host.split(':')[0] }}:{{ PORT_MESHCORE }}/" target="_blank" class="btn btn-primary btn-sm">Ouvrir (port {{ PORT_MESHCORE }})</a>
       {% else %}
-      <a href="/status" class="btn btn-secondary btn-sm">Status page</a>
+      <a href="/status" class="btn btn-secondary btn-sm">Page État</a>
       {% endif %}
     </div>
     <div class="tool">
-      <div class="t">&#128250; Repeater directory</div>
-      <div class="d">Your own imported repeater lists (CHIRP or RepeaterBook CSV exports), searchable offline by city, callsign or band.
-        {% if repeater_count %}<br><strong style="color:var(--text);">{{ repeater_count }}</strong> repeaters from {{ repeater_files|length }} file(s).{% else %}<br>No lists imported yet.{% endif %}</div>
-      <a href="/comms/repeaters" class="btn btn-primary btn-sm">Open</a>
+      <div class="t">&#128250; Annuaire de relais</div>
+      <div class="d">Vos propres listes de relais importées (exports CSV CHIRP ou RepeaterBook), consultables hors ligne par ville, indicatif ou bande.
+        {% if repeater_count %}<br><strong style="color:var(--text);">{{ repeater_count }}</strong> relais issus de {{ repeater_files|length }} fichier(s).{% else %}<br>Aucune liste importée pour l'instant.{% endif %}</div>
+      <a href="/comms/repeaters" class="btn btn-primary btn-sm">Ouvrir</a>
     </div>
     <div class="tool">
-      <div class="t">&#128218; Reading</div>
-      <div class="d">Ham radio Stack Exchange, licence study guides, antenna building and emergency net procedures are in the library.</div>
-      <a href="/search?q=radio" class="btn btn-secondary btn-sm">Search the library</a>
+      <div class="t">&#128218; Lectures</div>
+      <div class="d">Stack Exchange Ham Radio, guides de préparation à l'examen radioamateur, construction d'antennes et procédures de réseaux d'urgence figurent dans la bibliothèque.</div>
+      <a href="/search?q=radio" class="btn btn-secondary btn-sm">Chercher dans la bibliothèque</a>
     </div>
   </div>
 
   <div class="card" style="margin-top:20px;">
-    <div class="card-title">Emergency and calling frequencies (North America)</div>
+    <div class="card-title">Fréquences d'urgence et d'appel (France / Europe)</div>
     <table class="freq">
-      <thead><tr><th>Service</th><th>Frequency</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Service</th><th>Fréquence</th><th>Remarques</th></tr></thead>
       <tbody>
-        <tr><td>Ham 2 m calling</td><td class="f">146.520 MHz FM</td><td>National simplex calling frequency. Licence required to transmit; anyone may listen.</td></tr>
-        <tr><td>Ham 70 cm calling</td><td class="f">446.000 MHz FM</td><td>National simplex calling frequency.</td></tr>
-        <tr><td>Ham 6 m / 1.25 m calling</td><td class="f">52.525 / 223.500 MHz</td><td>Less crowded simplex calling frequencies.</td></tr>
-        <tr><td>FRS / GMRS ch 1&ndash;7</td><td class="f">462.5625&ndash;462.7125 MHz</td><td>Ch 1 462.5625, 2 .5875, 3 .6125, 4 .6375, 5 .6625, 6 .6875, 7 .7125. Shared, 2 W FRS / 5 W GMRS.</td></tr>
-        <tr><td>FRS ch 8&ndash;14</td><td class="f">467.5625&ndash;467.7125 MHz</td><td>0.5 W only. Ch 8 467.5625 then +0.025 per channel.</td></tr>
-        <tr><td>FRS / GMRS ch 15&ndash;22</td><td class="f">462.550&ndash;462.725 MHz</td><td>Ch 15 462.550, 16 .575, 17 .600, 18 .625, 19 .650, 20 .675, 21 .700, 22 .725. GMRS repeater outputs; inputs +5 MHz.</td></tr>
-        <tr><td>GMRS emergency convention</td><td class="f">Ch 20 (462.675) PL 141.3</td><td>Widely monitored travel/emergency channel.</td></tr>
-        <tr><td>MURS</td><td class="f">151.820 / 151.880 / 151.940 / 154.570 / 154.600 MHz</td><td>Licence-free VHF, 2 W.</td></tr>
-        <tr><td>CB</td><td class="f">Ch 9 27.065 / Ch 19 27.185 MHz</td><td>Ch 9 emergency, Ch 19 highway. AM, no licence.</td></tr>
-        <tr><td>Marine VHF</td><td class="f">Ch 16 156.800 MHz</td><td>International distress, safety and calling. Ch 9 156.450 secondary calling.</td></tr>
-        <tr><td>NOAA weather radio</td><td class="f">162.400 .425 .450 .475 .500 .525 .550 MHz</td><td>Continuous forecasts and alerts; receive-only.</td></tr>
-        <tr><td>Aviation emergency</td><td class="f">121.500 MHz AM</td><td>International aeronautical distress; 243.000 MHz military.</td></tr>
-        <tr><td>Meshtastic (US)</td><td class="f">906&ndash;928 MHz LoRa</td><td>Default LongFast preset, channel slot 20 (906.875 MHz). Licence-free.</td></tr>
-        <tr><td>MeshCore (US)</td><td class="f">910.525 MHz LoRa</td><td>Default US/CA preset (SF10, 62.5 kHz, CR8). Licence-free. Separate network from Meshtastic.</td></tr>
-        <tr><td>Ham HF emergency nets</td><td class="f">3.985 / 7.265 / 14.300 MHz</td><td>Regional and maritime mobile nets; check the ARRL net directory in the library.</td></tr>
+        <tr><td>Radioamateur &mdash; urgence HF</td><td class="f">3,760 / 7,110 / 14,300 / 18,160 / 21,360 MHz</td><td>Centres d'activité d'urgence communs de la région 1 de l'IARU (Europe, Afrique, Moyen-Orient) ; l'activité peut se trouver à &plusmn;20 kHz. Licence requise pour émettre, écoute libre.</td></tr>
+        <tr><td>Radioamateur &mdash; urgence VHF/UHF (France)</td><td class="f">145,450 / 145,4625 / 145,475 MHz FM<br>432,525 / 432,5375 / 432,550 MHz FM</td><td>Fréquences d'urgence déclarées par la France à l'IARU. Il n'existe aucune fréquence d'urgence VHF/UHF commune à toute la région 1.</td></tr>
+        <tr><td>Radioamateur &mdash; appel FM (pays voisins)</td><td class="f">145,500 / 433,500 MHz FM</td><td>Fréquences d'appel/urgence déclarées par la Belgique, la Suisse, l'Allemagne et d'autres pays ; utiles près des frontières.</td></tr>
+        <tr><td>Radioamateur &mdash; APRS</td><td class="f">144,800 MHz</td><td>Fréquence APRS (positions et messages courts) déclarée par la France.</td></tr>
+        <tr><td>PMR446</td><td class="f">446,00625&ndash;446,19375 MHz</td><td>16 canaux de 12,5 kHz, 0,5 W maximum, sans licence. Sur certains appareils grand public, les canaux 9 à 16 doivent être activés.</td></tr>
+        <tr><td>CB (bande des 27 MHz)</td><td class="f">26,960&ndash;27,410 MHz</td><td>40 canaux, 4 W crête maximum, sans licence ni déclaration d'après la réglementation citée par le gouvernement en 2007 ; vérifiez les règles en vigueur.</td></tr>
+        <tr><td>VHF marine</td><td class="f">Canal 16 &mdash; 156,800 MHz</td><td>Détresse, sécurité et appel internationaux.</td></tr>
+        <tr><td>Détresse aéronautique</td><td class="f">121,500 MHz AM</td><td>Fréquence de détresse aéronautique internationale ; 243,000 MHz pour l'usage militaire.</td></tr>
+        <tr><td>Meshtastic (UE)</td><td class="f">869,4&ndash;869,65 MHz LoRa</td><td>Préréglage LongFast par défaut, canal unique centré sur 869,525 MHz. Puissance maximale +27 dBm (PAR), rapport cyclique de 10 %.</td></tr>
+        <tr><td>MeshCore (UE / Royaume-Uni)</td><td class="f">869,618 MHz LoRa</td><td>Préréglage EU/UK Narrow (SF8, 62,5 kHz, CR8). Réseau distinct de Meshtastic.</td></tr>
+        <tr><td>Radio FM (écoute)</td><td class="f">87,5&ndash;108 MHz</td><td>Pour écouter les informations locales sur n'importe quel récepteur FM, y compris une autoradio.</td></tr>
       </tbody>
     </table>
     <div class="muted" style="margin-top:8px;">
-      In a genuine emergency, any station may use any means available to attract attention and get help
-      (FCC 97.403 / 97.405). Learn the frequencies before you need them.
+      En cas de détresse réelle, tous les moyens disponibles peuvent être utilisés pour attirer l'attention et obtenir de l'aide.
+      Émettre sur les bandes radioamateur exige un certificat d'opérateur et un indicatif ; l'écoute est libre.
+      Apprenez les fréquences avant d'en avoir besoin.
     </div>
   </div>
 </div>

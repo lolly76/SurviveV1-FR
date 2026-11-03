@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Offline Apps{% endblock %}
+{% block title %}Applications hors ligne{% endblock %}
 
 {% block content %}
 <div class="container">
 
-  <div class="page-title">&#128241; Offline App Depot</div>
+  <div class="page-title">&#128241; Dépôt d'applications hors ligne</div>
   <div class="page-sub">
-    Install these directly to your phone or laptop while connected to the
-    SurviveV1 Wi-Fi &mdash; no internet needed.
+    Installez-les directement sur votre téléphone ou votre ordinateur portable une fois connecté au
+    Wi-Fi SurviveV1 &mdash; aucun accès Internet nécessaire.
   </div>
 
   {% if not have_any %}
   <div class="card" style="margin-top:20px;">
-    <div class="card-title">No apps downloaded yet</div>
+    <div class="card-title">Aucune application téléchargée pour l'instant</div>
     <p style="font-size:13px;color:var(--text-dim);">
-      Run this on the Pi to populate the depot:
+      Exécutez ceci sur le Pi pour remplir le dépôt :
       <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">bash download/app_depot.sh --storage /mnt/survive</code>
     </p>
   </div>
@@ -24,20 +24,20 @@
   <div class="card" style="margin-top:20px;">
     <div class="card-title">&#129302; Android</div>
     <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
-      Tap to download, then open the file to install. If Android blocks it,
-      allow &ldquo;Install unknown apps&rdquo; for your browser and retry.
-      Install <strong>Kiwix</strong> to read the offline library at
-      <code>http://10.42.0.1:8081</code>; install <strong>F-Droid</strong>
-      as an open app store for maps and more. <strong>MeshCore</strong>, when
-      present, is the LoRa mesh messenger for MeshCore companion radios.
+      Touchez pour télécharger, puis ouvrez le fichier pour l'installer. Si Android le bloque,
+      autorisez &laquo;&nbsp;Installer des applications inconnues&nbsp;&raquo; pour votre navigateur et réessayez.
+      Installez <strong>Kiwix</strong> pour lire la bibliothèque hors ligne à l'adresse
+      <code>http://10.42.0.1:8081</code> ; installez <strong>F-Droid</strong>
+      comme boutique d'applications libres pour les cartes et bien plus. <strong>MeshCore</strong>, s'il est
+      présent, est la messagerie maillée LoRa pour les radios compagnons MeshCore.
     </p>
     {% for app in groups.android %}
     <div class="content-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;">{{ app.name }}</div>
-        <div style="font-size:12px;color:var(--text-dim);">{{ app.size_mb }} MB</div>
+        <div style="font-size:12px;color:var(--text-dim);">{{ app.size_mb }} Mo</div>
       </div>
-      <a href="/serve/{{ app.path }}" class="btn btn-primary btn-sm" download>Download</a>
+      <a href="/serve/{{ app.path }}" class="btn btn-primary btn-sm" download>Télécharger</a>
     </div>
     {% endfor %}
   </div>
@@ -47,16 +47,16 @@
   <div class="card" style="margin-top:20px;">
     <div class="card-title">&#128421; Windows</div>
     <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
-      Kiwix Desktop (unzip and run) reads the same offline library; VLC plays
-      the downloaded videos.
+      Kiwix Desktop (à décompresser puis lancer) lit la même bibliothèque hors ligne ; VLC lit
+      les vidéos téléchargées.
     </p>
     {% for app in groups.windows %}
     <div class="content-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;">{{ app.name }}</div>
-        <div style="font-size:12px;color:var(--text-dim);">{{ app.size_mb }} MB</div>
+        <div style="font-size:12px;color:var(--text-dim);">{{ app.size_mb }} Mo</div>
       </div>
-      <a href="/serve/{{ app.path }}" class="btn btn-primary btn-sm" download>Download</a>
+      <a href="/serve/{{ app.path }}" class="btn btn-primary btn-sm" download>Télécharger</a>
     </div>
     {% endfor %}
   </div>
