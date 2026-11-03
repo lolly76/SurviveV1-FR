@@ -28,6 +28,10 @@ CONTENT_EXPANSION="Y"
 # Extras EN (~3 Go), sans équivalent français : collections Kiwix catastrophes/
 # secours/eau/alimentation/nœuds, Appropedia, Energypedia
 CONTENT_EXPANSION_EN="N"
+# Pack « English » des contenus experts (médecine avancée, obstétrique, dentaire,
+# assainissement, élevage, semences, forge, apiculture, sécurité…) : ressources
+# sans équivalent français vérifié, conservées en anglais. N pour les ignorer.
+CONTENT_GAPS_EN="Y"
 # Offline app installers (~1 GB): Kiwix Android/Desktop, F-Droid, VLC, so
 # guests joining the hotspot can install the reader apps with no internet.
 CONTENT_APPS="Y"

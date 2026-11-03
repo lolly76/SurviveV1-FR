@@ -105,6 +105,7 @@ print_budget() {
     [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]          && printf "%-40s %10s\n" "Vidéos de survie" "~150 Go"
     [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "Cartes OpenStreetMap" "~70 Go"
     [[ "${CONTENT_PDFS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "PDF + manuels" "~20 Go"
+    [[ "${CONTENT_GAPS_EN:-Y}" =~ [Yy] ]]         && printf "%-40s %10s\n" "Contenus experts (pack English)" "~15 Go"
     [[ "${CONTENT_AI_MODELS:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Modèles d'IA (Ollama)" "~50 Go"
     [[ "${CONTENT_NPS_MAPS:-Y}" =~ [Yy] ]]        && printf "%-40s %10s\n" "Cartes des parcs nationaux + satellite" "~3 Go"
     [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]]      && printf "%-40s %10s\n" "Outils de transmission (Meshtastic web)" "<1 Go"
