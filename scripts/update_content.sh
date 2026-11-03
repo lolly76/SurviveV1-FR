@@ -132,8 +132,8 @@ main() {
             || warn "comms finished with errors"
     fi
 
-    # Refresh the openFDA drug reference (skips already-downloaded partitions)
-    if [[ "${CONTENT_DRUGS:-Y}" =~ [Yy] ]]; then
+    # Refresh the BDPM drug reference (fichiers rafraîchis ; notices déjà récupérées conservées)
+    if [[ "${CONTENT_DRUGS:-Y}" =~ [YyOo] ]]; then
         info "Refreshing drug reference..."
         bash "$REPO_DIR/download/drug_reference.sh" --storage "$STORAGE_PATH" \
             || warn "drug_reference finished with errors"

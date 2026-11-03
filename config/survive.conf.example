@@ -35,9 +35,14 @@ CONTENT_GAPS_EN="Y"
 # Offline app installers (~1 GB): Kiwix Android/Desktop, F-Droid, VLC, so
 # guests joining the hotspot can install the reader apps with no internet.
 CONTENT_APPS="Y"
-# Offline drug reference (~1.8 GB): openFDA drug labels, searchable by drug
-# name or symptom, with a label-text interaction check.
+# Référence des médicaments hors ligne (quelques centaines de Mo) : Base de
+# données publique des médicaments (BDPM), recherche par nom, substance ou
+# symptôme, avec une recherche d'interactions dans le texte des notices.
 CONTENT_DRUGS="Y"
+# Récupération lente et reprenable des notices officielles (indications,
+# posologie, contre-indications...). N = noms, compositions et conditions de
+# prescription seulement. SURVIVE_DRUGS_NOTICE_MAX limite les pages par passage.
+CONTENT_DRUG_NOTICES="Y"
 # Meshtastic web client (~10 MB) served on :8084 for LoRa mesh radios.
 CONTENT_MESHTASTIC="Y"
 # MeshCore web client (~50 MB) on :8085 plus its Android/Windows apps (~130 MB)

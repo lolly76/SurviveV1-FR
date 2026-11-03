@@ -1,25 +1,37 @@
 #!/usr/bin/env bash
 # =============================================================================
-# SurviveV1 — Offline drug reference (openFDA drug labels)
+# SurviveV1-FR — Référence des médicaments hors ligne (BDPM)
 #
-# Downloads the openFDA drug-label dataset (~1.8 GB across ~14 zip partitions,
-# US-government public domain) into $STORAGE/drugs/raw/, then builds a
-# searchable SQLite index so the dashboard answers "what is this pill", "what
-# treats this symptom", and "do these interact" with no internet.
+# Source : Base de données publique des médicaments (ANSM, HAS, UNCAM) —
+# https://base-donnees-publique.medicaments.gouv.fr — licence ouverte :
+# ne pas altérer les données, citer la source et la date de mise à jour.
 #
-#   bash download/drug_reference.sh --storage /mnt/survive
+#   1. Télécharge les fichiers BDPM (spécialités, compositions, conditions de
+#      prescription) dans $STORAGE/drugs/raw/ (quelques Mo).
+#   2. Récupère LENTEMENT et de façon reprenable les notices/RCP officielles de
+#      chaque spécialité (indications, posologie, contre-indications, mises en
+#      garde, interactions) dans $STORAGE/drugs/notices/. Désactivable avec
+#      CONTENT_DRUG_NOTICES="N" ; limitez avec SURVIVE_DRUGS_NOTICE_MAX=500.
+#   3. Construit l'index de recherche SQLite lu par la page /drugs.
+#
+#   bash download/drug_reference.sh --storage /mnt/survive [--index-only]
+#
+# Relancer le script reprend là où il s'est arrêté (les notices déjà
+# récupérées ne sont pas redemandées ; les fichiers BDPM sont rafraîchis).
 # =============================================================================
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _CONF="$REPO_DIR/config/survive.conf"
 [[ -f "$_CONF" ]] || _CONF="${_CONF}.example"
-if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config not found at $_CONF -- using defaults" >&2; else source "$_CONF"; fi
+if [[ ! -f "$_CONF" ]]; then echo "[WARN] Config introuvable : $_CONF -- valeurs par défaut" >&2; else source "$_CONF"; fi
 
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
+INDEX_ONLY=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --storage) STORAGE_PATH="$2"; shift 2 ;;
+        --index-only) INDEX_ONLY=true; shift ;;
         *) shift ;;
     esac
 done
@@ -29,69 +41,64 @@ LOG_DIR="$STORAGE_PATH/.logs"
 mkdir -p "$RAW_DIR" "$LOG_DIR"
 
 BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
-info()    { echo -e "${BLUE}[DRUGS]${NC} $*"; }
-success() { echo -e "${GREEN}[DRUGS]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[DRUGS]${NC} $*"; }
+info()    { echo -e "${BLUE}[MÉDICAMENTS]${NC} $*"; }
+success() { echo -e "${GREEN}[MÉDICAMENTS]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[MÉDICAMENTS]${NC} $*"; }
 
 FAILED_LOG="$LOG_DIR/failed_downloads.log"
-SPACE_MARGIN_MB="${SURVIVE_SPACE_MARGIN_MB:-10240}"
+BDPM_BASE="https://base-donnees-publique.medicaments.gouv.fr/download/file"
+BDPM_FILES=(CIS_bdpm.txt CIS_COMPO_bdpm.txt CIS_CPD_bdpm.txt)
 
-_space_ok() {  # _space_ok <need-bytes>
-    local need="$1" avail_kb
-    avail_kb=$(df --output=avail -k "$STORAGE_PATH" 2>/dev/null | tail -1 | tr -dc '0-9')
-    [[ -z "$avail_kb" ]] && return 0
-    (( avail_kb * 1024 - need > SPACE_MARGIN_MB * 1024 * 1024 ))
-}
+# Un fichier BDPM valide est un TSV : au moins une tabulation sur sa première ligne.
+_is_tsv() { head -n 1 "$1" 2>/dev/null | grep -q $'\t'; }
 
-_is_zip() { [[ "$(head -c 2 "$1" 2>/dev/null)" == "PK" ]]; }
+if [[ "$INDEX_ONLY" != true ]]; then
+    info "Téléchargement des fichiers BDPM (Base de données publique des médicaments)..."
+    for f in "${BDPM_FILES[@]}"; do
+        dest="$RAW_DIR/$f"
+        tmp="$dest.part"
+        if curl -fsSL --retry 3 --max-time 300 -A "SurviveV1-FR (base hors ligne personnelle)" \
+                -D "$tmp.hdr" "$BDPM_BASE/$f" -o "$tmp" && _is_tsv "$tmp"; then
+            mv "$tmp" "$dest"
+            # Date de mise à jour (en-tête Last-Modified si fourni, sinon date du jour).
+            if [[ "$f" == "CIS_bdpm.txt" ]]; then
+                lm=$(grep -i '^last-modified:' "$tmp.hdr" | head -n1 | cut -d' ' -f2- | tr -d '\r' || true)
+                if [[ -n "$lm" ]] && d=$(date -d "$lm" '+%d/%m/%Y' 2>/dev/null); then
+                    echo "$d" > "$RAW_DIR/BDPM_DATE"
+                else
+                    date '+%d/%m/%Y' > "$RAW_DIR/BDPM_DATE"
+                fi
+            fi
+            success "$f"
+        else
+            warn "[$f] téléchargement impossible — l'ancienne version (si présente) est conservée"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [bdpm $f] $BDPM_BASE/$f" >> "$FAILED_LOG"
+        fi
+        rm -f "$tmp" "$tmp.hdr"
+    done
 
-info "Fetching the openFDA drug-label file list..."
-MANIFEST=$(curl -sSL --max-time 60 "https://api.fda.gov/download.json") \
-    || { warn "Could not reach api.fda.gov"; exit 1; }
-
-# Extract the partition URLs (drug/label section).
-mapfile -t URLS < <(python3 -c "
-import json,sys
-d=json.loads(sys.argv[1])
-for p in d['results']['drug']['label']['partitions']:
-    print(p['file'])
-" "$MANIFEST" 2>/dev/null)
-
-if [[ ${#URLS[@]} -eq 0 ]]; then
-    warn "No partitions found in the openFDA manifest — aborting"
-    exit 1
-fi
-info "openFDA lists ${#URLS[@]} partitions (~1.8 GB total)."
-
-for url in "${URLS[@]}"; do
-    fname=$(basename "$url")
-    dest="$RAW_DIR/$fname"
-    if [[ -f "$dest" ]] && _is_zip "$dest"; then
-        info "[$fname] already downloaded"
-        continue
+    if [[ ! -f "$RAW_DIR/CIS_bdpm.txt" ]]; then
+        warn "Fichier des spécialités absent — abandon (pas de connexion ?)"
+        exit 1
     fi
-    # Each partition is ~130 MB; require headroom before fetching.
-    if ! _space_ok $((200 * 1024 * 1024)); then
-        warn "[$fname] low disk space — skipping remaining partitions"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [drug $fname] insufficient space" >> "$FAILED_LOG"
-        break
-    fi
-    info "Downloading $fname ..."
-    if curl -fsSL --retry 3 --max-time 600 "$url" -o "$dest" && _is_zip "$dest"; then
-        success "$fname"
+
+    if [[ "${CONTENT_DRUG_NOTICES:-Y}" =~ ^[YyOo] ]]; then
+        if command -v python3 &>/dev/null; then
+            info "Récupération lente des notices officielles (reprenable ; Ctrl-C sans risque)..."
+            nice -n 19 python3 "$REPO_DIR/scripts/fetch_drug_notices.py" --storage "$STORAGE_PATH" \
+                || warn "Récupération des notices interrompue — relancez le script pour reprendre"
+        fi
     else
-        rm -f "$dest"
-        warn "[$fname] download failed"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') FAILED [drug $fname] $url" >> "$FAILED_LOG"
+        info "Notices désactivées (CONTENT_DRUG_NOTICES=N) : index limité aux noms, compositions et conditions de prescription."
     fi
-done
+fi
 
-info "Building the searchable drug index (this takes a while on a Pi)..."
+info "Construction de l'index de recherche des médicaments..."
 if command -v python3 &>/dev/null; then
     nice -n 19 python3 "$REPO_DIR/scripts/build_drug_index.py" --storage "$STORAGE_PATH" \
-        || warn "Drug index build failed"
+        || warn "Échec de la construction de l'index"
 else
-    warn "python3 not found — cannot build the index"
+    warn "python3 introuvable — impossible de construire l'index"
 fi
 
-success "Drug reference ready. Browse it at the dashboard's /drugs page."
+success "Référence des médicaments prête : page /drugs du tableau de bord."

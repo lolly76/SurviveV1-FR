@@ -61,7 +61,7 @@ DOWNLOAD_CATEGORIES = [
     {"id": "gaps",          "name": "Contenus d'experts",  "budget_gb": 15,  "dir": "pdfs"},
     {"id": "mental_health", "name": "Santé mentale",       "budget_gb": 5,   "dir": "pdfs"},
     {"id": "apps",          "name": "Dépôt d'applications", "budget_gb": 2,   "dir": "apps"},
-    {"id": "drugs",         "name": "Référence médicaments", "budget_gb": 3,   "dir": "drugs"},
+    {"id": "drugs",         "name": "Référence médicaments", "budget_gb": 1,   "dir": "drugs"},
     {"id": "comms",         "name": "Outils de transmission", "budget_gb": 1,   "dir": "comms"},
 ]
 

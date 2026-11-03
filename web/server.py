@@ -17,6 +17,7 @@ import sqlite3
 import subprocess
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -530,10 +531,10 @@ def _retrieve_context(query: str) -> list:
             "text": chunk["snippet"],
         })
     # Medical questions are a top use case — add at most one drug-label hit so
-    # the AI can cite dosage/warnings from the offline FDA data.
+    # the AI can cite dosage/warnings from the offline BDPM data.
     drug_hits = _query_drug_index(query, mode="drug", limit=1) or []
     for d in drug_hits[:1]:
-        name = d.get("brand_name") or d.get("generic_name") or "drug"
+        name = d.get("brand_name") or d.get("generic_name") or "médicament"
         detail = _drug_by_id(d["id"]) or {}
         excerpt = " ".join(str(detail.get(f, "")) for f in
                            ("purpose", "indications", "dosage", "warnings"))[:1200]
@@ -692,14 +693,21 @@ def _run_doc_query(fts: str, limit: int):
 
 
 # ── Offline drug reference ────────────────────────────────────────────────────
-# Built offline by scripts/build_drug_index.py from openFDA labels. The server
+# Built offline by scripts/build_drug_index.py from the French BDPM (ANSM/HAS/UNCAM). The server
 # only reads it; every query follows the _query_doc_index contract (None if
 # absent, [] on bad input, never raises).
 DRUG_INDEX_DB = STORAGE_PATH / ".drug_index.db"
 _DRUG_COLUMNS = ("id", "brand_name", "generic_name", "active_ingredient",
                  "purpose", "indications", "warnings", "dosage",
                  "contraindications", "interactions", "otc_or_rx",
-                 "effective_time")
+                 "effective_time", "cis", "titulaire", "conditions",
+                 "source_date", "notice_origin")
+
+
+def _fold(text: str) -> str:
+    """Minuscules sans accents, pour comparer « paracétamol » et « paracetamol »."""
+    decomposed = unicodedata.normalize("NFD", str(text).lower())
+    return "".join(c for c in decomposed if unicodedata.category(c) != "Mn")
 
 
 def _drug_connect():
@@ -733,6 +741,20 @@ def _query_drug_index(query: str, mode: str = "drug", limit: int = 30):
     finally:
         conn.close()
     return [dict(r) for r in rows]
+
+
+def _drug_source_date() -> str:
+    """Date de mise à jour des données BDPM (exigée par la licence), ou ''."""
+    if not DRUG_INDEX_DB.exists():
+        return ""
+    conn = _drug_connect()
+    try:
+        row = conn.execute("SELECT source_date FROM drugs WHERE source_date != '' LIMIT 1").fetchone()
+    except sqlite3.OperationalError:
+        return ""
+    finally:
+        conn.close()
+    return row[0] if row else ""
 
 
 def _drug_by_id(drug_id: int):
@@ -1049,8 +1071,9 @@ def drugs_page():
     results = _query_drug_index(query, mode=mode) if query else []
     return render_template(
         "drugs.html", query=query, mode=mode, results=results,
-        index_missing=(results is None),
+        index_missing=(results is None or not DRUG_INDEX_DB.exists()),
         results_list=(results or []),
+        source_date=_drug_source_date(),
     )
 
 
@@ -1067,8 +1090,8 @@ def drug_detail(drug_id):
 @app.route("/api/drugs/interactions")
 def api_drug_interactions():
     """Honest label-text interaction check: search drug A's interaction/warning
-    text for drug B's name and vice versa. This is a TEXT MATCH against FDA
-    labels, NOT a clinical interaction database — the UI says so plainly."""
+    text for drug B's name and vice versa. This is a TEXT MATCH against the
+    official notices, NOT a clinical interaction database — the UI says so plainly."""
     if not _drug_disclaimer_ok():
         return jsonify({"error": "Acceptez d'abord l'avertissement"}), 403
     try:
@@ -1082,20 +1105,23 @@ def api_drug_interactions():
     if drug_a is None:
         return jsonify({"error": "Médicament introuvable"}), 404
 
-    b_lower = b_name.lower()
-    haystack = " ".join(str(drug_a.get(f, "")) for f in
-                        ("interactions", "warnings", "contraindications")).lower()
+    b_lower = _fold(b_name)
+    haystack = _fold(" ".join(str(drug_a.get(f, "")) for f in
+                              ("interactions", "warnings", "contraindications")))
     a_mentions_b = b_lower in haystack
-    # And the reverse: does any label for drug B mention drug A's generic?
+    # And the reverse: does any label for drug B mention drug A's active substance(s)?
     b_mentions_a = False
-    a_generic = (drug_a.get("generic_name") or "").lower()
-    if a_generic:
+    a_substances = [s.strip() for s in _fold(drug_a.get("generic_name") or "").split("+")
+                    if len(s.strip()) >= 4]
+    if a_substances:
         b_hits = _query_drug_index(b_name, mode="drug", limit=5) or []
         for hit in b_hits:
             rec = _drug_by_id(hit["id"])
-            if rec and a_generic in " ".join(
-                    str(rec.get(f, "")) for f in
-                    ("interactions", "warnings", "contraindications")).lower():
+            if not rec:
+                continue
+            text = _fold(" ".join(str(rec.get(f, "")) for f in
+                                  ("interactions", "warnings", "contraindications")))
+            if any(sub in text for sub in a_substances):
                 b_mentions_a = True
                 break
     return jsonify({
@@ -1103,7 +1129,7 @@ def api_drug_interactions():
         "b": b_name,
         "a_label_mentions_b": a_mentions_b,
         "b_label_mentions_a": b_mentions_a,
-        "note": "Simple recherche dans le texte des notices — ce n'est pas un outil clinique de vérification des interactions. "
+        "note": "Simple recherche dans le texte des notices officielles — ce n'est pas un outil clinique de vérification des interactions. "
                 "Consultez un pharmacien ou un médecin.",
     })
 

@@ -6,16 +6,18 @@
   <a href="/drugs" style="font-size:13px;color:var(--text-dim);">&larr; Retour à la recherche</a>
   <div class="page-title" style="margin-top:8px;">{{ drug.brand_name or drug.generic_name }}</div>
   <div class="page-sub">
-    {% if drug.generic_name %}Générique : {{ drug.generic_name }} · {% endif %}
+    {% if drug.generic_name %}Substance(s) active(s) : {{ drug.generic_name }} · {% endif %}
     {{ drug.otc_or_rx or '' }}
   </div>
 
   {% set sections = [
-    ('Objectif', drug.purpose),
+    ('Forme et voie d\'administration', drug.purpose),
+    ('Titulaire de l\'AMM', drug.titulaire),
+    ('Conditions de prescription et de délivrance', drug.conditions),
     ('Substance active', drug.active_ingredient),
-    ('Usages / indications', drug.indications),
+    ('Indications thérapeutiques', drug.indications),
     ('Posologie et administration', drug.dosage),
-    ('Mises en garde', drug.warnings),
+    ('Mises en garde et précautions d\'emploi', drug.warnings),
     ('Contre-indications', drug.contraindications),
     ('Interactions médicamenteuses', drug.interactions),
   ] %}
@@ -33,7 +35,7 @@
     <div class="card-title">Vérifier l'interaction avec un autre médicament</div>
     <p style="font-size:12px;color:var(--text-dim);">
       Recherche le nom d'un autre médicament dans le texte d'interactions/mises en garde
-      de cette notice, et inversement. Il s'agit d'une <strong>recherche de texte dans les notices de la FDA, et non
+      de cette notice, et inversement. Il s'agit d'une <strong>recherche de texte dans les notices officielles, et non
       d'un vérificateur clinique d'interactions</strong>.
     </p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -45,8 +47,20 @@
     <div id="interactionResult" style="margin-top:10px;font-size:13px;"></div>
   </div>
 
+  {% if not (drug.indications or drug.dosage or drug.warnings or drug.contraindications or drug.interactions) %}
+  <div class="card" style="margin-top:16px;">
+    <p style="font-size:13px;color:var(--text-dim);">
+      Le texte de la notice n'a pas (encore) été récupéré pour cette spécialité. Relancez
+      <code>bash download/drug_reference.sh</code> pour poursuivre la récupération, puis consultez la notice
+      officielle sur le site de la base.
+    </p>
+  </div>
+  {% endif %}
   <p style="margin-top:20px;font-size:12px;color:var(--text-dim);">
-    Source : notice de médicament de la FDA (openFDA). Informations seulement — ne constitue pas un avis médical.
+    Source : <a href="http://base-donnees-publique.medicaments.gouv.fr" target="_blank" rel="noopener">Base de données publique des médicaments</a>
+    (ANSM, HAS, UNCAM), licence ouverte{% if drug.source_date %} — données mises à jour le {{ drug.source_date }}{% endif %}.
+    {% if drug.cis %}<a href="https://base-donnees-publique.medicaments.gouv.fr/medicament/{{ drug.cis }}/extrait" target="_blank" rel="noopener">Fiche officielle (CIS {{ drug.cis }})</a>.{% endif %}
+    Informations seulement — ne constitue pas un avis médical. Cette réutilisation n'est ni officielle ni cautionnée par l'ANSM, la HAS ou l'UNCAM.
   </p>
 </div>
 {% endblock %}

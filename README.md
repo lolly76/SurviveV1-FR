@@ -12,6 +12,7 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 |-----------|---------|
 | **Référence** | Wikipédia FR complète, Wikilivres, Wikivoyage, Wikisource et Wiktionnaire en français, Vikidia, Wikiversité FR |
 | **Médical** | Sous-ensemble « Médecine » de Wikipédia FR, *Là où il n'y a pas de docteur* (Hesperian, chapitres en français), vidéos de formation aux premiers secours de la Croix-Rouge française |
+| **Référence des médicaments** | Base de données publique des médicaments (ANSM, HAS, UNCAM, licence ouverte) : noms, substances, conditions de prescription, plus indications / posologie / contre-indications / mises en garde / interactions tirées des RCP officiels (récupération lente et reprenable) ; page `/drugs` avec date de mise à jour et source affichées |
 | **Savoir-faire** | Guides de réparation iFixit (FR), Ekopédia, Cuisine Libre, French Language Stack Exchange ; pack « English » : médecine avancée, obstétrique, dentaire, élevage, semences, forge, etc. |
 | **Éducation** | Khan Academy en français (Kolibri et ZIM Kiwix), Projet Gutenberg (livres en français), simulations PhET FR |
 | **Vidéos de survie** | Chaînes YouTube francophones (bushcraft, potager, permaculture, énergie, bricolage, radio) téléchargées avec yt-dlp ; liste extensible dans `config/videos_extra.list` |
@@ -23,7 +24,7 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 | **Notes et fichiers partagés** | Carnet Markdown partagé et dépôt pour vos propres documents, tous deux stockés sur le disque |
 | **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence en France |
 
-> **Avancement de la francisation des sources.** Fait : ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF, premiers secours psychologiques (OMS et Croix-Rouge, en français). Les contenus « experts » (médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité…) n'ont pas d'équivalent français vérifié : ils sont conservés en anglais dans un **pack « English »** identifié (`CONTENT_GAPS_EN`, activé par défaut) ; vos documents français s'ajoutent via `config/gaps_extra.list`. À venir : référence des médicaments (encore basée sur les notices américaines de la FDA, en anglais), dépôt d'applications. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN` dans `config/survive.conf`).
+> **Avancement de la francisation des sources.** Fait : ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF, premiers secours psychologiques (OMS et Croix-Rouge, en français). Les contenus « experts » (médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité…) n'ont pas d'équivalent français vérifié : ils sont conservés en anglais dans un **pack « English »** identifié (`CONTENT_GAPS_EN`, activé par défaut) ; vos documents français s'ajoutent via `config/gaps_extra.list`. Référence des médicaments : désormais basée sur la BDPM française (`CONTENT_DRUG_NOTICES="N"` pour ne garder que les fichiers de base ; `SURVIVE_DRUGS_NOTICE_MAX` limite la récupération des notices à chaque passage). À venir : dépôt d'applications et traduction des scripts d'installation restants. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN` dans `config/survive.conf`).
 
 ---
 
@@ -197,6 +198,7 @@ Estimations pour les sources françaises (les ZIM Kiwix datés sont remplacés p
 | Vidéos de survie | ~150 Go |
 | OpenStreetMap France | ~5 Go (monde : ~70 Go) |
 | PDF + manuels, pack d'extension FR | ~25 Go |
+| Référence des médicaments (BDPM + notices) | ~1 Go |
 | Modèles LLM (IA) | ~50 Go |
 | Réserve | variable |
 
