@@ -223,17 +223,10 @@ install_kolibri() {
         return 0
     fi
 
-    # Try the vendor installer, then pip. Neither is guaranteed: Kolibri
-    # historically lags new Python releases, and this OS ships Python 3.13.
-    if wget -q "https://learningequality.org/r/kolibri-install-pi" -O /tmp/kolibri_install.sh \
-       && [[ -s /tmp/kolibri_install.sh ]]; then
-        bash /tmp/kolibri_install.sh || true
-    else
-        warn "Impossible de récupérer le script d'installation de Kolibri"
-    fi
-    if ! command -v kolibri &>/dev/null; then
-        /opt/survive/venv/bin/pip install -q kolibri || true
-    fi
+    # Installation par pip (le raccourci learningequality.org/r/kolibri-install-pi
+    # renvoie 404, vérifié le 2026-11-03). Kolibri suit les nouvelles versions de
+    # Python avec retard, et ce système fournit Python 3.13.
+    /opt/survive/venv/bin/pip install -q kolibri || true
 
     # Report the truth. This previously printed "Kolibri installed"
     # unconditionally, so a failed install looked like a success and the

@@ -33,19 +33,11 @@ check_hailo_device() {
 install_hailo_suite() {
     info "Installation de la suite logicielle Hailo (HailoRT)..."
 
-    # Add Hailo repository
-    curl -fsSL https://hailo.ai/hailo-apt-key.gpg | gpg --dearmor \
-        -o /usr/share/keyrings/hailo-archive-keyring.gpg
-
-    echo "deb [signed-by=/usr/share/keyrings/hailo-archive-keyring.gpg] \
-        https://hailo.ai/ubuntu jammy main" \
-        > /etc/apt/sources.list.d/hailo.list
-
+    # Les paquets Hailo pour le Pi sont dans le dépôt Raspberry Pi OS (pas de dépôt
+    # hailo.ai : https://hailo.ai/ubuntu et la clé GPG renvoient 404, vérifié le
+    # 2026-11-03). Hailo-8/8L : « hailo-all » ; Hailo-10H : voir scripts/setup_hailo10.sh.
     apt-get update -qq
-    apt-get install -y \
-        hailort \
-        hailort-dev \
-        python3-hailort
+    apt-get install -y hailo-all
 
     success "Environnement d'exécution Hailo installé"
 }
