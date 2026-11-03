@@ -90,7 +90,9 @@ _RCP_SECTIONS = {
     "interactions": re.compile(r"^4\s*\.\s*5\s*\.?\s*interactions?", re.I),
 }
 # Fin d'une rubrique RCP : la rubrique 4.x suivante ou la rubrique 5.
-_RCP_NEXT = re.compile(r"^(4\s*\.\s*[1-9]|5|6|7|8|9|10|11|12)\s*\.?\s+\S", re.I)
+# Le point est obligatoire après un numéro de rubrique principal : sans lui,
+# une ligne de corps comme « 5 mg/kg » ou « 10 comprimés » couperait la rubrique.
+_RCP_NEXT = re.compile(r"^(4\s*\.\s*[1-9]\s*\.?|(?:5|6|7|8|9|10|11|12)\s*\.)\s+\S", re.I)
 
 # Repli sur la notice destinée aux patients (rubriques 1, 2, 3).
 _NOTICE_SECTIONS = {
@@ -158,12 +160,12 @@ def default_storage() -> str:
 
 
 def read_bdpm(path: Path):
-    """Lit un fichier BDPM (TSV). Encodage : UTF-8 si valide, sinon ISO-8859-1."""
+    """Lit un fichier BDPM (TSV). Encodage : UTF-8 si valide, sinon Windows-1252 (encodage réel des fichiers BDPM, vérifié : octets 0x80-0x9F présents)."""
     data = path.read_bytes()
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
-        text = data.decode("latin-1")
+        text = data.decode("cp1252", errors="replace")
     for line in text.splitlines():
         if line.strip():
             yield line.split("\t")

@@ -122,8 +122,8 @@ def test_build_index(tmp_path):
     conn.close()
 
 
-def test_build_index_latin1(tmp_path):
-    _write_bdpm(tmp_path, encoding="latin-1")
+def test_build_index_cp1252(tmp_path):
+    _write_bdpm(tmp_path, encoding="cp1252")
     assert build_drug_index.build(str(tmp_path)) == 2
 
 
@@ -157,3 +157,15 @@ def test_detail_page_shows_attribution_and_date(server, tmp_path):
         assert inter["a_label_mentions_b"] is True
     finally:
         server.DRUG_INDEX_DB.unlink(missing_ok=True)
+
+
+def test_rcp_section_not_cut_by_numeric_body_line():
+    """Une ligne de corps commençant par un nombre ne doit pas fermer la rubrique."""
+    from fetch_drug_notices import parse_notice_html
+    html = ("<p>4.2. Posologie et mode d'administration </p>"
+            "<p>10 comprimés par jour au maximum.</p><p>5 mg/kg chez l'enfant.</p>"
+            "<p>4.3. Contre-indications </p><p>Allergie.</p>"
+            "<p>5. PROPRIETES PHARMACOLOGIQUES</p><p>Autre.</p>")
+    out = parse_notice_html(html)
+    assert "10 comprimés" in out["dosage"] and "5 mg/kg" in out["dosage"]
+    assert out["contraindications"] == "Allergie."

@@ -56,12 +56,12 @@ def default_storage() -> str:
 
 
 def read_bdpm(path: Path):
-    """Lignes d'un fichier BDPM (TSV). UTF-8 si valide, sinon ISO-8859-1."""
+    """Lignes d'un fichier BDPM (TSV). UTF-8 si valide, sinon Windows-1252 (encodage réel des fichiers BDPM, vérifié : octets 0x80-0x9F présents)."""
     data = path.read_bytes()
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
-        text = data.decode("latin-1")
+        text = data.decode("cp1252", errors="replace")
     for line in text.splitlines():
         if line.strip():
             yield line.split("\t")
