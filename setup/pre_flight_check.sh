@@ -84,7 +84,15 @@ echo ""
 echo "Stockage"
 STORAGE_PATH="${SURVIVE_STORAGE_PATH:-/mnt/survive}"
 
-if mountpoint -q "$STORAGE_PATH" 2>/dev/null; then
+if [[ "${SURVIVE_STORAGE_MODE:-dedie}" == "dossier" && -d "$STORAGE_PATH" ]]; then
+    AVAIL_GB=$(df -BG "$STORAGE_PATH" | tail -1 | awk '{print $4}' | tr -d 'G')
+    pass "Dossier de stockage : $STORAGE_PATH (sur le disque du système)"
+    if [[ "$AVAIL_GB" -ge 80 ]]; then
+        pass "Espace disponible : ${AVAIL_GB} Go (profil de contenu adapté à garder une marge)"
+    else
+        fail "Espace disponible : ${AVAIL_GB} Go — au moins 80 Go requis sur le disque du système"
+    fi
+elif mountpoint -q "$STORAGE_PATH" 2>/dev/null; then
     AVAIL_GB=$(df -BG "$STORAGE_PATH" | tail -1 | awk '{print $4}' | tr -d 'G')
     pass "Storage mounted at $STORAGE_PATH"
     if [[ "$AVAIL_GB" -ge 800 ]]; then

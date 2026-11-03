@@ -100,7 +100,7 @@ print_budget() {
     [[ "${CONTENT_STACKEXCHANGE:-Y}" =~ [Yy] ]]   && printf "%-40s %10s\n" "Stack Exchange (langue française)" "<1 Go"
     [[ "${CONTENT_STACKEXCHANGE_EN:-N}" =~ [Yy] ]] && printf "%-40s %10s\n" "Stack Exchange (EN, option)" "~40 Go"
     [[ "${CONTENT_GUTENBERG:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Projet Gutenberg (livres FR)" "~15 Go"
-    printf "%-40s %10s\n" "Khan Academy FR (ZIM Kiwix)" "~94 Go"
+    [[ "${CONTENT_KHAN_ZIM:-Y}" =~ [Yy] ]]        && printf "%-40s %10s\n" "Khan Academy FR (ZIM Kiwix)" "~94 Go"
     [[ "${CONTENT_KOLIBRI:-Y}" =~ [Yy] ]]         && printf "%-40s %10s\n" "Khan Academy (Kolibri)" "~200 Go"
     [[ "${CONTENT_VIDEOS:-Y}" =~ [Yy] ]]          && printf "%-40s %10s\n" "Vidéos de survie" "~150 Go"
     [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "Cartes OpenStreetMap (France par défaut)" "~5 Go"

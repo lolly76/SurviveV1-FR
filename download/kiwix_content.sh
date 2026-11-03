@@ -368,6 +368,10 @@ dl_gutenberg() {
 # ── Khan Academy (version Kiwix) ──────────────────────────────────────────────
 dl_khan() {
     [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "khan" ]] && return
+    if [[ -z "$ONLY_PACKAGE" ]] && [[ ! "${CONTENT_KHAN_ZIM:-Y}" =~ [YyOo] ]]; then
+        info "CONTENT_KHAN_ZIM=N — Khan Academy (ZIM) ignoré"
+        return
+    fi
 
     info "=== Khan Academy FR (version Kiwix) ==="
     # Remarque : la version Kolibri est préférée (download/kolibri_content.sh).

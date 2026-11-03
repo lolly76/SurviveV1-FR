@@ -106,6 +106,26 @@ l'utilisateur `sudo`. `SURVIVE_PLATFORM=pi|generic` force la détection Pi/PC.
 `bash download/download_all.sh --dry-run` simule les téléchargements. Tails n'est pas pris en charge
 (système amnésique dont le pare-feu bloque les connexions entrantes).
 
+### Stockage et profils de contenu
+
+L'assistant propose deux modes de stockage :
+
+1. **Disque dédié** (recommandé) : SSD USB ou second disque interne, monté sur `/mnt/survive`, formatage
+   proposé avec double confirmation. Le disque qui porte Debian n'est **jamais** listé.
+2. **Dossier sur le disque du système** (ex. `/srv/survive`) : aucun formatage, pour un portable à disque
+   unique. Refusé sous 80 Go libres, et le profil conseillé garde une marge de 20 Go ou 15 %.
+
+Le **profil de contenu** se choisit selon l'espace (valeurs approximatives) :
+
+| Profil | Taille | Contenu |
+|--------|--------|---------|
+| `leger` | ~60 Go | Wikipédia sans images, Wikilivres & co, cartes, PDF de survie, médicaments |
+| `moyen` | ~250 Go | + Wikipédia complète, livres, iFixit, Khan Academy (ZIM), sans vidéos ni Kolibri |
+| `complet` | ~800 Go | tout, y compris vidéos de survie et Kolibri |
+
+Changer de profil plus tard : `bash scripts/apply_profile.sh leger` puis
+`bash download/download_all.sh`. Les profils sont des fichiers lisibles dans `config/profiles/`.
+
 ## Arborescence
 
 ```

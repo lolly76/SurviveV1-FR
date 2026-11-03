@@ -67,8 +67,64 @@ BANNER
 CHOSEN_DEV=""
 CHOSEN_MOUNT="/mnt/survive"
 
+# Disques physiques qui portent le système (/) : jamais proposés au formatage.
+system_disks() {
+    local src
+    src=$(findmnt -n -o SOURCE / 2>/dev/null) || return 0
+    [[ -n "$src" ]] || return 0
+    lsblk -nsl -o NAME,TYPE "$src" 2>/dev/null | awk '$2=="disk" {print $1}'
+}
+
+# Mode « dossier sur le disque du système » : aucun formatage, pour un portable
+# à disque unique. Renvoie 0 si l'utilisateur a validé un dossier, 1 sinon.
+SYSTEM_FOLDER=false
+STORAGE_FREE_GB=0
+choose_system_folder() {
+    local dir free
+    echo ""
+    ask "Dossier de stockage [/srv/survive] : "
+    read -r dir
+    dir="${dir:-/srv/survive}"
+    if [[ "$dir" != /* || "$dir" == "/" || "$dir" =~ [[:space:]] ]]; then
+        warn "Chemin invalide : indiquez un chemin absolu sans espace (ex. /srv/survive)."
+        return 1
+    fi
+    mkdir -p "$dir" || { warn "Impossible de créer $dir"; return 1; }
+    free=$(df -BG --output=avail "$dir" 2>/dev/null | tail -1 | tr -dc '0-9')
+    free="${free:-0}"
+    info "Espace libre sur le disque du système : ${free} Go"
+    if (( free < 80 )); then
+        warn "Moins de 80 Go libres : trop juste pour une bibliothèque utile sans risquer de saturer le système."
+        return 1
+    fi
+    echo ""
+    warn "Le contenu sera stocké sur le MÊME disque que Debian."
+    echo -e "  ${DIM}Un disque plein empêche le système de démarrer correctement : le profil de contenu"
+    echo -e "  sera choisi pour garder une marge de sécurité (20 Go ou 15 %).${NC}"
+    ask "Utiliser ${dir} ? [o/N] : "
+    read -r ans
+    [[ "${ans:-n}" =~ ^[YyOo]$ ]] || return 1
+    CHOSEN_DEV="SKIP"
+    CHOSEN_MOUNT="$dir"
+    SYSTEM_FOLDER=true
+    STORAGE_FREE_GB="$free"
+    return 0
+}
+
 choose_storage() {
     header "Stockage"
+    echo ""
+    echo -e "    ${BOLD}[1]${NC}  Disque dédié ${DIM}(recommandé : SSD USB ou second disque interne)${NC}"
+    echo -e "    ${BOLD}[2]${NC}  Dossier sur le disque du système ${DIM}(aucun formatage ; portable à disque unique)${NC}"
+    echo ""
+    ask "Votre choix [1] : "
+    read -r mode
+    if [[ "${mode:-1}" == "2" ]]; then
+        if choose_system_folder; then
+            return
+        fi
+        warn "Dossier non retenu — retour au choix d'un disque dédié."
+    fi
     echo ""
 
     # Liste des périphériques bloc hors carte SD et hors loop
@@ -85,6 +141,20 @@ choose_storage() {
         models+=("$model")
     done < <(lsblk -d -n -o NAME,SIZE,MODEL 2>/dev/null \
              | grep -Ev '^(loop|mmcblk|zram)' || true)
+
+    # Retire le(s) disque(s) du système : on ne propose jamais de formater Debian.
+    if mapfile -t _sysdisks < <(system_disks) && [[ ${#_sysdisks[@]} -gt 0 ]]; then
+        local -a keep_d=() keep_s=() keep_m=()
+        local k d_idx skip
+        for d_idx in "${!devs[@]}"; do
+            skip=false
+            for k in "${_sysdisks[@]}"; do [[ "${devs[$d_idx]}" == "$k" ]] && skip=true; done
+            if [[ "$skip" == "false" ]]; then
+                keep_d+=("${devs[$d_idx]}"); keep_s+=("${sizes[$d_idx]}"); keep_m+=("${models[$d_idx]}")
+            fi
+        done
+        devs=("${keep_d[@]}"); sizes=("${keep_s[@]}"); models=("${keep_m[@]}")
+    fi
 
     # Vérifier si /mnt/survive est déjà monté
     local already_mounted=false
@@ -109,8 +179,9 @@ choose_storage() {
             CHOSEN_MOUNT="/mnt/survive"
             return
         fi
-        warn "Aucun disque externe détecté."
-        warn "Branchez votre SSD USB et appuyez sur ENTRÉE pour réanalyser, ou Ctrl+C pour quitter."
+        warn "Aucun disque dédié détecté (le disque du système n'est jamais proposé)."
+        warn "Branchez un SSD et appuyez sur ENTRÉE pour réanalyser, ou Ctrl+C pour quitter"
+        warn "(ou relancez l'assistant et choisissez le mode « dossier sur le disque du système »)."
         read -r _
         choose_storage   # un seul appel récursif
         return
@@ -189,6 +260,46 @@ confirm_format() {
     else
         info "Formatage ignoré — les données existantes sont conservées."
     fi
+}
+
+# ── Écran : profil de contenu ────────────────────────────────────────────────────
+CHOSEN_PROFILE="complet"
+
+choose_profile() {
+    header "Profil de contenu"
+    echo ""
+    local free="$STORAGE_FREE_GB" flag="" rec
+    if (( free == 0 )); then
+        # Dossier non encore calculé (disque dédié) : mesure après montage impossible
+        # ici ; on estime avec la taille du disque choisi, sinon on conseille « complet ».
+        if [[ "$CHOSEN_DEV" != "SKIP" ]]; then
+            free=$(lsblk -b -d -n -o SIZE "/dev/$CHOSEN_DEV" 2>/dev/null | awk '{printf "%d", $1/1000000000*0.93}')
+        elif mountpoint -q "$CHOSEN_MOUNT" 2>/dev/null; then
+            free=$(df -BG --output=avail "$CHOSEN_MOUNT" | tail -1 | tr -dc '0-9')
+        fi
+    fi
+    free="${free:-0}"
+    [[ "$SYSTEM_FOLDER" == "true" ]] && flag="--systeme"
+    rec=$(bash "${REPO_DIR}/scripts/recommend_profile.sh" "$free" $flag 2>/dev/null || echo complet)
+    [[ "$rec" == "insuffisant" ]] && rec="leger"
+    info "Espace disponible estimé : ${free} Go  →  profil conseillé : ${rec}"
+    echo ""
+    echo -e "    ${BOLD}[1]${NC}  léger    ${DIM}~60 Go   Wikipédia sans images, cartes, PDF de survie, médicaments${NC}"
+    echo -e "    ${BOLD}[2]${NC}  moyen    ${DIM}~250 Go  + Wikipédia complète, livres, Khan Academy (sans vidéos)${NC}"
+    echo -e "    ${BOLD}[3]${NC}  complet  ${DIM}~800 Go  + vidéos de survie et Kolibri${NC}"
+    echo ""
+    local def=3
+    [[ "$rec" == "leger" ]] && def=1
+    [[ "$rec" == "moyen" ]] && def=2
+    ask "Votre choix [${def}] : "
+    read -r pc
+    case "${pc:-$def}" in
+        1) CHOSEN_PROFILE="leger" ;;
+        2) CHOSEN_PROFILE="moyen" ;;
+        3) CHOSEN_PROFILE="complet" ;;
+        *) warn "Choix invalide — profil conseillé utilisé"; CHOSEN_PROFILE="$rec" ;;
+    esac
+    ok "Profil retenu : ${CHOSEN_PROFILE}"
 }
 
 # ── Écran : nom d'hôte ──────────────────────────────────────────────────────────
@@ -292,13 +403,16 @@ confirm_install() {
     else                            ai_model="gemma4:e2b  (8-12 tok/s)"
     fi
 
-    if [[ "$CHOSEN_DEV" == "SKIP" ]]; then
+    if [[ "$SYSTEM_FOLDER" == "true" ]]; then
+        info "Stockage :    dossier ${CHOSEN_MOUNT} sur le disque du système (${STORAGE_FREE_GB} Go libres)"
+    elif [[ "$CHOSEN_DEV" == "SKIP" ]]; then
         info "Stockage :    ${CHOSEN_MOUNT}  (déjà monté)"
     elif [[ "$FORMAT_DRIVE" == "true" ]]; then
         info "Stockage :    /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (sera formaté en ext4)"
     else
         info "Stockage :    /dev/${CHOSEN_DEV} → ${CHOSEN_MOUNT}  (données existantes conservées)"
     fi
+    info "Contenu :     profil « ${CHOSEN_PROFILE} »"
     info "Nom d'hôte :  ${CHOSEN_HOSTNAME}  (http://${CHOSEN_HOSTNAME}.local:8080)"
     info "Modèle d'IA : ${ai_model}"
     info "Cartes :      ${CHOSEN_MAP_REGION}"
@@ -458,6 +572,7 @@ write_config() {
 # ── Storage ────────────────────────────────────────────────────────────────────
 SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}"
 SURVIVE_STORAGE_DEV="${CHOSEN_DEV:-SKIP}"
+SURVIVE_STORAGE_MODE="$([[ "$SYSTEM_FOLDER" == "true" ]] && echo dossier || echo dedie)"
 SURVIVE_BUDGET_GB="800"
 SURVIVE_HOSTNAME="${CHOSEN_HOSTNAME}"
 
@@ -522,6 +637,13 @@ CONF
         sed -i 's/^CONTENT_MAPS="Y"/CONTENT_MAPS="N"/' "$CONF"
     fi
 
+    # Profil de contenu choisi (écrase les CONTENT_* et le budget ci-dessus)
+    bash "${REPO_DIR}/scripts/apply_profile.sh" "${CHOSEN_PROFILE}" "$CONF" >/dev/null
+    # La carte « aucune région » reste prioritaire sur le profil
+    if [[ "${CHOSEN_MAP_REGION}" == "none" ]]; then
+        sed -i 's/^CONTENT_MAPS="Y"/CONTENT_MAPS="N"/' "$CONF"
+    fi
+
     ok "Configuration écrite dans ${CONF}"
 }
 
@@ -529,7 +651,9 @@ CONF
 run_preflight() {
     header "Vérifications préalables"
     echo ""
-    SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}" bash "${REPO_DIR}/setup/pre_flight_check.sh" || {
+    SURVIVE_STORAGE_PATH="${CHOSEN_MOUNT}" \
+    SURVIVE_STORAGE_MODE="$([[ "$SYSTEM_FOLDER" == "true" ]] && echo dossier || echo dedie)" \
+    bash "${REPO_DIR}/setup/pre_flight_check.sh" || {
         echo ""
         warn "Certaines vérifications ont échoué (voir ci-dessus)."
         ask "Continuer malgré tout ? [o/N] : "
@@ -635,6 +759,7 @@ main() {
     show_welcome
     choose_storage
     confirm_format
+    choose_profile
     choose_hostname
     choose_map_region
     choose_hotspot

@@ -5,6 +5,10 @@
 # ── Stockage ────────────────────────────────────────────────────────────────────
 SURVIVE_STORAGE_PATH="/mnt/survive"
 SURVIVE_STORAGE_DEV="SKIP"
+# dedie = disque dédié monté (SSD USB, 2e disque) ; dossier = dossier sur le disque
+# du système (ex. /srv/survive), sans formatage. Voir aussi config/profiles/ et
+# « bash scripts/apply_profile.sh <leger|moyen|complet> » pour changer de profil.
+SURVIVE_STORAGE_MODE="dedie"
 SURVIVE_BUDGET_GB="800"
 SURVIVE_HOSTNAME="survive"
 
@@ -16,6 +20,8 @@ CONTENT_STACKEXCHANGE="Y"
 # Sites Stack Exchange pratiques en ANGLAIS (~40 Go) : aucun équivalent français
 CONTENT_STACKEXCHANGE_EN="N"
 CONTENT_GUTENBERG="Y"
+# Khan Academy FR en ZIM Kiwix (~94 Go), distinct de Kolibri (~200 Go)
+CONTENT_KHAN_ZIM="Y"
 CONTENT_KOLIBRI="Y"
 CONTENT_VIDEOS="Y"
 CONTENT_MAPS="Y"
