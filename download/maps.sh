@@ -141,7 +141,7 @@ install_pmtiles_cli() {
     url=$(curl -fsSL --max-time 60 \
             https://api.github.com/repos/protomaps/go-pmtiles/releases/latest 2>/dev/null \
         | grep -oE '"browser_download_url": *"[^"]+"' | cut -d'"' -f4 \
-        | grep -i linux | grep -iE 'arm64|aarch64' \
+        | grep -i linux | grep -iE "$([[ "$(uname -m)" == x86_64 ]] && echo 'x86_64|amd64' || echo 'arm64|aarch64')" \
         | grep -iE '\.(tar\.gz|zip)$' | head -1) || true
     if [[ -z "$url" ]]; then
         warn "Impossible de trouver une version de pmtiles pour $(uname -m)"

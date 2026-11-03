@@ -193,7 +193,13 @@ install_kiwix() {
     # kiwix-tools is NOT on download.openzim.org any more (that host now carries
     # only libzim/zim-tools). The unversioned filename below always resolves to
     # the current release, so this cannot rot the way a pinned version does.
-    local url="https://download.kiwix.org/release/kiwix-tools/kiwix-tools_linux-aarch64.tar.gz"
+    local karch
+    case "$(uname -m)" in
+        aarch64|arm64) karch="aarch64" ;;
+        x86_64|amd64)  karch="x86_64" ;;
+        *) error "Architecture non prise en charge pour kiwix-tools : $(uname -m)"; exit 1 ;;
+    esac
+    local url="https://download.kiwix.org/release/kiwix-tools/kiwix-tools_linux-${karch}.tar.gz"
     local tmp
     tmp=$(mktemp -d)
     # No -q: a download failure must be visible, not silent.
@@ -310,7 +316,7 @@ install_jellyfin() {
         warn "Le script d'installation de Jellyfin a échoué, essai de la méthode manuelle..."
         curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key \
             | gpg --dearmor -o /usr/share/keyrings/jellyfin.gpg
-        echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=arm64] \
+        echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=$(dpkg --print-architecture)] \
             https://repo.jellyfin.org/ubuntu jammy main" \
             > /etc/apt/sources.list.d/jellyfin.list
         apt-get update -qq && apt-get install -y -qq jellyfin
@@ -432,14 +438,39 @@ SAMBA
     info "Définissez un mot de passe Samba avec : sudo smbpasswd -a <utilisateur>"
 }
 
+# ── Plateforme : Raspberry Pi ou machine générique (VM, PC de test) ───────────
+# SURVIVE_PLATFORM=pi|generic force le choix ; sinon détection via le
+# device-tree. En mode « generic », on saute les étapes propres au Pi
+# (courant USB, TRIM, AI Hat Hailo) au lieu de les laisser échouer.
+detect_platform() {
+    if [[ -n "${SURVIVE_PLATFORM:-}" ]]; then
+        echo "$SURVIVE_PLATFORM"
+    elif grep -qi "raspberry pi" /proc/device-tree/model 2>/dev/null; then
+        echo "pi"
+    else
+        echo "generic"
+    fi
+}
+PLATFORM="$(detect_platform)"
+
+# Utilisateur qui exécutera les services : l'utilisateur sudo, sinon le premier
+# compte « humain » (uid >= 1000), sinon « pi » s'il existe, sinon root.
+resolve_service_user() {
+    local u="${SUDO_USER:-}"
+    if [[ -n "$u" && "$u" != "root" ]] && id "$u" &>/dev/null; then echo "$u"; return; fi
+    u=$(awk -F: '$3>=1000 && $3<60000 && $7 !~ /(nologin|false)$/ {print $1; exit}' /etc/passwd)
+    if [[ -n "$u" ]]; then echo "$u"; return; fi
+    if id pi &>/dev/null; then echo "pi"; else echo "root"; fi
+}
+
 # ── Install systemd services ──────────────────────────────────────────────────
 install_services() {
     info "Installation des services systemd..."
     # The unit files ship with User=pi, but the real login may be anything
     # (Raspberry Pi Imager lets users pick a name). Substitute the invoking
     # user so services actually start on non-'pi' systems.
-    local svc_user="${SUDO_USER:-pi}"
-    id "$svc_user" &>/dev/null || svc_user="pi"
+    local svc_user
+    svc_user="$(resolve_service_user)"
     for unit in "$REPO_DIR"/systemd/*.service "$REPO_DIR"/systemd/*.timer; do
         [[ -f "$unit" ]] || continue
         sed -e "s/^User=pi$/User=${svc_user}/" \
@@ -465,6 +496,10 @@ install_services() {
 setup_ai_hat() {
     if [[ "${SKIP_AI_HAT:-false}" == "true" ]]; then
         warn "Configuration de l'AI Hat ignorée (SKIP_AI_HAT=true)"
+        return
+    fi
+    if [[ "$PLATFORM" != "pi" && "${SURVIVE_FORCE_AI_HAT:-false}" != "true" ]]; then
+        info "Plateforme « $PLATFORM » : AI Hat Hailo ignoré (SURVIVE_FORCE_AI_HAT=true pour forcer)"
         return
     fi
     info "Configuration de l'AI Hat Hailo..."
@@ -497,7 +532,7 @@ setup_opt_survive() {
     cp -r "$REPO_DIR/web" /opt/survive/
     cp -r "$REPO_DIR/config" /opt/survive/
     ln -sfn "$REPO_DIR/data" /opt/survive/data
-    REAL_USER="${SUDO_USER:-pi}"
+    REAL_USER="$(resolve_service_user)"
     chown -R "$REAL_USER:$REAL_USER" /opt/survive
     success "/opt/survive prêt"
 }
@@ -520,7 +555,11 @@ main() {
     install_kiwix
     install_ollama
     setup_storage
-    bash "$SCRIPT_DIR/pi5_storage.sh" || warn "Réglages de stockage du Pi 5 ignorés"
+    if [[ "$PLATFORM" == "pi" ]]; then
+        bash "$SCRIPT_DIR/pi5_storage.sh" || warn "Réglages de stockage du Pi 5 ignorés"
+    else
+        info "Plateforme « $PLATFORM » : réglages de stockage propres au Pi 5 ignorés"
+    fi
     configure_nginx
     configure_firewall
     configure_samba

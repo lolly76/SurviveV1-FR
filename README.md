@@ -79,6 +79,16 @@ http://localhost:8080
 
 ---
 
+### Tester sans Raspberry Pi (VM / PC)
+
+L'installateur accepte une VM Debian 12/13 **aarch64 ou x86_64** : les étapes propres au Pi
+(AI Hat Hailo, courant USB, TRIM) sont ignorées automatiquement, et les binaires (Kiwix, Martin,
+pmtiles, Jellyfin) sont choisis selon l'architecture. L'utilisateur des services est l'utilisateur
+`sudo` (ou le premier compte humain). Variables : `SURVIVE_PLATFORM=pi|generic` pour forcer la
+détection, `SURVIVE_FORCE_AI_HAT=true` pour forcer l'installation Hailo. Le mode point d'accès
+Wi-Fi n'est pas testable sans carte Wi-Fi. `bash download/download_all.sh --dry-run` simule les
+téléchargements.
+
 ## Arborescence
 
 ```

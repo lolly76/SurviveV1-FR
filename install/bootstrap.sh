@@ -51,12 +51,16 @@ info "Vérification de la configuration requise..."
 
 # Architecture : ARM 64 bits obligatoire
 ARCH=$(uname -m)
-if [[ "$ARCH" != "aarch64" ]]; then
-    die "Architecture non prise en charge : ${ARCH}\n" \
-        "  SurviveV1 est conçu pour le Raspberry Pi 5 (aarch64).\n" \
-        "  Raspberry Pi OS 64 bits est requis."
-fi
-ok "Architecture : ${ARCH}"
+case "$ARCH" in
+    aarch64) ok "Architecture : ${ARCH}" ;;
+    x86_64)
+        warn "Architecture : ${ARCH} — machine de test (VM / PC), pas un Raspberry Pi."
+        warn "  Les étapes propres au Pi (AI Hat, courant USB) seront ignorées." ;;
+    *)
+        die "Architecture non prise en charge : ${ARCH}\n" \
+            "  SurviveV1 est conçu pour le Raspberry Pi 5 (aarch64).\n" \
+            "  Les VM aarch64 et x86_64 sont acceptées pour les tests." ;;
+esac
 
 # RAM : avertissement en dessous de 4 Go
 RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 0)

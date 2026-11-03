@@ -123,6 +123,12 @@ case "$ACTION" in
             exit 1
         fi
 
+        # VM / PC sans carte Wi-Fi : rien à faire, on le dit clairement.
+        if ! nmcli -t -f DEVICE,TYPE device 2>/dev/null | grep -q "^${AP_IFACE}:wifi"; then
+            error "Interface Wi-Fi « ${AP_IFACE} » introuvable : le point d'accès n'est pas utilisable sur cette machine (VM sans Wi-Fi ?)."
+            exit 1
+        fi
+
         # Wi-Fi country unset → AP channel selection can fail silently.
         if command -v iw &>/dev/null && iw reg get 2>/dev/null | grep -q "country 00"; then
             warn "Le pays du Wi-Fi n'est pas défini — si le point d'accès ne démarre pas, lancez :"

@@ -25,7 +25,11 @@ echo "Système et architecture"
 if [[ "$(uname -m)" == "aarch64" ]]; then
     pass "Architecture : aarch64 (ARM 64 bits)"
 else
-    warn "Architecture : $(uname -m) — aarch64 attendu (Raspberry Pi 5, 64 bits)"
+    if [[ "$(uname -m)" == "x86_64" ]]; then
+        info "Architecture : x86_64 — mode machine de test (VM / PC), étapes propres au Pi ignorées"
+    else
+        warn "Architecture : $(uname -m) — aarch64 attendu (Raspberry Pi 5, 64 bits)"
+    fi
 fi
 
 if grep -qi "bookworm\|trixie" /etc/os-release 2>/dev/null; then
