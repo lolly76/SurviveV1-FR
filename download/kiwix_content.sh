@@ -480,6 +480,69 @@ dl_expansion_en() {
         "$ZIM_DIR/skills"
 }
 
+# ── Phase 2 (option) : la base anglaise d'origine ────────────────────────────
+# Reprend les ZIM du projet SurviveV1 d'origine, en anglais : Wikipédia EN,
+# Wikilivres/Wikivoyage/Wikisource/Wiktionnaire EN, iFixit EN, Gutenberg EN,
+# MedlinePlus, WikiMed (mdwiki), Khan Academy EN, Wikiversité EN, PhET EN.
+# Utile hors de France ou pour croiser les sources. S'AJOUTE au contenu
+# français ; très volumineux (≈ 25 Go avec CONTENT_BASE_EN_WIKIPEDIA=nopic,
+# ≈ 130 Go avec « maxi » ; Khan Academy EN est exclu par défaut).
+#   CONTENT_BASE_EN=Y                 active la phase 2
+#   CONTENT_BASE_EN_WIKIPEDIA=nopic   nopic (défaut) | maxi | N
+#   CONTENT_BASE_EN_KHAN=N            Y pour ajouter Khan Academy EN
+dl_base_en() {
+    [[ -n "$ONLY_PACKAGE" ]] && [[ "$ONLY_PACKAGE" != "base_en" ]] && return
+    [[ "${CONTENT_BASE_EN:-N}" =~ [YyOo] ]] || return
+
+    info "=== Phase 2 : base anglaise d'origine ==="
+    case "${CONTENT_BASE_EN_WIKIPEDIA:-nopic}" in
+        maxi)
+            download_zim "Wikipedia EN" \
+                "$KIWIX_MIRROR/wikipedia/wikipedia_en_all_maxi_2026-02.zim" \
+                "$ZIM_DIR/wikipedia" ;;
+        N|n|non|no) ;;
+        *)
+            download_zim "Wikipedia EN (no-pic)" \
+                "$KIWIX_MIRROR/wikipedia/wikipedia_en_all_nopic_2026-06.zim" \
+                "$ZIM_DIR/wikipedia" ;;
+    esac
+    download_zim "Wikibooks EN" \
+        "$KIWIX_MIRROR/wikibooks/wikibooks_en_all_maxi_2026-04.zim" \
+        "$ZIM_DIR/reference"
+    download_zim "Wikivoyage EN" \
+        "$KIWIX_MIRROR/wikivoyage/wikivoyage_en_all_maxi_2026-06.zim" \
+        "$ZIM_DIR/reference"
+    download_zim "Wikisource EN" \
+        "$KIWIX_MIRROR/wikisource/wikisource_en_all_maxi_2026-05.zim" \
+        "$ZIM_DIR/reference"
+    download_zim "Wiktionary EN" \
+        "$KIWIX_MIRROR/wiktionary/wiktionary_en_all_nopic_2026-05.zim" \
+        "$ZIM_DIR/reference"
+    download_zim "iFixit EN" \
+        "$KIWIX_MIRROR/ifixit/ifixit_en_all_2025-12.zim" \
+        "$ZIM_DIR/skills"
+    download_zim "Gutenberg EN" \
+        "$KIWIX_MIRROR/gutenberg/gutenberg_en_all_2025-11.zim" \
+        "$ZIM_DIR/books"
+    download_zim "Medline Plus (EN)" \
+        "$KIWIX_MIRROR/zimit/medlineplus.gov_en_all_2025-01.zim" \
+        "$ZIM_DIR/medicine"
+    download_zim "WikiMed (EN)" \
+        "$KIWIX_MIRROR/other/mdwiki_en_all_maxi_2025-11.zim" \
+        "$ZIM_DIR/medicine"
+    download_zim "PhET Science Simulations (EN)" \
+        "$KIWIX_MIRROR/phet/phet_en_all_2026-05.zim" \
+        "$ZIM_DIR/education"
+    download_zim "Wikiversity EN" \
+        "$KIWIX_MIRROR/wikiversity/wikiversity_en_all_maxi_2026-05.zim" \
+        "$ZIM_DIR/education"
+    if [[ "${CONTENT_BASE_EN_KHAN:-N}" =~ [YyOo] ]]; then
+        download_zim "Khan Academy EN" \
+            "$KIWIX_MIRROR/other/khanacademy_en_all_2023-03.zim" \
+            "$ZIM_DIR/education"
+    fi
+}
+
 # ── Register all ZIMs with kiwix-serve ───────────────────────────────────────
 register_zims() {
     info "Enregistrement des fichiers ZIM dans la bibliothèque Kiwix..."
@@ -507,6 +570,7 @@ main() {
     dl_medical
     dl_expansion
     dl_expansion_en
+    dl_base_en
     # TED goes last (Science alone is 15 GB): on a nearly-full drive the
     # least-critical content should be what a disk-full failure lands on.
     dl_ted

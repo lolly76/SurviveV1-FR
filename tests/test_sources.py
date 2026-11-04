@@ -24,3 +24,12 @@ def test_sources_contient_les_urls_des_scripts():
                  "hesperian.org", "youtube.com", "ollama.com", "docs/licenses.md"):
         assert must in out, must
     assert len(re.findall(r"https?://", out)) > 150
+
+
+def test_sources_zim_et_phase2():
+    out = subprocess.run([sys.executable, GEN], capture_output=True, text=True, check=True).stdout
+    for must in ("wikipedia_fr_all_maxi", "ted_mul_science", "zimgit-knots_en",
+                 "wikipedia_en_all_nopic", "gutenberg_en_all", "mdwiki_en_all_maxi",
+                 "khanacademy_en_all", "CONTENT_BASE_EN"):
+        assert must in out, must
+    assert out.count("| `") >= 30

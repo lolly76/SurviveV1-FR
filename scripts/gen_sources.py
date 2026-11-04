@@ -78,6 +78,7 @@ ZIM_FLAGS = {
     "dl_ted": "toujours",
     "dl_expansion": "`CONTENT_EXPANSION`",
     "dl_expansion_en": "`CONTENT_EXPANSION_EN` (pack English, désactivé par défaut)",
+    "dl_base_en": "`CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut)",
 }
 
 # Sources qui ne passent pas par les appels analysés ci-dessus.
@@ -142,8 +143,9 @@ def _who_url(handle):
 
 def _expand(url, bases):
     """Remplace ${H}/${W} par leur valeur ; renvoie None s'il reste une variable."""
+    bases = {**bases, "KIWIX_MIRROR": "https://download.kiwix.org/zim"}
     for k, v in bases.items():
-        url = url.replace("${" + k + "}", v)
+        url = url.replace("${" + k + "}", v).replace("$" + k, v)
     return None if "$" in url else url
 
 
@@ -177,9 +179,11 @@ def _entries():
             if m and not m.group(3).startswith("$"):
                 out.append((rel, func, m.group(1) + ":" + m.group(2), m.group(3), m.group(4)))
                 continue
-            m = re.search(r'\["([^"]+)"\]="(https?://[^"$]+)"', line)
+            m = re.search(r'\["([^"]+)"\]="((?:https?://|\$KIWIX_MIRROR/|\$\{KIWIX_MIRROR\}/)[^"]+)"', line)
             if m:
-                out.append((rel, func, "array", m.group(1), m.group(2)))
+                url = _expand(m.group(2), bases)
+                if url:
+                    out.append((rel, func, "array", m.group(1), url))
                 continue
             m = re.search(r'"(https://www\.gutenberg\.org/ebooks/\d+[^"|]*)\|([^"]+)"', line)
             if m:
@@ -210,7 +214,8 @@ def build():  # pylint: disable=too-many-locals,too-many-branches,too-many-state
         "SurviveV1-FR peut récupérer. Rien n'est stocké dans ce dépôt ; les contenus gardent leur "
         "licence d'origine (voir [`docs/licenses.md`](docs/licenses.md)). Les noms de fichiers "
         "Kiwix perdent leur date : c'est toujours la dernière version publiée qui est téléchargée. "
-        "**Pack English** = ressource sans équivalent français vérifié, conservée en anglais.",
+        "**Pack English** = ressource sans équivalent français vérifié, conservée en anglais. "
+        "**Phase 2** = la base anglaise d'origine du projet SurviveV1, en option (voir « Phase 2 » dans la section Contenu).",
         "",
     ]
 
@@ -222,6 +227,10 @@ def build():  # pylint: disable=too-many-locals,too-many-branches,too-many-state
             if kind == "array" and "stackexchange" not in url:
                 continue
             flag = ZIM_FLAGS.get(func, "")
+            if func == "dl_base_en" and name.startswith("Wikipedia"):
+                flag = "`CONTENT_BASE_EN` + `CONTENT_BASE_EN_WIKIPEDIA=nopic\\|maxi` (phase 2)"
+            if func == "dl_base_en" and name.startswith("Khan"):
+                flag = "`CONTENT_BASE_EN` + `CONTENT_BASE_EN_KHAN=Y` (phase 2)"
             if kind == "array":
                 name = f"Stack Exchange — {name}"
                 flag = "`CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut)"

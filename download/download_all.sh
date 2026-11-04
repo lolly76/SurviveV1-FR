@@ -110,6 +110,14 @@ print_budget() {
     [[ "${CONTENT_MAPS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "Cartes OpenStreetMap (France par défaut)" "~5 Go"
     [[ "${CONTENT_PDFS:-Y}" =~ [Yy] ]]            && printf "%-40s %10s\n" "PDF + manuels" "~20 Go"
     [[ "${CONTENT_GAPS_EN:-Y}" =~ [Yy] ]]         && printf "%-40s %10s\n" "Contenus experts (pack English)" "~15 Go"
+    if [[ "${CONTENT_BASE_EN:-N}" =~ [Yy] ]]; then
+        case "${CONTENT_BASE_EN_WIKIPEDIA:-nopic}" in
+            maxi)  printf "%-40s %10s\n" "Phase 2 : base anglaise (Wikipédia maxi)" "~130 Go" ;;
+            N|n)   printf "%-40s %10s\n" "Phase 2 : base anglaise (sans Wikipédia)" "~15 Go" ;;
+            *)     printf "%-40s %10s\n" "Phase 2 : base anglaise (Wikipédia nopic)" "~25 Go" ;;
+        esac
+        [[ "${CONTENT_BASE_EN_KHAN:-N}" =~ [Yy] ]] && printf "%-40s %10s\n" "Khan Academy EN (ZIM)" "~90 Go"
+    fi
     [[ "${CONTENT_AI_MODELS:-Y}" =~ [Yy] ]]       && printf "%-40s %10s\n" "Modèles d'IA (Ollama)" "~50 Go"
     [[ "${CONTENT_NPS_MAPS:-N}" =~ [Yy] ]]        && printf "%-40s %10s\n" "Cartes des parcs nationaux + satellite" "~3 Go"
     [[ "${CONTENT_MESHTASTIC:-Y}" =~ [Yy] ]]      && printf "%-40s %10s\n" "Outils de transmission (Meshtastic web)" "<1 Go"

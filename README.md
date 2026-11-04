@@ -24,11 +24,23 @@ Une base de connaissances autohébergée, pensée « hors ligne d'abord », pour
 | **Notes et fichiers partagés** | Carnet Markdown partagé et dépôt pour vos propres documents, tous deux stockés sur le disque |
 | **Transmissions** | Encodeur/décodeur Morse, clients web Meshtastic et MeshCore, listes de relais importées et consultables, référence des fréquences d'urgence en France |
 
+### Phase 2 (option) : la base anglaise d'origine
+
+Le projet SurviveV1 d'origine est entièrement en anglais. Si vous voulez aussi cette base (voyage hors de France, croisement des sources, lecture en anglais), activez la **phase 2** dans `config/survive.conf` : elle **s'ajoute** au contenu français, rien n'est remplacé.
+
+```bash
+CONTENT_BASE_EN="Y"               # active la phase 2 (désactivée par défaut)
+CONTENT_BASE_EN_WIKIPEDIA="nopic" # nopic (≈ 25 Go au total) | maxi (≈ 130 Go) | N
+CONTENT_BASE_EN_KHAN="N"          # Y pour ajouter Khan Academy EN (≈ 90 Go de plus)
+```
+
+Elle télécharge : Wikipédia EN, Wikibooks, Wikivoyage, Wikisource et Wiktionary EN, iFixit EN, Projet Gutenberg EN, MedlinePlus, WikiMed, Wikiversity EN et PhET EN (liste exacte dans « Sources utilisées »). Les tailles sont des ordres de grandeur ; le script vérifie l'espace libre avant chaque ZIM. Lancer ensuite `bash download/kiwix_content.sh` (ou `bash download/kiwix_content.sh --only base_en` pour la phase 2 seule). Les packs anglais déjà existants (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN`, `CONTENT_PDFS_EN`, `CONTENT_VIDEOS_EN`, `CONTENT_MENTAL_EN`) restent indépendants.
+
 > **Avancement de la francisation des sources.** Fait : interface du tableau de bord, scripts d'installation, de démarrage et de téléchargement (messages en français), ZIM Kiwix, cartes, Kolibri, vidéos, livres/PDF, premiers secours psychologiques (OMS et Croix-Rouge), référence des médicaments (BDPM), documentation (`docs/`, page `index.html`, skill `install-pi`). Les contenus « experts » (médecine avancée, obstétrique, dentaire, assainissement, élevage, semences, forge, apiculture, sécurité…) n'ont pas d'équivalent français vérifié : ils sont conservés en anglais dans un **pack « English »** identifié (`CONTENT_GAPS_EN`, activé par défaut) ; vos documents français s'ajoutent via `config/gaps_extra.list`. Référence des médicaments : désormais basée sur la BDPM française (`CONTENT_DRUG_NOTICES="N"` pour ne garder que les fichiers de base ; `SURVIVE_DRUGS_NOTICE_MAX` limite la récupération des notices à chaque passage). L'**assistant IA** est aussi francisé (prompt système du modèle `survive`, scripts `ai/` et Hailo, `docs/ai_hat_setup.md`). `docs/gaps_analysis.md` est traduit. Les plans de conception `docs/plans/` sont également traduits. Vérifié en ligne le 3 novembre 2026 : fichiers et formats BDPM, pages de notices (redirection vers la fiche « extrait »), lien de la fiche officielle, URL Geofabrik, noms et tailles des ZIM Kiwix français, existence de la chaîne Kolibri. Quelques ressources n'existent qu'en anglais (Stack Exchange pratiques, collections « zimgit », Appropedia, Energypedia, manuels militaires américains et PDF techniques, chaînes YouTube anglophones, PDF et vidéos de santé mentale) : elles sont proposées en option, désactivées par défaut (`CONTENT_STACKEXCHANGE_EN`, `CONTENT_EXPANSION_EN`, `CONTENT_PDFS_EN`, `CONTENT_VIDEOS_EN`, `CONTENT_MENTAL_EN` dans `config/survive.conf`).
 >
 > **Avancement du 3 novembre 2026 — consolidation avant test.** Vérification des URL de téléchargement (rapport automatique `url-health` sur 250 URL) et corrections : installation de Martin (tuiles de cartes) choisie selon l'architecture, dépôt Hailo inexistant remplacé par `hailo-all`, raccourci Kolibri mort retiré, encodage réel des fichiers BDPM (cp1252), tailles et dates des ZIM mises à jour. **Matériel agnostique :** détection (`scripts/detect_hardware.sh`) et modules activables (IA, Hailo, USB du Pi, point d'accès Wi-Fi, capot, batterie) ; l'IA se désactive proprement sans AVX2. **Stockage :** disque dédié ou dossier système, profils `test` / `léger` / `moyen` / `complet`. **Qualité :** CI GitHub sur Debian 12 et 13, 130 tests, correction d'un bug de cache qui provoquait des erreurs 500 juste après un démarrage. **À valider :** installation réelle sur VM (`docs/VM_TEST.md`, `scripts/vm_check.sh`), puis sur Raspberry Pi. **Limites connues :** une vingtaine de liens PDF américains et ~18 chaînes YouTube des packs anglophones optionnels sont morts (packs désactivés par défaut) ; plusieurs sites officiels (CDC, FEMA, Peace Corps…) répondent 403 aux robots, leur téléchargement réel reste à confirmer ; le code d'origine n'a pas de licence explicite.
 >
-> **Avancement du 4 novembre 2026.** Section [« Sources utilisées »](#sources-utilisées) ajoutée : liste exhaustive des ressources téléchargeables, **générée** depuis les scripts (`python3 scripts/gen_sources.py --write`) et vérifiée par un test.
+> **Avancement du 4 novembre 2026.** Phase 2 optionnelle (`CONTENT_BASE_EN`) : télécharge la base anglaise d'origine en plus du français. Section [« Sources utilisées »](#sources-utilisées) ajoutée : liste exhaustive des ressources téléchargeables, **générée** depuis les scripts (`python3 scripts/gen_sources.py --write`) et vérifiée par un test.
 
 ---
 
@@ -260,12 +272,62 @@ Estimations pour les sources françaises (les ZIM Kiwix datés sont remplacés p
 
 ## Sources utilisées
 
-Liste générée depuis les scripts de téléchargement : chaque ligne est une ressource que SurviveV1-FR peut récupérer. Rien n'est stocké dans ce dépôt ; les contenus gardent leur licence d'origine (voir [`docs/licenses.md`](docs/licenses.md)). Les noms de fichiers Kiwix perdent leur date : c'est toujours la dernière version publiée qui est téléchargée. **Pack English** = ressource sans équivalent français vérifié, conservée en anglais.
+Liste générée depuis les scripts de téléchargement : chaque ligne est une ressource que SurviveV1-FR peut récupérer. Rien n'est stocké dans ce dépôt ; les contenus gardent leur licence d'origine (voir [`docs/licenses.md`](docs/licenses.md)). Les noms de fichiers Kiwix perdent leur date : c'est toujours la dernière version publiée qui est téléchargée. **Pack English** = ressource sans équivalent français vérifié, conservée en anglais. **Phase 2** = la base anglaise d'origine du projet SurviveV1, en option (voir « Phase 2 » dans la section Contenu).
 
 ### Bibliothèques Kiwix (ZIM) — [download.kiwix.org](https://download.kiwix.org/zim/)
 
 | Ressource | Fichier ZIM | Activation |
 |---|---|---|
+| Wikipédia FR | `wikipedia_fr_all_maxi` | `CONTENT_WIKIPEDIA` / `CONTENT_WIKIPEDIA_NOPIC` |
+| Wikipédia FR (sans images) | `wikipedia_fr_all_nopic` | `CONTENT_WIKIPEDIA` / `CONTENT_WIKIPEDIA_NOPIC` |
+| Wikilivres FR | `wikibooks_fr_all_maxi` | `CONTENT_WIKIBOOKS` |
+| Wikivoyage FR | `wikivoyage_fr_all_maxi` | `CONTENT_WIKIBOOKS` |
+| Wikisource FR | `wikisource_fr_all_nopic` | `CONTENT_WIKIBOOKS` |
+| Wiktionnaire FR | `wiktionary_fr_all_nopic` | `CONTENT_WIKIBOOKS` |
+| iFixit FR | `ifixit_fr_all` | `CONTENT_IFIX` |
+| French Language Stack Exchange | `french.stackexchange.com_mul_all` | `CONTENT_STACKEXCHANGE` |
+| Stack Exchange — DIY | `diy.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Cooking | `cooking.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Ham Radio | `ham.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Outdoors | `outdoors.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Gardening | `gardening.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Medical Sciences | `medicalsciences.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Sustainability | `sustainability.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Electronics | `electronics.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Stack Exchange — Unix/Linux | `unix.stackexchange.com_en_all` | `CONTENT_STACKEXCHANGE_EN` (pack English, désactivé par défaut) |
+| Gutenberg FR | `gutenberg_fr_all` | `CONTENT_GUTENBERG` |
+| Khan Academy FR | `khanacademy_fr_all` | `CONTENT_KHAN_ZIM` |
+| Wikipédia FR — Médecine | `wikipedia_fr_medicine_maxi` | toujours |
+| TED Technology | `ted_mul_technology` | toujours |
+| TED Health Care | `ted_mul_health-care` | toujours |
+| TED Public Health | `ted_mul_public-health` | toujours |
+| TED Mental Health | `ted_mul_mental-health` | toujours |
+| TED Science | `ted_mul_science` | toujours |
+| Ekopédia (écologie pratique, autonomie) | `ekopedia_fr_all_maxi` | `CONTENT_EXPANSION` |
+| Cuisine Libre (recettes) | `cuisinelibre.org_fr_all` | `CONTENT_EXPANSION` |
+| PhET — simulations scientifiques FR | `phet_fr_all` | `CONTENT_EXPANSION` |
+| Wikiversité FR | `wikiversity_fr_all_maxi` | `CONTENT_EXPANSION` |
+| Vikidia FR (encyclopédie simplifiée) | `vikidia_fr_all_maxi` | `CONTENT_EXPANSION` |
+| Post-disaster Library (EN) | `zimgit-post-disaster_en` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Emergency Medicine Collection (EN) | `zimgit-medicine_en` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Water Purification Collection (EN) | `zimgit-water_en` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Food Preparation Collection (EN) | `zimgit-food-preparation_en` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Knots Guide (EN) | `zimgit-knots_en` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Appropedia (EN) | `appropedia_en_all_maxi` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Energypedia (EN) | `energypedia_en_all_maxi` | `CONTENT_EXPANSION_EN` (pack English, désactivé par défaut) |
+| Wikipedia EN | `wikipedia_en_all_maxi` | `CONTENT_BASE_EN` + `CONTENT_BASE_EN_WIKIPEDIA=nopic\|maxi` (phase 2) |
+| Wikipedia EN (no-pic) | `wikipedia_en_all_nopic` | `CONTENT_BASE_EN` + `CONTENT_BASE_EN_WIKIPEDIA=nopic\|maxi` (phase 2) |
+| Wikibooks EN | `wikibooks_en_all_maxi` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Wikivoyage EN | `wikivoyage_en_all_maxi` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Wikisource EN | `wikisource_en_all_maxi` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Wiktionary EN | `wiktionary_en_all_nopic` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| iFixit EN | `ifixit_en_all` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Gutenberg EN | `gutenberg_en_all` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Medline Plus (EN) | `medlineplus.gov_en_all` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| WikiMed (EN) | `mdwiki_en_all_maxi` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| PhET Science Simulations (EN) | `phet_en_all` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Wikiversity EN | `wikiversity_en_all_maxi` | `CONTENT_BASE_EN` (phase 2, base anglaise, désactivée par défaut) |
+| Khan Academy EN | `khanacademy_en_all` | `CONTENT_BASE_EN` + `CONTENT_BASE_EN_KHAN=Y` (phase 2) |
 
 ### Livres et PDF (`download/books_pdfs.sh`)
 

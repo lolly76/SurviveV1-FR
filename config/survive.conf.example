@@ -45,6 +45,13 @@ CONTENT_GAPS_EN="Y"
 CONTENT_PDFS_EN="N"
 CONTENT_VIDEOS_EN="N"
 CONTENT_MENTAL_EN="N"
+# Phase 2 (option) : la base anglaise d'origine de SurviveV1 (Wikipédia EN,
+# Wikilivres/Wikivoyage/Wikisource/Wiktionnaire EN, iFixit EN, Gutenberg EN,
+# MedlinePlus, WikiMed, Wikiversité EN, PhET EN). S'ajoute au contenu français.
+# ≈ 25 Go avec Wikipédia « nopic », ≈ 130 Go avec « maxi » (nopic | maxi | N).
+CONTENT_BASE_EN="N"
+CONTENT_BASE_EN_WIKIPEDIA="nopic"
+CONTENT_BASE_EN_KHAN="N"
 # Dépôt d'applications hors ligne (~1 Go) : Kiwix Android/Desktop, F-Droid, VLC,
 # pour que les invités du point d'accès Wi-Fi installent les lecteurs sans Internet.
 CONTENT_APPS="Y"
